@@ -62,6 +62,9 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Descriptions: settings.closingDesc lines "Category | 3 | 2 | 1" (Mat's wording shortened 11/7; Performance 1 and Attitude 2/1 written by Claude, Mat to confirm). Shown only on the big scoreboard; the current score's line turns gold.
 - Test: 'end of class: pack-up -> scoreboard' in tests/smoke.py.
 
+## Test mode (1.6.1)
+- `?test=2026-11-09T08:29:45&speed=5` (speed 1–60): now() runs from that time at that speed. #testBar shows it + End test. In a test: a=set calls are faked (never sent; "Test only · not saved"), pack-up "done" marks aren't stored. Menu 🧪 Test end of class builds the URL: block on screen (else first block), today or next weekday, 15 s before pack-up, speed 5.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

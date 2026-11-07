@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.6.1 — 2026-11-07
+- ☰ → 🧪 Test end of class: plays pack-up → scoreboard → class change for the block on screen (next school day if it's the weekend), 5× faster, with a pink TEST bar and End test. Scores tapped in a test are never sent. Any time can be tried with ?test=YYYY-MM-DDTHH:MM:SS&speed=n.
+
 ## 1.6.0 — 2026-11-07
 - End of class is one sequence: 6:00 before class change "Pack up time!" (stays up as a countdown to scores), 2:00 before: rising chime + full-screen closing scoreboard (today's 1/2/3 buttons, earlier days, one-line meaning of each number, "Class change in m:ss") until class change. ✕ hides it; the gold pill brings it back. No scoreboard on Band Ninja days or when the slide has no column for today (then pack-up behaves as before).
 - "Bell" is now "class change" everywhere (the school has no bells).

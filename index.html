@@ -221,6 +221,11 @@
     font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em;
     box-shadow: 0 4px 14px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; white-space: nowrap; }
   #packPill.show { display: block; }
+  #testBar { position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; display: none;
+    background: #ffb4a8; color: #141c30; border-radius: 0 0 14px 14px; padding: 8px 18px; gap: 14px; align-items: center;
+    font: 600 18px "Segoe UI", Arial, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); white-space: nowrap; }
+  #testBar.show { display: flex; }
+  #testBar button { border: 0; border-radius: 8px; padding: 6px 12px; background: #141c30; color: #fff; font: inherit; cursor: pointer; }
   #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
 </head>
@@ -253,6 +258,7 @@
   <div class="p-tap">Tap anywhere to close</div>
 </div>
 <div id="packPill" title="Show the pack-up steps"></div>
+<div id="testBar" role="status"><span id="testText"></span><button id="testExit">End test</button></div>
 
 <!-- Closing scores: a student taps 1-3 for today; saved into the slide's CLOSING table -->
 <button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
@@ -320,6 +326,10 @@
       </button>
     </div>
     <p class="hint">Switches apply to today only. Tomorrow the board goes back to the normal schedule.</p>
+    <div class="row">
+      <button class="big" id="testEnd">🧪 Test end of class</button>
+    </div>
+    <p class="hint">Plays pack-up → closing scoreboard → class change for the block on screen, 5× faster. Scores tapped in a test are not saved.</p>
     <div class="row">
       <button class="big" id="openSettings">Settings</button>
       <button class="big" id="closeMenu">Close</button>
@@ -490,7 +500,19 @@
   var settings = Object.assign(clone(DEFAULTS), load(STORE_KEY) || {});
 
   // ===================== TIME HELPERS =====================
-  function now() { return new Date(); }
+  // Test mode: ?test=2026-11-09T08:29:30&speed=5 makes the board act as if it were that time,
+  // with its clock running `speed` times faster. Nothing is saved to the slide in a test.
+  var TEST = (function () {
+    try {
+      var q = new URLSearchParams(location.search), t = q.get("test");
+      if (!t) return null;
+      var m = t.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!m) return null;
+      var start = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)).getTime();
+      return { start: start, real: Date.now(), speed: Math.max(1, Math.min(60, +q.get("speed") || 1)) };
+    } catch (e) { return null; }
+  })();
+  function now() { return TEST ? new Date(TEST.start + (Date.now() - TEST.real) * TEST.speed) : new Date(); }
   function mins(hhmm) { var p = hhmm.split(":"); return (+p[0]) * 60 + (+p[1]); }
   function nowMins(d) { return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
   function ymd(d) {
@@ -902,6 +924,10 @@
     return u + (u.indexOf("?") >= 0 ? "&" : "?") + q;
   }
   function scoresCall(params) {
+    if (TEST && params.a === "set") {          // test: pretend it saved, touch nothing in Google
+      var d = sc.data[params.block];
+      return new Promise(function (ok) { setTimeout(function () { ok(Object.assign({}, d, { ok: true })); }, 150); });
+    }
     return fetch(scoresUrl(params), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
       if (!j || !j.ok) throw new Error((j && j.error) || "No answer");
       return j;
@@ -940,7 +966,7 @@
     if (!d) { sGrid.innerHTML = ""; return; }
     var t = todayCol(d.days);
     var big = scoresEl.classList.contains("big");
-    sGrid.style.gridTemplateColumns = (big ? "minmax(0, 3fr) " : "minmax(150px, 1.2fr) ") +
+    sGrid.style.gridTemplateColumns = (big ? "minmax(0, 3.8fr) " : "minmax(150px, 1.2fr) ") +
       d.days.map(function (_, i) { return i === t ? (big ? "4fr" : "3.2fr") : "1fr"; }).join(" ");
     var h = '<div></div>' + d.days.map(function (x, i) {
       return '<div class="s-h' + (i === t ? ' today' : '') + '">' + esc(x) + (i === t ? ' · TODAY' : '') + '</div>';
@@ -1004,7 +1030,7 @@
     scoresMsg("Saving…");
     scoresCall({ a: "set", block: op.block, row: op.row, day: op.day, v: op.v }).then(function (j) {
       sc.queue.shift(); sc.busy = false; sc.changed = true;
-      if (!sc.queue.length) { sc.data[op.block] = j; scoresMsg("Saved ✓"); }
+      if (!sc.queue.length) { sc.data[op.block] = j; scoresMsg(TEST ? "Test only · not saved" : "Saved ✓"); }
       if (sc.block === op.block) scoresPaint();
       if (!scoresEl.classList.contains("open")) scoresClose(); else scoresFlush();
     }).catch(function (e) {
@@ -1036,7 +1062,8 @@
   var packBell = document.getElementById("packBell");
   var pack = { block: null, name: null, end: 0, shownAt: 0, phase: null };
   var sChangeEl = document.getElementById("sChange");
-  var packDone = load(PACK_KEY) || {};
+  var packDone = TEST ? {} : (load(PACK_KEY) || {});
+  if (TEST) save = (function (realSave) { return function (k, v) { if (k !== PACK_KEY) realSave(k, v); }; })(save);
   var HOLD_FLASH = 10000, HOLD_OPEN = 45000;
 
   document.addEventListener("pointerdown", tUnlockAudio, true);
@@ -1145,6 +1172,35 @@
   });
   setInterval(packCheck, 1000);
   packCheck();
+
+  // ---------- Test end of class (menu) ----------
+  var testBar = document.getElementById("testBar"), testText = document.getElementById("testText");
+  function testStartUrl() {
+    // Today if it's a school day, else next Monday; the block on screen (or in session, or 1st Block).
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+    var type = dayType(d) === "if" ? "if" : "regular";
+    var list = settings.schedules[type] || [];
+    var pick = list.filter(function (b) { return b[0] === shownKey; })[0] || list[0];
+    var lead = Math.max(+settings.packMinutes || 0, +settings.scoreMinutes || 0, 1) * 60 + 15;   // 15 s before pack-up
+    var t = mins(pick[2]) * 60 - lead;
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    var iso = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" +
+      pad(Math.floor(t / 3600)) + ":" + pad(Math.floor(t / 60) % 60) + ":" + pad(t % 60);
+    return location.pathname + "?test=" + iso + "&speed=5";
+  }
+  document.getElementById("testEnd").onclick = function () { location.href = testStartUrl(); };
+  document.getElementById("testExit").onclick = function () { location.href = location.pathname; };
+  if (TEST) {
+    testBar.classList.add("show");
+    var paintTest = function () {
+      var d = now();
+      testText.textContent = "🧪 TEST · " + d.toLocaleDateString([], { weekday: "short" }) + " " +
+        d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) +
+        " · " + TEST.speed + "× speed · scores not saved";
+    };
+    paintTest(); setInterval(paintTest, 500);
+  }
 
   // ===================== LOOP =====================
   frame.addEventListener("load", function () {

@@ -320,10 +320,39 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'end of class: pack-up -> scoreboard':34s}" + ("" if ok else f" {a1} {line1} {a2} {b} {pk} {state['values']} {desc_on} {pill} {reopened} {c}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Test mode: menu button jumps to just before pack-up on the next school day; test runs never save scores
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://script.google.com/**", fake_script)
+        page = ctx.new_page(); page.clock.install(time="2026-11-07T10:15:00")      # Saturday
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        page.click("#btnMenu"); page.click("#testEnd"); page.wait_for_timeout(500)
+        url_ok = "test=2026-11-09T08:29:45&speed=5" in page.url and page.is_visible("#testBar")
+        ctx.close()
+        calls.clear(); state["values"] = [["", "", "", ""], ["", "", "", ""], ["", "", "", ""]]
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://script.google.com/**", fake_script)
+        page = ctx.new_page()
+        page.goto(f"http://127.0.0.1:{PORT}/index.html?test=2026-11-09T08:29:50&speed=60")   # real clock, 60x
+        page.wait_for_timeout(1500); p1 = page.evaluate("window.__agendaBoard.pack()")       # ~8:31: pack-up
+        page.wait_for_timeout(3500); s1 = S()                                             # ~8:34:30: scoreboard (Monday column)
+        today_ok = page.inner_text(".s-h.today").startswith("MON") if s1["open"] else False
+        if s1["open"]: page.click("#sGrid button[data-r='0'][data-v='3']"); page.wait_for_timeout(400)
+        if shots_dir: page.screenshot(path=str(shots_dir / "test_mode.png"))
+        page.wait_for_timeout(2500); s2 = S()                                             # past 8:36
+        no_save = not any(c.get("a") == "set" for c in calls) and state["values"][0][0] == ""
+        ok = url_ok and p1["open"] and s1["big"] and today_ok and not s2["open"] and no_save
+        print(("PASS" if ok else "FAIL"), f"{'test mode (menu + no saving)':34s}" + ("" if ok else f" {url_ok} {p1} {s1} {today_ok} {s2} {no_save} {calls}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
