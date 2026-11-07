@@ -92,6 +92,47 @@
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
   #status { font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+  /* ---------- Warm-up timer ---------- */
+  #btnTimer { position: fixed; left: 10px; bottom: 10px; z-index: 21; background: #c9a227; color: #141c30;
+    border: 0; border-radius: 999px; padding: 12px 20px; font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif;
+    letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  body.timer-open #btnTimer { display: none; }
+  #overrideBadge { left: 150px; }               /* sits beside the Timer button */
+  body.timer-open #overrideBadge { left: 10px; }
+  #timer { position: fixed; z-index: 30; display: none; width: min(420px, 92vw); background: #1f2a44; color: #fff;
+    border: 3px solid #c9a227; border-radius: 22px; padding: 14px 18px 16px; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    font-family: "Oswald", "Arial Narrow", Arial, sans-serif; text-align: center; user-select: none; }
+  #timer.open { display: block; }
+  #timer.pos-tr { top: 16px; right: 16px; } #timer.pos-tl { top: 16px; left: 16px; }
+  #timer.pos-bl { bottom: 16px; left: 16px; } #timer.pos-br { bottom: 76px; right: 16px; }
+  #timer.big { inset: 0; width: auto; border-radius: 0; border-width: 0; display: none;
+    flex-direction: column; justify-content: center; }
+  #timer.big.open { display: flex; }
+  #timer .t-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    color: #c9a227; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
+  #timer .t-head .t-icons { display: flex; gap: 6px; }
+  #timer .t-icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #34405e; background: #141c30;
+    color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  #timer .t-time { font-size: 112px; line-height: 1.05; font-variant-numeric: tabular-nums; margin: 4px 0 8px;
+    letter-spacing: .02em; }
+  #timer.big .t-time { font-size: min(42vh, 30vw); }
+  #timer.big .t-head { font-size: 3vh; justify-content: center; position: relative; }
+  #timer.big .t-head .t-icons { position: absolute; right: 16px; }
+  #timer.big .t-msg { font-size: 6vh; }
+  #timer.low .t-time { color: #c9a227; }
+  #timer.done { animation: tFlash 1s linear infinite; }
+  #timer.done .t-head { color: inherit; }
+  @keyframes tFlash { 0%, 49.9% { background: #c9a227; color: #141c30; } 50%, 100% { background: #1f2a44; color: #fff; } }
+  #timer .t-msg { min-height: 1.3em; font-size: 26px; margin: -2px 0 8px; }
+  #timer .t-presets, #timer .t-ctl { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  #timer .t-ctl { margin-top: 10px; }
+  #timer button.t-b { flex: 1 1 0; min-width: 72px; padding: 12px 8px; border-radius: 12px; cursor: pointer;
+    font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; border: 1px solid #34405e; background: #141c30; color: #fff; }
+  #timer button.t-b.sel { border-color: #c9a227; color: #c9a227; }
+  #timer button.t-b.go { background: #c9a227; border-color: #c9a227; color: #141c30; flex-grow: 2; }
+  #timer.done button.t-b { background: #141c30; color: #fff; }
+  #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
 </head>
 <body>
@@ -110,6 +151,31 @@
 </div>
 
 <div id="overrideBadge" title="Tap to return to automatic"></div>
+
+<!-- Warm-up timer: a student runs it from the board -->
+<button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
+<div id="timer" class="pos-tr" role="timer" aria-live="off">
+  <div class="t-head">
+    <span>Warm-up timer</span>
+    <span class="t-icons">
+      <button class="t-icon" id="tMove" title="Move to another corner" aria-label="Move timer">⇄</button>
+      <button class="t-icon" id="tBig" title="Full screen timer" aria-label="Bigger timer">⤢</button>
+      <button class="t-icon" id="tClose" title="Hide timer" aria-label="Hide timer">✕</button>
+    </span>
+  </div>
+  <div class="t-time" id="tTime">4:00</div>
+  <div class="t-msg" id="tMsg"></div>
+  <div class="t-presets" id="tPresets">
+    <button class="t-b" data-min="3">3 min</button>
+    <button class="t-b" data-min="4">4 min</button>
+    <button class="t-b" data-min="5">5 min</button>
+    <button class="t-b" id="tPlus" title="Add 30 seconds">+30s</button>
+  </div>
+  <div class="t-ctl">
+    <button class="t-b go" id="tGo">Start</button>
+    <button class="t-b" id="tReset">Reset</button>
+  </div>
+</div>
 
 <div id="corner">
   <button id="btnRefresh" title="Refresh agenda" aria-label="Refresh agenda">⟳</button>
@@ -552,6 +618,115 @@
     catch (e) { statusMsg("That didn't look like exported settings. Nothing changed."); }
   };
 
+  // ===================== WARM-UP TIMER =====================
+  // Counts down to a fixed end time (stays accurate even if the board's browser is busy).
+  // Last length + corner are remembered on this device.
+  var TIMER_KEY = "agendaBoard.timer";
+  var POSITIONS = ["pos-tr", "pos-tl", "pos-bl", "pos-br"];
+  var timerEl = document.getElementById("timer");
+  var tTime = document.getElementById("tTime"), tMsg = document.getElementById("tMsg"), tGo = document.getElementById("tGo");
+  var tPrefs = Object.assign({ min: 4, pos: "pos-tr" }, load(TIMER_KEY) || {});
+  var timer = { state: "idle", dur: tPrefs.min * 60000, left: tPrefs.min * 60000, endAt: 0, doneAt: 0 };
+  var audio = null;
+
+  function tSavePrefs() { save(TIMER_KEY, tPrefs); }
+  function tRemaining() { return timer.state === "run" ? Math.max(0, timer.endAt - Date.now()) : timer.left; }
+  function tFmt(ms) {
+    var s = Math.ceil(ms / 1000), m = Math.floor(s / 60);
+    return m + ":" + String(s % 60).padStart(2, "0");
+  }
+  function tPaint() {
+    var ms = tRemaining();
+    tTime.textContent = tFmt(ms);
+    timerEl.classList.toggle("low", timer.state === "run" && ms <= 30000);
+    timerEl.classList.toggle("done", timer.state === "done");
+    tGo.textContent = timer.state === "run" ? "Pause" : timer.state === "pause" ? "Resume" : "Start";
+    tMsg.textContent = timer.state === "done" ? "Time's up · instruments up!" :
+      timer.state === "pause" ? "Paused" : timer.state === "run" ? "Warm up & assemble" : "";
+    Array.prototype.forEach.call(document.querySelectorAll("#tPresets [data-min]"), function (b) {
+      b.classList.toggle("sel", +b.getAttribute("data-min") * 60000 === timer.dur);
+    });
+  }
+  function tSetLength(min) {
+    tPrefs.min = min; tSavePrefs();
+    timer.dur = min * 60000;
+    if (timer.state === "run") timer.endAt = Date.now() + timer.dur;   // restart at the new length
+    else { timer.left = timer.dur; if (timer.state === "done") timer.state = "idle"; }
+    tPaint();
+  }
+  function tChime() {
+    try {
+      var ctx = audio || new (window.AudioContext || window.webkitAudioContext)();
+      audio = ctx;
+      [0, 0.45, 0.9].forEach(function (at) {
+        var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + at;
+        o.type = "sine"; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+        o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.4);
+      });
+    } catch (e) { /* no sound on this browser; the flashing still shows */ }
+  }
+  function tUnlockAudio() {
+    // The board's browser only allows sound after a tap, so get it ready on Start.
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.resume) audio.resume(); } catch (e) {}
+  }
+  function tTick() {
+    if (timer.state === "run" && Date.now() >= timer.endAt) {
+      timer.state = "done"; timer.left = 0; timer.doneAt = Date.now(); tChime();
+    }
+    // A finished timer resets and tucks itself away after a minute.
+    if (timer.state === "done" && Date.now() - timer.doneAt > 60000) {
+      timer.state = "idle"; timer.left = timer.dur; tOpen(false);
+    }
+    if (timerEl.classList.contains("open")) tPaint();
+  }
+  function tOpen(on) {
+    timerEl.classList.toggle("open", on);
+    document.body.classList.toggle("timer-open", on);
+    if (!on) timerEl.classList.remove("big");
+    tPaint();
+  }
+  function tApplyPos() {
+    POSITIONS.forEach(function (p) { timerEl.classList.remove(p); });
+    timerEl.classList.add(POSITIONS.indexOf(tPrefs.pos) >= 0 ? tPrefs.pos : "pos-tr");
+  }
+
+  document.getElementById("btnTimer").onclick = function () { tOpen(true); };
+  document.getElementById("tClose").onclick = function () { tOpen(false); };   // keeps counting while hidden
+  document.getElementById("tBig").onclick = function () { timerEl.classList.toggle("big"); tPaint(); };
+  document.getElementById("tMove").onclick = function () {
+    tPrefs.pos = POSITIONS[(POSITIONS.indexOf(tPrefs.pos) + 1) % POSITIONS.length];
+    tSavePrefs(); tApplyPos();
+  };
+  Array.prototype.forEach.call(document.querySelectorAll("#tPresets [data-min]"), function (b) {
+    b.onclick = function () { tSetLength(+b.getAttribute("data-min")); };
+  });
+  document.getElementById("tPlus").onclick = function () {
+    if (timer.state === "run") timer.endAt += 30000;
+    else { timer.left += 30000; if (timer.state === "done") { timer.state = "pause"; } }
+    tPaint();
+  };
+  tGo.onclick = function () {
+    tUnlockAudio();
+    if (timer.state === "run") { timer.left = tRemaining(); timer.state = "pause"; }
+    else {
+      if (timer.state === "done" || timer.left <= 0) timer.left = timer.dur;
+      timer.endAt = Date.now() + timer.left; timer.state = "run";
+    }
+    tPaint();
+  };
+  document.getElementById("tReset").onclick = function () { timer.state = "idle"; timer.left = timer.dur; tPaint(); };
+  // A timer that finishes while hidden pops back up so the class sees "Time's up".
+  setInterval(function () {
+    var wasDone = timer.state === "done";
+    tTick();
+    if (!wasDone && timer.state === "done" && !timerEl.classList.contains("open")) tOpen(true);
+  }, 250);
+  tApplyPos();
+  tPaint();
+
   // ===================== LOOP =====================
   frame.addEventListener("load", function () {
     var l = agendaEl.querySelector(".loading"); if (l) l.style.display = "none";
@@ -562,7 +737,8 @@
 
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
-    shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl };
+    shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
+    timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };
 })();
 </script>
 </body>

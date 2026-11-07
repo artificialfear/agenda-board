@@ -40,6 +40,11 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - The logo was extracted from the Hub (artificialfear/raven-hub-code, `src/RavenHubPage.html`) and is only 128×128, so it's capped at 220px tall to limit blur on big boards. A larger original would look sharper.
 - Asset URLs carry `?v=<version>`; bump it when an asset changes so the board doesn't serve a cached copy.
 
+## Warm-up timer (1.3.0, Mat 11/6)
+- Mat gives 3–5 min to warm up/assemble; a student runs it. Gold ⏱ Timer pill bottom-left (always visible; the manual-override badge sits beside it). Panel: presets 3/4/5, +30s, Start/Pause/Resume, Reset, ⇄ corner, ⤢ full screen, ✕ hide (keeps counting).
+- Counts to a fixed end time (Date.now). Last 30 s gold; done = WebAudio chime ×3 (audio unlocked on the Start tap) + gold/navy flash; pops open if hidden; resets and closes 60 s after done.
+- localStorage `agendaBoard.timer` {min, pos}. Test: 'warm-up timer' in tests/smoke.py.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), flip today between Regular/IF, Settings.

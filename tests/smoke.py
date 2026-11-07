@@ -167,10 +167,42 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'manual override expires':34s} got={(s1, s2, s3)}")
         failures += 0 if ok else 1
         ctx.close()
+
+        # Warm-up timer: open, pick 3 min, start, pause/resume, hide, finishes -> pops back up, auto-tucks away
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page()
+        page.clock.install(time="2026-11-06T07:46:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html")
+        page.wait_for_timeout(300)
+        T = lambda: page.evaluate("window.__agendaBoard.timer()")
+        page.click("#btnTimer"); page.click("#tPresets [data-min='3']")
+        a = T()
+        page.click("#tGo"); page.clock.fast_forward("01:00")
+        b = T()
+        page.click("#tGo"); page.clock.fast_forward("00:30"); c = T()      # paused: no change
+        page.click("#tGo"); page.click("#tClose"); d = T()
+        if shots_dir:
+            page.click("#btnTimer"); page.clock.fast_forward("01:45"); page.wait_for_timeout(300)
+            page.screenshot(path=str(shots_dir / "timer_low.png")); page.click("#tClose")
+            page.clock.fast_forward("00:20")
+        else:
+            page.clock.fast_forward("02:05")
+        e = T()
+        if shots_dir:
+            page.click("#tBig"); page.wait_for_timeout(200); page.screenshot(path=str(shots_dir / "timer_done_big.png")); page.click("#tBig")
+        page.clock.fast_forward("01:05"); f = T()
+        page.reload(); page.wait_for_timeout(300); page.click("#btnTimer"); g = T()   # remembers 3 min
+        ok = (a["text"] == "3:00" and b["text"] == "2:00" and b["state"] == "run" and c["text"] == "2:00"
+              and c["state"] == "pause" and not d["open"] and e["state"] == "done" and e["open"] and e["text"] == "0:00"
+              and f["state"] == "idle" and not f["open"] and g["text"] == "3:00")
+        print(("PASS" if ok else "FAIL"), f"{'warm-up timer':34s} {[x['state'] + ' ' + x['text'] for x in (a, b, c, d, e, f, g)]}")
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7
+    total = len(CASES) + 1 + 7 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

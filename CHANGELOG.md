@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.0 — 2026-11-06
+- Warm-up timer: gold ⏱ Timer button (bottom-left). 3/4/5 min, +30s, Start/Pause, Reset. Counts down in a corner over the slide (⇄ moves it, ⤢ full screen). Gold in the last 30 s; at 0 it chimes 3 times and flashes "Time's up · instruments up!", then tucks away after a minute. Keeps counting if hidden and pops back up when done. Remembers the last length and corner on the board.
+
 ## 1.2.1 — 2026-11-06
 - Band Ninja Day slides restyled to the Raven look; quarter goal box filled each morning by apps-script/NinjaGoals.gs.
 
