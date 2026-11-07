@@ -45,6 +45,11 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Counts to a fixed end time (Date.now). Last 30 s gold; done = WebAudio chime ×3 (audio unlocked on the Start tap) + gold/navy flash; pops open if hidden; resets and closes 60 s after done.
 - localStorage `agendaBoard.timer` {min, pos}. Test: 'warm-up timer' in tests/smoke.py.
 
+## Pack-up alert (1.4.0, Mat 11/6)
+- `packMinutes` (default 6, Settings, 0 = off) before each block's END by the bell schedule (not the lead-in, not what's on screen; overrides don't matter). Full-screen #packup: flashes 10 s, closes after 45 s or a tap; then #packPill "bell in m:ss" bottom-center until the bell. Fired once per block per day (localStorage `agendaBoard.packDone`, survives reloads).
+- Sound: WebAudio chime. Browsers block sound until the page has been touched once since it loaded, so any tap on the board readies it (pointerdown → tUnlockAudio). After the board's browser restarts, someone must touch the page once or the first alert is silent (flash still shows).
+- Tests: 3 pack-up cases in tests/smoke.py.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), flip today between Regular/IF, Settings.

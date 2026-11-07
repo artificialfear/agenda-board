@@ -199,10 +199,43 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'warm-up timer':34s} {[x['state'] + ' ' + x['text'] for x in (a, b, c, d, e, f, g)]}")
         failures += 0 if ok else 1
         ctx.close()
+
+        # Pack-up alert: 6 min before the bell, once per block, then a "bell in" pill until the bell
+        def packctx(t, extra_init=None):
+            c = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+            c.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+            if extra_init: c.add_init_script(extra_init)
+            pg = c.new_page(); pg.clock.install(time=t); pg.goto(f"http://127.0.0.1:{PORT}/index.html"); pg.wait_for_timeout(300)
+            return c, pg
+        ctx, page = packctx("2026-11-06T08:29:50")            # regular 1st ends 8:36
+        P = lambda: page.evaluate("window.__agendaBoard.pack()")
+        a = P(); page.clock.fast_forward("00:15"); b = P()
+        if shots_dir: page.screenshot(path=str(shots_dir / "packup.png"))
+        page.clock.fast_forward("00:12"); c = P()
+        page.clock.fast_forward("00:40"); d = P()
+        if shots_dir: page.screenshot(path=str(shots_dir / "packup_pill.png"))
+        page.reload(); page.wait_for_timeout(300); e = P()    # no repeat after a reload
+        page.clock.fast_forward("06:00"); f = P()              # past 8:36, bell rang
+        ok = (not a["open"] and b["open"] and b["flash"] and c["open"] and not c["flash"] and not d["open"]
+              and d["pill"].startswith("🎒 Pack up · bell in 5:") and not e["open"] and e["pill"] and not f["pill"] and not f["open"])
+        print(("PASS" if ok else "FAIL"), f"{'pack-up alert (regular 1st)':34s} {[a, b, c, d, e, f]}" if not ok else "pack-up alert (regular 1st)")
+        failures += 0 if ok else 1
+        ctx.close()
+        ctx, page = packctx("2026-11-10T08:19:30")            # IF 1st ends 8:25
+        ok = page.evaluate("window.__agendaBoard.pack()")["open"]
+        print(("PASS" if ok else "FAIL"), "pack-up alert (IF day schedule)")
+        failures += 0 if ok else 1
+        ctx.close()
+        ctx, page = packctx("2026-11-06T08:31:00", "localStorage.setItem('agendaBoard.settings', JSON.stringify({packMinutes: 0}))")
+        p0 = page.evaluate("window.__agendaBoard.pack()")
+        ok = not p0["open"] and not p0["pill"]
+        print(("PASS" if ok else "FAIL"), "pack-up alert off when set to 0")
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

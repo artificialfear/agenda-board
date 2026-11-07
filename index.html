@@ -132,6 +132,26 @@
   #timer button.t-b.sel { border-color: #c9a227; color: #c9a227; }
   #timer button.t-b.go { background: #c9a227; border-color: #c9a227; color: #141c30; flex-grow: 2; }
   #timer.done button.t-b { background: #141c30; color: #fff; }
+  /* ---------- Pack-up alert ---------- */
+  #packup { position: fixed; inset: 0; z-index: 40; display: none; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; background: #1f2a44; color: #fff; cursor: pointer;
+    font-family: "Oswald", "Arial Narrow", Arial, sans-serif; padding: 4vh 4vw; }
+  #packup.open { display: flex; }
+  #packup.flash { animation: tFlash 1s linear infinite; }
+  #packup .p-title { font-size: min(16vh, 11vw); line-height: 1; letter-spacing: .04em; text-transform: uppercase; }
+  #packup .p-bell { font-size: min(6vh, 4vw); margin: 2vh 0 4vh; opacity: .9; font-variant-numeric: tabular-nums; }
+  #packup ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2.2vh;
+    font-size: min(6.5vh, 4.4vw); text-align: left; }
+  #packup li { display: flex; align-items: center; gap: .6em; }
+  #packup li b { display: inline-flex; width: 1.4em; height: 1.4em; border-radius: 50%; align-items: center;
+    justify-content: center; background: #c9a227; color: #141c30; font-size: .8em; flex: none; }
+  #packup.flash li b { background: #141c30; color: #c9a227; }
+  #packup .p-tap { position: absolute; bottom: 3vh; font-size: 2.4vh; opacity: .7; font-family: "Segoe UI", Arial, sans-serif; }
+  #packPill { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 22; display: none;
+    background: #c9a227; color: #141c30; border-radius: 999px; padding: 10px 22px; cursor: pointer;
+    font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #packPill.show { display: block; }
   #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
 </head>
@@ -151,6 +171,19 @@
 </div>
 
 <div id="overrideBadge" title="Tap to return to automatic"></div>
+
+<!-- Pack-up alert: a few minutes before each block's bell -->
+<div id="packup" role="alert" title="Tap to close">
+  <div class="p-title">Pack up time!</div>
+  <div class="p-bell" id="packBell"></div>
+  <ol>
+    <li><b>1</b>Pack up your instrument</li>
+    <li><b>2</b>Straighten your chair</li>
+    <li><b>3</b>Push your music stand away from your feet</li>
+  </ol>
+  <div class="p-tap">Tap anywhere to close</div>
+</div>
+<div id="packPill" title="Show the pack-up steps"></div>
 
 <!-- Warm-up timer: a student runs it from the board -->
 <button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
@@ -257,6 +290,10 @@
       </div>
     </div>
 
+    <label class="f" for="sPack">Pack-up alert (minutes before the bell)</label>
+    <input id="sPack" type="number" min="0" max="20">
+    <div class="hint">Chime + full-screen "Pack up time!" this many minutes before each block ends. 0 = off.</div>
+
     <label class="f" for="sNinjaEmbed">Band Ninja Day deck link</label>
     <input id="sNinjaEmbed" placeholder="https://docs.google.com/presentation/d/…/pub or …/embed">
     <label class="f" for="sNinjaOnIf">Band Ninja Day</label>
@@ -298,6 +335,7 @@
     refreshMinutes: 5,
     theme: "dark",
     weekend: "welcome",
+    packMinutes: 6,      // pack-up alert this many minutes before each block ends (0 = off)
     ninjaEmbedUrl: "https://docs.google.com/presentation/d/" + NINJA_DECK_ID + "/embed",
     ninjaOnIf: true,     // Band Ninja Day slides every IF day
     ninjaBlocks: { "1st": "p3", "3rd": "p2", "4th": "p2", "6th": "p1", "7th": "p1" },
@@ -565,6 +603,7 @@
     document.getElementById("sRefresh").value = settings.refreshMinutes;
     document.getElementById("sTheme").value = settings.theme;
     document.getElementById("sWeekend").value = settings.weekend;
+    document.getElementById("sPack").value = settings.packMinutes;
     document.getElementById("sSched").value = schedText();
     document.getElementById("status").textContent = "";
   }
@@ -593,6 +632,8 @@
     settings.refreshMinutes = Math.max(1, Math.min(60, +document.getElementById("sRefresh").value || 5));
     settings.theme = document.getElementById("sTheme").value;
     settings.weekend = document.getElementById("sWeekend").value;
+    var pm = document.getElementById("sPack").value;
+    settings.packMinutes = pm === "" ? 0 : Math.max(0, Math.min(20, Math.round(+pm) || 0));
     settings.blocks = parsed.blocks;
     settings.schedules = parsed.schedules;
     save(STORE_KEY, settings);
@@ -729,6 +770,75 @@
   tApplyPos();
   tPaint();
 
+  // ===================== PACK-UP ALERT =====================
+  // Goes by the bell schedule (not by what's on screen), once per block per day.
+  // Browsers only allow sound after someone has touched the page, so any tap readies it.
+  var PACK_KEY = "agendaBoard.packDone";
+  var packEl = document.getElementById("packup"), packPill = document.getElementById("packPill");
+  var packBell = document.getElementById("packBell");
+  var pack = { block: null, end: 0, shownAt: 0 };
+  var packDone = load(PACK_KEY) || {};
+  var HOLD_FLASH = 10000, HOLD_OPEN = 45000;
+
+  document.addEventListener("pointerdown", tUnlockAudio, true);
+
+  function packChime() {
+    try {
+      var ctx = audio || new (window.AudioContext || window.webkitAudioContext)();
+      audio = ctx;
+      [[0, 784], [0.35, 523], [1.2, 784], [1.55, 523]].forEach(function (n) {
+        var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + n[0];
+        o.type = "triangle"; o.frequency.value = n[1];
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.6, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+        o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.55);
+      });
+    } catch (e) { /* no sound: the flash still shows */ }
+  }
+  function packLeft(d) { return Math.max(0, pack.end - (d.getTime())); }
+  function bellText(ms) { var s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function packClose() { packEl.classList.remove("open", "flash"); }
+
+  function packCheck() {
+    var d = now(), mins_ = +settings.packMinutes || 0;
+    var st = scheduleState(d), today = ymd(d);
+    // Which block is in session by the bell (ignoring the early lead-in)?
+    var blk = null;
+    if (mins_ > 0 && st.type !== "weekend") {
+      (settings.schedules[st.type] || []).forEach(function (b) {
+        var t = nowMins(d);
+        if (t >= mins(b[1]) && t < mins(b[2])) blk = b;
+      });
+    }
+    if (blk && nowMins(d) >= mins(blk[2]) - mins_) {
+      var key = today + " " + blk[0] + " " + blk[2];
+      var endD = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, mins(blk[2]));
+      if (pack.block !== key) { pack.block = key; pack.end = endD.getTime(); }
+      if (!packDone[key]) {
+        packDone = {}; packDone[key] = true; save(PACK_KEY, packDone);   // only today's block is kept
+        pack.shownAt = d.getTime();
+        packEl.classList.add("open", "flash");
+        packChime();
+      }
+      var left = packLeft(d);
+      packBell.textContent = "Bell in " + bellText(left);
+      packPill.textContent = "🎒 Pack up · bell in " + bellText(left);
+      if (packEl.classList.contains("open")) {
+        if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
+        if (d.getTime() - pack.shownAt > HOLD_OPEN) packClose();
+      }
+      packPill.classList.toggle("show", !packEl.classList.contains("open"));
+    } else {
+      if (pack.block) { pack.block = null; packClose(); }
+      packPill.classList.remove("show");
+    }
+  }
+  packEl.addEventListener("click", function () { packClose(); packCheck(); });
+  packPill.addEventListener("click", function () { packEl.classList.add("open"); pack.shownAt = now().getTime() - HOLD_FLASH; });
+  setInterval(packCheck, 1000);
+  packCheck();
+
   // ===================== LOOP =====================
   frame.addEventListener("load", function () {
     var l = agendaEl.querySelector(".loading"); if (l) l.style.display = "none";
@@ -740,6 +850,8 @@
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
+    pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
+      pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },
     timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };
 })();
 </script>

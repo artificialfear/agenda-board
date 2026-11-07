@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.0 — 2026-11-06
+- Pack-up alert: 6 minutes before each block's bell (regular or IF schedule) the board chimes and flashes a full-screen "Pack up time!" with three steps (pack up your instrument, straighten your chair, push your music stand away from your feet). It flashes 10 s, stays up 45 s (tap to close), then a gold "🎒 Pack up · bell in m:ss" pill stays until the bell (tap it to see the steps again). Once per block per day. Settings: minutes before the bell, 0 = off.
+
 ## 1.3.1 — 2026-11-06
 - Timer opens in the bottom-left corner of the agenda; running text says "Assemble & warm up".
 
