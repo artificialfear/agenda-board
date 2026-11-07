@@ -129,6 +129,9 @@
     </div>
     <div class="row">
       <button class="big" id="dayToggle">Today is…</button>
+      <button class="big" id="ninjaToggle">Band Ninja Day…</button>
+    </div>
+    <div class="row">
       <button class="big" id="openSettings">Settings</button>
       <button class="big" id="closeMenu">Close</button>
     </div>
@@ -188,9 +191,15 @@
       </div>
     </div>
 
+    <label class="f" for="sNinjaEmbed">Band Ninja Day deck link</label>
+    <input id="sNinjaEmbed" placeholder="https://docs.google.com/presentation/d/…/pub or …/embed">
+    <label class="f" for="sNinjaOnIf">Band Ninja Day</label>
+    <select id="sNinjaOnIf"><option value="1">Every IF day</option><option value="0">Only when I turn it on</option></select>
+    <div class="hint">On a Band Ninja Day each block shows its grade's Band Ninja slide instead of the agenda. The ☰ menu turns it on or off for today.</div>
+
     <label class="f" for="sSched">Schedules and slides (advanced)</label>
     <textarea id="sSched" spellcheck="false"></textarea>
-    <div class="hint">Each block: start, end (24-hour), and the slide ID it shows. Only edit if your bell schedule changes or a block's slide was recreated.</div>
+    <div class="hint">Each block: start, end (24-hour), the agenda slide ID it shows ("blocks") and its Band Ninja slide ("ninjaBlocks"). Only edit if your bell schedule changes or a slide was recreated.</div>
 
     <div class="row">
       <button class="big primary" id="saveSettings">Save</button>
@@ -211,6 +220,8 @@
   // Bell times come from Mat's sub plan templates (Regular Day + IF Day).
   // Slide IDs come from the "Daily Rehearsal (All Band Classes)" deck.
   var DECK_ID = "1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY";
+  // "Band_Ninja_Day" deck: one slide per grade (p3 = 8th, p2 = 7th, p1 = 6th).
+  var NINJA_DECK_ID = "1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU";
   var DEFAULTS = {
     version: 1,
     embedUrl: "https://docs.google.com/presentation/d/" + DECK_ID + "/embed",
@@ -221,6 +232,9 @@
     refreshMinutes: 5,
     theme: "dark",
     weekend: "welcome",
+    ninjaEmbedUrl: "https://docs.google.com/presentation/d/" + NINJA_DECK_ID + "/embed",
+    ninjaOnIf: true,     // Band Ninja Day slides every IF day
+    ninjaBlocks: { "1st": "p3", "3rd": "p2", "4th": "p2", "6th": "p1", "7th": "p1" },
     blocks: {
       "1st": "h6417f591313bdade_2_0",
       "3rd": "g3f643065e38_0_0",
@@ -249,6 +263,7 @@
   var STORE_KEY = "agendaBoard.settings";
   var OVERRIDE_KEY = "agendaBoard.override";
   var DAYTYPE_KEY = "agendaBoard.dayType";
+  var NINJA_KEY = "agendaBoard.ninja";
 
   // ===================== STORAGE (safe) =====================
   function load(key) {
@@ -290,6 +305,13 @@
     return dow === currentIfDay(d) ? "if" : "regular";
   }
 
+  // Band Ninja Day: every IF day by default; the menu can turn it on/off for one day.
+  function isNinja(d) {
+    var forced = load(NINJA_KEY);
+    if (forced && forced.date === ymd(d)) return !!forced.on;
+    return !!settings.ninjaOnIf && dayType(d) === "if";
+  }
+
   // Which block (if any) should be on screen right now, plus when that decision next changes.
   function scheduleState(d) {
     var type = dayType(d);
@@ -327,19 +349,21 @@
   }
 
   // ===================== EMBED URL =====================
-  function embedBase() {
-    var u = (settings.embedUrl || DEFAULTS.embedUrl).trim();
+  function embedBase(ninja) {
+    var u = ninja ? (settings.ninjaEmbedUrl || DEFAULTS.ninjaEmbedUrl) : (settings.embedUrl || DEFAULTS.embedUrl);
+    u = u.trim();
     u = u.split("#")[0].split("?")[0];
     // A "Publish to web" link ends in /pub or /pubembed; the iframe wants /embed.
     u = u.replace(/\/(pub|pubembed|edit|present|preview)$/, "/embed");
     if (!/\/embed$/.test(u)) u = u.replace(/\/$/, "") + "/embed";
     return u;
   }
-  function slideUrl(blockName) {
-    var id = settings.blocks[blockName];
+  function slideUrl(blockName, ninja) {
+    var map = ninja ? (settings.ninjaBlocks || DEFAULTS.ninjaBlocks) : settings.blocks;
+    var id = map[blockName];
     var q = "start=false&loop=false&delayms=3600000&rm=minimal&_=" + Date.now();
     if (id) q += "&slide=id." + encodeURIComponent(id);
-    return embedBase() + "?" + q;
+    return embedBase(ninja) + "?" + q;
   }
 
   // ===================== RENDER =====================
@@ -348,9 +372,10 @@
   var frame = document.getElementById("frame");
   var badge = document.getElementById("overrideBadge");
   var shownKey = null;      // what is on screen ("welcome" or a block name)
+  var shownNinja = false;   // whether the block on screen is its Band Ninja slide
   var lastLoad = 0;
 
-  function show(target, force) {
+  function show(target, force, ninja) {
     if (target === "welcome") {
       agendaEl.style.display = "none";
       welcomeEl.style.display = "flex";
@@ -359,12 +384,13 @@
       welcomeEl.style.display = "none";
       agendaEl.style.display = "block";
       var stale = Date.now() - lastLoad > (Math.max(1, +settings.refreshMinutes || 5) * 60000);
-      if (force || shownKey !== target || stale) {
-        frame.src = slideUrl(target);
+      if (force || shownKey !== target || shownNinja !== ninja || stale) {
+        frame.src = slideUrl(target, ninja);
         lastLoad = Date.now();
       }
     }
     shownKey = target;
+    shownNinja = target !== "welcome" && ninja;
   }
 
   function render(force) {
@@ -380,7 +406,7 @@
       badge.style.display = "none";
       target = st.block ? st.block[0] : "welcome";
     }
-    show(target, force);
+    show(target, force, isNinja(d));
     paintWelcome(d, st);
   }
 
@@ -391,7 +417,7 @@
       h12 + ":" + String(m).padStart(2, "0") + '<span class="ampm">' + ap + "</span>";
     document.getElementById("date").textContent =
       d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) +
-      (st.type === "if" ? "  ·  IF Day" : "");
+      (isNinja(d) ? "  ·  Band Ninja Day" : st.type === "if" ? "  ·  IF Day" : "");
     var nextEl = document.getElementById("next");
     if (st.type === "weekend") nextEl.textContent = "";
     else if (st.next) nextEl.textContent = "Next up: " + st.next[0] + " Block at " + fmt12(st.next[1]);
@@ -415,8 +441,10 @@
     });
     var t = dayType(now());
     document.getElementById("dayToggle").textContent =
-      t === "if" ? "Today: IF Day → switch to Regular" :
-      t === "regular" ? "Today: Regular → switch to IF Day" : "Today: Weekend → use Regular";
+      t === "if" ? "IF Day today · switch to Regular" :
+      t === "regular" ? "Regular day · switch to IF Day" : "Weekend · use Regular schedule";
+    document.getElementById("ninjaToggle").textContent =
+      isNinja(now()) ? "🥋 Band Ninja Day is ON · turn off" : "🥋 Band Ninja Day is off · turn on";
   }
   function closeAll() { menu.classList.remove("open"); settingsSheet.classList.remove("open"); }
 
@@ -432,6 +460,11 @@
     var d = now(), t = dayType(d);
     save(DAYTYPE_KEY, { date: ymd(d), type: t === "if" ? "regular" : "if" });
     save(OVERRIDE_KEY, null);
+    closeAll(); render(true);
+  };
+  document.getElementById("ninjaToggle").onclick = function () {
+    var d = now();
+    save(NINJA_KEY, { date: ymd(d), on: !isNinja(d) });
     closeAll(); render(true);
   };
   document.getElementById("btnRefresh").onclick = function () { render(true); };
@@ -452,11 +485,13 @@
 
   // ===================== SETTINGS =====================
   function schedText() {
-    var out = { blocks: settings.blocks, schedules: settings.schedules };
+    var out = { blocks: settings.blocks, ninjaBlocks: settings.ninjaBlocks, schedules: settings.schedules };
     return JSON.stringify(out, null, 2);
   }
   function fillSettings() {
     document.getElementById("sEmbed").value = settings.embedUrl;
+    document.getElementById("sNinjaEmbed").value = settings.ninjaEmbedUrl;
+    document.getElementById("sNinjaOnIf").value = settings.ninjaOnIf ? "1" : "0";
     document.getElementById("sIfDay").value = String(settings.ifDay);
     document.getElementById("sIfDay2").value = String(settings.ifDayLater);
     document.getElementById("sSwitch").value = settings.switchDate || "";
@@ -482,6 +517,9 @@
       statusMsg("Schedules box needs \"blocks\" and \"schedules\" (regular and if). Nothing was saved."); return;
     }
     settings.embedUrl = document.getElementById("sEmbed").value.trim() || DEFAULTS.embedUrl;
+    settings.ninjaEmbedUrl = document.getElementById("sNinjaEmbed").value.trim() || DEFAULTS.ninjaEmbedUrl;
+    settings.ninjaOnIf = document.getElementById("sNinjaOnIf").value === "1";
+    settings.ninjaBlocks = parsed.ninjaBlocks || DEFAULTS.ninjaBlocks;
     settings.ifDay = +document.getElementById("sIfDay").value;
     settings.ifDayLater = +document.getElementById("sIfDay2").value;
     settings.switchDate = document.getElementById("sSwitch").value || "";
@@ -524,7 +562,7 @@
 
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
-    shown: function () { return shownKey; }, slideUrl: slideUrl };
+    shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl };
 })();
 </script>
 </body>

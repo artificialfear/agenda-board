@@ -87,7 +87,8 @@ def main():
             ok = shown == expected
             if expected != "welcome":
                 src = page.get_attribute("#frame", "src") or ""
-                sid = page.evaluate(f"window.__agendaBoard.settings().blocks['{expected}']")
+                key = "ninjaBlocks" if label.startswith("IF") else "blocks"
+                sid = page.evaluate(f"window.__agendaBoard.settings().{key}['{expected}']")
                 ok = ok and f"slide=id.{sid}" in src and "/embed?" in src
             print(("PASS" if ok else "FAIL"), f"{label:34s} expected={expected:8s} got={shown}")
             failures += 0 if ok else 1
@@ -95,6 +96,53 @@ def main():
                 page.wait_for_timeout(300)
                 page.screenshot(path=str(shots_dir / (label.replace(" ", "_").replace(">", "").replace("(", "").replace(")", "") + ".png")))
             ctx.close()
+
+        # Band Ninja Day: IF days use the Band_Ninja_Day deck, one slide per grade
+        NINJA = "1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU"
+        AGENDA = "1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY"
+        ninja_cases = [
+            ("ninja IF 1st -> 8th grade",  "2026-11-10T08:00:00", "1st", NINJA, "p3"),
+            ("ninja IF 3rd -> 7th grade",  "2026-11-10T10:00:00", "3rd", NINJA, "p2"),
+            ("ninja IF 4th -> 7th grade",  "2026-11-10T11:00:00", "4th", NINJA, "p2"),
+            ("ninja IF 6th -> 6th grade",  "2026-11-10T13:00:00", "6th", NINJA, "p1"),
+            ("ninja IF 7th -> 6th grade",  "2026-11-10T14:00:00", "7th", NINJA, "p1"),
+            ("regular day keeps agenda",   "2026-11-11T10:00:00", "3rd", AGENDA, "g3f643065e38_0_0"),
+        ]
+        for label, iso, blk, deck, sid in ninja_cases:
+            ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+            ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+            page = ctx.new_page()
+            page.clock.set_fixed_time(iso)
+            page.goto(f"http://127.0.0.1:{PORT}/index.html")
+            page.wait_for_timeout(300)
+            src = page.get_attribute("#frame", "src") or ""
+            shown = page.evaluate("window.__agendaBoard.shown()")
+            ok = shown == blk and f"/d/{deck}/embed?" in src and f"slide=id.{sid}" in src
+            print(("PASS" if ok else "FAIL"), f"{label:34s} got={shown} src={src[40:110]}")
+            failures += 0 if ok else 1
+            if shots_dir and label.startswith("ninja IF 3rd"):
+                page.screenshot(path=str(shots_dir / "ninja_if_3rd.png"))
+            ctx.close()
+
+        # Menu toggle: turn Band Ninja Day on for a regular day, then off again
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page()
+        page.clock.install(time="2026-11-11T10:00:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html")
+        page.wait_for_timeout(300)
+        page.click("#btnMenu"); page.click("#ninjaToggle"); page.wait_for_timeout(200)
+        on = NINJA in (page.get_attribute("#frame", "src") or "")
+        if shots_dir:
+            page.click("#btnMenu")
+            page.screenshot(path=str(shots_dir / "ninja_menu.png"))
+            page.click("#closeMenu")
+        page.click("#btnMenu"); page.click("#ninjaToggle"); page.wait_for_timeout(200)
+        off = AGENDA in (page.get_attribute("#frame", "src") or "")
+        ok = on and off
+        print(("PASS" if ok else "FAIL"), f"{'ninja toggle on/off from menu':34s} on={on} off={off}")
+        failures += 0 if ok else 1
+        ctx.close()
 
         # Manual override: pick 6th during 3rd block, it should stick until 3rd ends, then go automatic
         ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
@@ -122,7 +170,8 @@ def main():
         browser.close()
 
     httpd.shutdown()
-    print(f"\n{len(CASES) + 1 - failures}/{len(CASES) + 1} passed")
+    total = len(CASES) + 1 + 7
+    print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
 

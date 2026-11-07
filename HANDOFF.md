@@ -23,6 +23,12 @@ Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
 IF day is Tuesday in fall 2026, Thursday next semester. The switch date is a setting (`switchDate`), blank by default — **open item: Mat needs to set the semester 2 start date.**
 
+## Band Ninja Day (1.2.0, Mat 11/6)
+- Mat runs Band Ninja pass-off days on IF days (shorter blocks). Deck "Band_Ninja_Day" `1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU` (personal Gmail): slide p3 = 8th grade, p2 = 7th, p1 = 6th.
+- `ninjaBlocks` maps blocks to those slides; `ninjaOnIf` (default true) turns it on every IF day; localStorage `agendaBoard.ninja` {date, on} is the menu's one-day override (any day type).
+- IF bell times still come from the IF schedule; only the deck/slide changes.
+- The deck must be Published to web for the board (not signed in) to show it. Not yet confirmed published 11/6.
+
 ## Slide IDs
 1st `h6417f591313bdade_2_0`, 3rd `g3f643065e38_0_0`, 4th `h6417f591313bdade_2_16`, 6th `h6417f591313bdade_2_32`, 7th `h6417f591313bdade_2_48`.
 If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings → "Schedules and slides", or update `DEFAULTS.blocks` here. Get IDs from the Slides API or from the `#slide=id.…` part of the edit URL when that slide is selected.
@@ -38,7 +44,7 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Settings live in the board's localStorage only. Export/Import copies them between devices.
 
 ## Testing
-`python3 tests/smoke.py [--shots DIR]` — serves locally, freezes the clock at 21 times across regular/IF/weekend days, stubs Google requests, checks what's shown, and checks a manual override expires at the block change. Must be 21/21 before committing.
+`python3 tests/smoke.py [--shots DIR]` — serves locally, freezes the clock at 21 times (plus 7 Band Ninja Day checks) across regular/IF/weekend days, stubs Google requests, checks what's shown, and checks a manual override expires at the block change. Must be 28/28 before committing.
 
 ## Open items
 - Semester 2 start date for the IF Tuesday→Thursday switch.
