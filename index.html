@@ -1013,7 +1013,7 @@
     });
   }
   document.getElementById("btnScores").onclick = function () { scoresOpen(false); };
-  document.getElementById("sClose").onclick = scoresClose;
+  document.getElementById("sClose").onclick = function () { scoresClose(); packCheck(); };   // pill appears at once
   scoresEl.addEventListener("click", function (e) { if (e.target === scoresEl) scoresClose(); });
   sGrid.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("button[data-r]");
