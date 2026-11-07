@@ -42,12 +42,15 @@
   #welcome { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; padding: 4vh 4vw;
     background: radial-gradient(ellipse at 50% 35%, var(--bg) 0%, var(--bg-deep) 100%); }
-  #welcome .brand { display: flex; align-items: center; justify-content: center; gap: 2.2vw; }
-  #welcome .brand img { height: clamp(64px, 17vh, 220px); width: auto; display: block;
-    filter: drop-shadow(0 4px 14px rgba(0,0,0,.35)); }
-  #welcome .brand .word { font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600;
-    font-size: clamp(36px, 9.5vw, 190px); letter-spacing: .07em; text-transform: uppercase;
-    line-height: 1; color: var(--brand); }
+  #welcome .brand { display: flex; align-items: center; justify-content: center; gap: .3em;
+    font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600;
+    font-size: clamp(36px, 8.5vw, 170px); line-height: 1; }
+  /* Logos sized to the capital-letter height so they never tower over the words */
+  #welcome .brand img { height: .82em; width: auto; display: block;
+    filter: drop-shadow(0 3px 10px rgba(0,0,0,.35)); }
+  #welcome .brand .word { letter-spacing: .07em; text-transform: uppercase; color: var(--brand);
+    margin-right: -.07em; /* cancel trailing letter-spacing so it centers */ }
+  #welcome .brand .word .gold { color: var(--accent); }
   #welcome .rule { width: min(60vw, 1000px); height: 5px; background: var(--accent); margin: 3.5vh auto 2.5vh; border-radius: 3px; }
   #welcome .date { color: var(--accent) !important; }
   #welcome .brand .word .gold { color: var(--accent); }
@@ -99,7 +102,7 @@
 </div>
 
 <div id="welcome">
-  <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt="Raven Band logo"><span class="word">Raven <span class="gold">Band</span></span></div>
+  <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt=""><span class="word">Raven <span class="gold">Band</span></span><img src="assets/raven-logo.png?v=1.1.0" alt=""></div>
   <div class="rule"></div>
   <div class="clock" id="clock">--:--</div>
   <div class="date" id="date"></div>
