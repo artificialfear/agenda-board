@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raven Band Agenda</title>
+<style>
+  :root {
+    --bg: #0e0f13;
+    --panel: #181a21;
+    --ink: #f3f1ea;
+    --muted: #9a9caa;
+    --accent: #c9a227;
+    --line: #2a2d38;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f2ec;
+    --panel: #ffffff;
+    --ink: #15161b;
+    --muted: #5d606d;
+    --accent: #8a6d0f;
+    --line: #d9d5c9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+
+  /* ---------- Agenda view ---------- */
+  #agenda { position: fixed; inset: 0; display: none; background: #000; }
+  #agenda iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #agenda .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 2vw; pointer-events: none; }
+
+  /* ---------- Welcome view ---------- */
+  #welcome { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 4vh 4vw; }
+  #welcome .brand { font-size: clamp(28px, 7vw, 140px); font-weight: 800; letter-spacing: .06em;
+    text-transform: uppercase; line-height: 1; }
+  #welcome .brand span { color: var(--accent); }
+  #welcome .rule { width: min(40vw, 600px); height: 4px; background: var(--accent); margin: 3vh auto; border-radius: 2px; }
+  #welcome .clock { font-size: clamp(48px, 16vw, 320px); font-weight: 300; font-variant-numeric: tabular-nums;
+    line-height: 1; letter-spacing: -.02em; }
+  #welcome .ampm { font-size: .3em; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
+  #welcome .date { font-size: clamp(18px, 2.6vw, 52px); color: var(--muted); margin-top: 2vh; }
+  #welcome .next { font-size: clamp(16px, 2vw, 40px); margin-top: 4vh; color: var(--ink); opacity: .85; min-height: 1.2em; }
+
+  /* ---------- Corner controls ---------- */
+  #corner { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 20;
+    opacity: .18; transition: opacity .2s; }
+  #corner:hover, #corner:focus-within, #corner.awake { opacity: 1; }
+  #corner button { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); font-size: 22px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; }
+  #overrideBadge { position: fixed; left: 10px; bottom: 10px; z-index: 20; background: var(--accent); color: #111;
+    font-weight: 700; padding: 8px 14px; border-radius: 999px; font-size: 16px; display: none; cursor: pointer; }
+
+  /* ---------- Sheets (menu + settings) ---------- */
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center;
+    justify-content: center; z-index: 50; padding: 16px; }
+  .sheet.open { display: flex; }
+  .card { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px; width: min(720px, 100%); max-height: 92vh; overflow: auto; }
+  .card h2 { margin: 0 0 4px; font-size: 24px; }
+  .card p.sub { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .big { padding: 18px 12px; font-size: 20px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); cursor: pointer; font-weight: 600; }
+  .big.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .row .big { flex: 1 1 160px; }
+  label.f { display: block; margin: 14px 0 4px; font-weight: 600; font-size: 14px; }
+  .card input, .card select, .card textarea { width: 100%; padding: 10px; font-size: 15px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; }
+  .card textarea { min-height: 120px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+  #status { font-size: 13px; color: var(--muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div id="agenda">
+  <div class="loading">Loading agenda…</div>
+  <iframe id="frame" title="Daily agenda" allowfullscreen></iframe>
+</div>
+
+<div id="welcome">
+  <div class="brand">Raven <span>Band</span></div>
+  <div class="rule"></div>
+  <div class="clock" id="clock">--:--</div>
+  <div class="date" id="date"></div>
+  <div class="next" id="next"></div>
+</div>
+
+<div id="overrideBadge" title="Tap to return to automatic"></div>
+
+<div id="corner">
+  <button id="btnRefresh" title="Refresh agenda" aria-label="Refresh agenda">⟳</button>
+  <button id="btnFull" title="Full screen" aria-label="Full screen">⛶</button>
+  <button id="btnMenu" title="Choose what to show" aria-label="Choose what to show">☰</button>
+</div>
+
+<!-- Quick override menu -->
+<div class="sheet" id="menu">
+  <div class="card">
+    <h2>Show on the board</h2>
+    <p class="sub" id="menuSub">A manual choice lasts until the next block change, then the board goes back to automatic.</p>
+    <div class="grid" id="menuBlocks"></div>
+    <div class="row">
+      <button class="big" data-show="welcome">Welcome screen</button>
+      <button class="big primary" data-show="auto">Back to automatic</button>
+    </div>
+    <div class="row">
+      <button class="big" id="dayToggle">Today is…</button>
+      <button class="big" id="openSettings">Settings</button>
+      <button class="big" id="closeMenu">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="sheet" id="settings">
+  <div class="card">
+    <h2>Settings</h2>
+    <p class="sub">Saved on this device only (the viewboard). Use Export to copy them to another device.</p>
+
+    <label class="f" for="sEmbed">Published deck link</label>
+    <input id="sEmbed" placeholder="https://docs.google.com/presentation/d/…/pub or …/embed">
+    <div class="hint">Paste the link from Slides → File → Share → Publish to web. Leave as-is if the agenda already shows.</div>
+
+    <div class="two">
+      <div>
+        <label class="f" for="sIfDay">IF day</label>
+        <select id="sIfDay">
+          <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option>
+          <option value="4">Thursday</option><option value="5">Friday</option><option value="0">None</option>
+        </select>
+      </div>
+      <div>
+        <label class="f" for="sIfDay2">Switch IF day to</label>
+        <select id="sIfDay2">
+          <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option>
+          <option value="4">Thursday</option><option value="5">Friday</option><option value="0">None</option>
+        </select>
+      </div>
+    </div>
+    <label class="f" for="sSwitch">…starting on</label>
+    <input id="sSwitch" type="date">
+    <div class="hint">Leave blank to keep the first IF day all year.</div>
+
+    <div class="two">
+      <div>
+        <label class="f" for="sLead">Show agenda early (minutes)</label>
+        <input id="sLead" type="number" min="0" max="20">
+        <div class="hint">So students walking in see their agenda.</div>
+      </div>
+      <div>
+        <label class="f" for="sRefresh">Re-check deck every (minutes)</label>
+        <input id="sRefresh" type="number" min="1" max="60">
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <label class="f" for="sTheme">Welcome screen theme</label>
+        <select id="sTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
+      </div>
+      <div>
+        <label class="f" for="sWeekend">Weekends</label>
+        <select id="sWeekend"><option value="welcome">Welcome screen</option><option value="regular">Regular schedule</option></select>
+      </div>
+    </div>
+
+    <label class="f" for="sSched">Schedules and slides (advanced)</label>
+    <textarea id="sSched" spellcheck="false"></textarea>
+    <div class="hint">Each block: start, end (24-hour), and the slide ID it shows. Only edit if your bell schedule changes or a block's slide was recreated.</div>
+
+    <div class="row">
+      <button class="big primary" id="saveSettings">Save</button>
+      <button class="big" id="exportSettings">Export</button>
+      <button class="big" id="importSettings">Import</button>
+      <button class="big" id="resetSettings">Reset to defaults</button>
+      <button class="big" id="closeSettings">Close</button>
+    </div>
+    <div id="status"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ===================== DEFAULTS =====================
+  // Bell times come from Mat's sub plan templates (Regular Day + IF Day).
+  // Slide IDs come from the "Daily Rehearsal (All Band Classes)" deck.
+  var DECK_ID = "1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY";
+  var DEFAULTS = {
+    version: 1,
+    embedUrl: "https://docs.google.com/presentation/d/" + DECK_ID + "/embed",
+    ifDay: 2,            // Tuesday (fall 2026)
+    ifDayLater: 4,       // Thursday (next semester)
+    switchDate: "",      // set when semester 2 starts, e.g. 2027-01-06
+    leadMinutes: 3,
+    refreshMinutes: 5,
+    theme: "dark",
+    weekend: "welcome",
+    blocks: {
+      "1st": "h6417f591313bdade_2_0",
+      "3rd": "g3f643065e38_0_0",
+      "4th": "h6417f591313bdade_2_16",
+      "6th": "h6417f591313bdade_2_32",
+      "7th": "h6417f591313bdade_2_48"
+    },
+    schedules: {
+      regular: [
+        ["1st", "07:45", "08:36"],
+        ["3rd", "09:29", "10:20"],
+        ["4th", "10:21", "11:13"],
+        ["6th", "12:54", "13:45"],
+        ["7th", "13:46", "14:30"]
+      ],
+      "if": [
+        ["1st", "07:45", "08:25"],
+        ["3rd", "09:51", "10:33"],
+        ["4th", "10:35", "11:17"],
+        ["6th", "12:49", "13:37"],
+        ["7th", "13:39", "14:27"]
+      ]
+    }
+  };
+
+  var STORE_KEY = "agendaBoard.settings";
+  var OVERRIDE_KEY = "agendaBoard.override";
+  var DAYTYPE_KEY = "agendaBoard.dayType";
+
+  // ===================== STORAGE (safe) =====================
+  function load(key) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; }
+  }
+  function save(key, val) {
+    try {
+      if (val === null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) { /* storage blocked; keep going in memory */ }
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  var settings = Object.assign(clone(DEFAULTS), load(STORE_KEY) || {});
+
+  // ===================== TIME HELPERS =====================
+  function now() { return new Date(); }
+  function mins(hhmm) { var p = hhmm.split(":"); return (+p[0]) * 60 + (+p[1]); }
+  function nowMins(d) { return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
+  function ymd(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function fmt12(hhmm) {
+    var m = mins(hhmm), h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return h + ":" + String(mm).padStart(2, "0") + " " + ap;
+  }
+
+  function currentIfDay(d) {
+    if (settings.switchDate && ymd(d) >= settings.switchDate) return +settings.ifDayLater;
+    return +settings.ifDay;
+  }
+
+  // "regular" | "if" | "weekend"
+  function dayType(d) {
+    var forced = load(DAYTYPE_KEY);
+    if (forced && forced.date === ymd(d)) return forced.type;
+    var dow = d.getDay();
+    if (dow === 0 || dow === 6) return settings.weekend === "regular" ? "regular" : "weekend";
+    return dow === currentIfDay(d) ? "if" : "regular";
+  }
+
+  // Which block (if any) should be on screen right now, plus when that decision next changes.
+  function scheduleState(d) {
+    var type = dayType(d);
+    var t = nowMins(d);
+    var lead = Math.max(0, +settings.leadMinutes || 0);
+    if (type === "weekend") return { type: type, block: null, next: null, boundary: null };
+    var sched = settings.schedules[type] || [];
+    var block = null, next = null, boundary = null, prevEnd = -1;
+    for (var i = 0; i < sched.length; i++) {
+      // The early lead-in never starts before the previous block has ended.
+      var s = Math.max(mins(sched[i][1]) - lead, prevEnd), e = mins(sched[i][2]);
+      prevEnd = e;
+      if (!block && t >= s && t < e) { block = sched[i]; boundary = e; continue; }
+      if (t < s && !next) {
+        next = sched[i];
+        boundary = boundary === null ? s : Math.min(boundary, s);
+      }
+    }
+    return { type: type, block: block, next: next, boundary: boundary };
+  }
+
+  // ===================== OVERRIDE =====================
+  function activeOverride(d) {
+    var o = load(OVERRIDE_KEY);
+    if (!o) return null;
+    if (o.date !== ymd(d) || (o.until !== null && nowMins(d) >= o.until)) { save(OVERRIDE_KEY, null); return null; }
+    return o;
+  }
+  function setOverride(show) {
+    var d = now();
+    if (show === "auto") { save(OVERRIDE_KEY, null); render(true); return; }
+    var st = scheduleState(d);
+    save(OVERRIDE_KEY, { show: show, date: ymd(d), until: st.boundary });
+    render(true);
+  }
+
+  // ===================== EMBED URL =====================
+  function embedBase() {
+    var u = (settings.embedUrl || DEFAULTS.embedUrl).trim();
+    u = u.split("#")[0].split("?")[0];
+    // A "Publish to web" link ends in /pub or /pubembed; the iframe wants /embed.
+    u = u.replace(/\/(pub|pubembed|edit|present|preview)$/, "/embed");
+    if (!/\/embed$/.test(u)) u = u.replace(/\/$/, "") + "/embed";
+    return u;
+  }
+  function slideUrl(blockName) {
+    var id = settings.blocks[blockName];
+    var q = "start=false&loop=false&delayms=3600000&rm=minimal&_=" + Date.now();
+    if (id) q += "&slide=id." + encodeURIComponent(id);
+    return embedBase() + "?" + q;
+  }
+
+  // ===================== RENDER =====================
+  var agendaEl = document.getElementById("agenda");
+  var welcomeEl = document.getElementById("welcome");
+  var frame = document.getElementById("frame");
+  var badge = document.getElementById("overrideBadge");
+  var shownKey = null;      // what is on screen ("welcome" or a block name)
+  var lastLoad = 0;
+
+  function show(target, force) {
+    if (target === "welcome") {
+      agendaEl.style.display = "none";
+      welcomeEl.style.display = "flex";
+      if (shownKey !== "welcome") frame.removeAttribute("src");
+    } else {
+      welcomeEl.style.display = "none";
+      agendaEl.style.display = "block";
+      var stale = Date.now() - lastLoad > (Math.max(1, +settings.refreshMinutes || 5) * 60000);
+      if (force || shownKey !== target || stale) {
+        frame.src = slideUrl(target);
+        lastLoad = Date.now();
+      }
+    }
+    shownKey = target;
+  }
+
+  function render(force) {
+    var d = now();
+    var st = scheduleState(d);
+    var o = activeOverride(d);
+    var target;
+    if (o) {
+      target = o.show;
+      badge.style.display = "block";
+      badge.textContent = (o.show === "welcome" ? "Welcome screen" : o.show + " Block") + " (manual) · tap for auto";
+    } else {
+      badge.style.display = "none";
+      target = st.block ? st.block[0] : "welcome";
+    }
+    show(target, force);
+    paintWelcome(d, st);
+  }
+
+  function paintWelcome(d, st) {
+    var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12 || 12;
+    document.getElementById("clock").innerHTML =
+      h12 + ":" + String(m).padStart(2, "0") + '<span class="ampm">' + ap + "</span>";
+    document.getElementById("date").textContent =
+      d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) +
+      (st.type === "if" ? "  ·  IF Day" : "");
+    var nextEl = document.getElementById("next");
+    if (st.type === "weekend") nextEl.textContent = "";
+    else if (st.next) nextEl.textContent = "Next up: " + st.next[0] + " Block at " + fmt12(st.next[1]);
+    else nextEl.textContent = "";
+  }
+
+  // ===================== MENU =====================
+  var menu = document.getElementById("menu");
+  var settingsSheet = document.getElementById("settings");
+  var corner = document.getElementById("corner");
+
+  function buildMenu() {
+    var wrap = document.getElementById("menuBlocks");
+    wrap.innerHTML = "";
+    Object.keys(settings.blocks).forEach(function (b) {
+      var btn = document.createElement("button");
+      btn.className = "big";
+      btn.textContent = b + " Block";
+      btn.onclick = function () { setOverride(b); closeAll(); };
+      wrap.appendChild(btn);
+    });
+    var t = dayType(now());
+    document.getElementById("dayToggle").textContent =
+      t === "if" ? "Today: IF Day → switch to Regular" :
+      t === "regular" ? "Today: Regular → switch to IF Day" : "Today: Weekend → use Regular";
+  }
+  function closeAll() { menu.classList.remove("open"); settingsSheet.classList.remove("open"); }
+
+  document.getElementById("btnMenu").onclick = function () { buildMenu(); menu.classList.add("open"); };
+  document.getElementById("closeMenu").onclick = closeAll;
+  menu.addEventListener("click", function (e) { if (e.target === menu) closeAll(); });
+  settingsSheet.addEventListener("click", function (e) { if (e.target === settingsSheet) closeAll(); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-show]"), function (b) {
+    b.onclick = function () { setOverride(b.getAttribute("data-show")); closeAll(); };
+  });
+  badge.onclick = function () { setOverride("auto"); };
+  document.getElementById("dayToggle").onclick = function () {
+    var d = now(), t = dayType(d);
+    save(DAYTYPE_KEY, { date: ymd(d), type: t === "if" ? "regular" : "if" });
+    save(OVERRIDE_KEY, null);
+    closeAll(); render(true);
+  };
+  document.getElementById("btnRefresh").onclick = function () { render(true); };
+  document.getElementById("btnFull").onclick = function () {
+    var el = document.documentElement;
+    try {
+      if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      else (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } catch (e) { /* not supported */ }
+  };
+  // Wake the faded corner buttons on any touch so they are findable on the board
+  var wakeTimer;
+  document.addEventListener("pointerdown", function () {
+    corner.classList.add("awake");
+    clearTimeout(wakeTimer);
+    wakeTimer = setTimeout(function () { corner.classList.remove("awake"); }, 6000);
+  });
+
+  // ===================== SETTINGS =====================
+  function schedText() {
+    var out = { blocks: settings.blocks, schedules: settings.schedules };
+    return JSON.stringify(out, null, 2);
+  }
+  function fillSettings() {
+    document.getElementById("sEmbed").value = settings.embedUrl;
+    document.getElementById("sIfDay").value = String(settings.ifDay);
+    document.getElementById("sIfDay2").value = String(settings.ifDayLater);
+    document.getElementById("sSwitch").value = settings.switchDate || "";
+    document.getElementById("sLead").value = settings.leadMinutes;
+    document.getElementById("sRefresh").value = settings.refreshMinutes;
+    document.getElementById("sTheme").value = settings.theme;
+    document.getElementById("sWeekend").value = settings.weekend;
+    document.getElementById("sSched").value = schedText();
+    document.getElementById("status").textContent = "";
+  }
+  function statusMsg(t) { document.getElementById("status").textContent = t; }
+  function applyTheme() { document.documentElement.setAttribute("data-theme", settings.theme === "light" ? "light" : "dark"); }
+
+  document.getElementById("openSettings").onclick = function () {
+    menu.classList.remove("open"); fillSettings(); settingsSheet.classList.add("open");
+  };
+  document.getElementById("closeSettings").onclick = closeAll;
+  document.getElementById("saveSettings").onclick = function () {
+    var parsed;
+    try { parsed = JSON.parse(document.getElementById("sSched").value); }
+    catch (e) { statusMsg("Schedules box isn't valid — check for a missing comma or quote. Nothing was saved."); return; }
+    if (!parsed.blocks || !parsed.schedules || !parsed.schedules.regular || !parsed.schedules["if"]) {
+      statusMsg("Schedules box needs \"blocks\" and \"schedules\" (regular and if). Nothing was saved."); return;
+    }
+    settings.embedUrl = document.getElementById("sEmbed").value.trim() || DEFAULTS.embedUrl;
+    settings.ifDay = +document.getElementById("sIfDay").value;
+    settings.ifDayLater = +document.getElementById("sIfDay2").value;
+    settings.switchDate = document.getElementById("sSwitch").value || "";
+    settings.leadMinutes = Math.max(0, Math.min(20, +document.getElementById("sLead").value || 0));
+    settings.refreshMinutes = Math.max(1, Math.min(60, +document.getElementById("sRefresh").value || 5));
+    settings.theme = document.getElementById("sTheme").value;
+    settings.weekend = document.getElementById("sWeekend").value;
+    settings.blocks = parsed.blocks;
+    settings.schedules = parsed.schedules;
+    save(STORE_KEY, settings);
+    applyTheme(); render(true);
+    statusMsg("Saved.");
+  };
+  document.getElementById("resetSettings").onclick = function () {
+    if (!confirm("Reset all settings on this device to the defaults?")) return;
+    settings = clone(DEFAULTS); save(STORE_KEY, null); fillSettings(); applyTheme(); render(true);
+    statusMsg("Back to defaults.");
+  };
+  document.getElementById("exportSettings").onclick = function () {
+    var txt = JSON.stringify(settings);
+    try { navigator.clipboard.writeText(txt).then(function () { statusMsg("Settings copied to the clipboard."); },
+      function () { prompt("Copy these settings:", txt); }); }
+    catch (e) { prompt("Copy these settings:", txt); }
+  };
+  document.getElementById("importSettings").onclick = function () {
+    var txt = prompt("Paste exported settings:");
+    if (!txt) return;
+    try { settings = Object.assign(clone(DEFAULTS), JSON.parse(txt)); save(STORE_KEY, settings);
+      fillSettings(); applyTheme(); render(true); statusMsg("Imported."); }
+    catch (e) { statusMsg("That didn't look like exported settings. Nothing changed."); }
+  };
+
+  // ===================== LOOP =====================
+  frame.addEventListener("load", function () {
+    var l = agendaEl.querySelector(".loading"); if (l) l.style.display = "none";
+  });
+  applyTheme();
+  render(true);
+  setInterval(function () { render(false); }, 1000);
+
+  // Exposed for tests only
+  window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
+    shown: function () { return shownKey; }, slideUrl: slideUrl };
+})();
+</script>
+</body>
+</html>
