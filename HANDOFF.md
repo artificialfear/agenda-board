@@ -52,7 +52,7 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
-- Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), flip today between Regular/IF, Settings.
+- Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
 - Settings live in the board's localStorage only. Export/Import copies them between devices.
 
 ## Testing

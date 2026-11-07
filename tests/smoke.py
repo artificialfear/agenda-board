@@ -132,15 +132,17 @@ def main():
         page.goto(f"http://127.0.0.1:{PORT}/index.html")
         page.wait_for_timeout(300)
         page.click("#btnMenu"); page.click("#ninjaToggle"); page.wait_for_timeout(200)
-        on = NINJA in (page.get_attribute("#frame", "src") or "")
+        on = NINJA in (page.get_attribute("#frame", "src") or "") and page.get_attribute("#ninjaToggle", "aria-checked") == "true"
+        page.click("#dayToggle"); page.wait_for_timeout(200)
+        if_on = page.get_attribute("#dayToggle", "aria-checked") == "true" and page.evaluate("window.__agendaBoard.dayType(new Date())") == "if"
         if shots_dir:
-            page.click("#btnMenu")
             page.screenshot(path=str(shots_dir / "ninja_menu.png"))
-            page.click("#closeMenu")
-        page.click("#btnMenu"); page.click("#ninjaToggle"); page.wait_for_timeout(200)
-        off = AGENDA in (page.get_attribute("#frame", "src") or "")
-        ok = on and off
-        print(("PASS" if ok else "FAIL"), f"{'ninja toggle on/off from menu':34s} on={on} off={off}")
+        page.click("#dayToggle"); page.click("#ninjaToggle"); page.wait_for_timeout(200)
+        off = AGENDA in (page.get_attribute("#frame", "src") or "") and page.get_attribute("#ninjaToggle", "aria-checked") == "false" \
+            and page.get_attribute("#dayToggle", "aria-checked") == "false"
+        page.click("#closeMenu")
+        ok = on and off and if_on
+        print(("PASS" if ok else "FAIL"), f"{'menu switches: ninja + IF day':34s} on={on} off={off}")
         failures += 0 if ok else 1
         ctx.close()
 

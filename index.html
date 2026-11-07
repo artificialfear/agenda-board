@@ -82,6 +82,21 @@
   .big { padding: 18px 12px; font-size: 20px; border-radius: 12px; border: 1px solid var(--line);
     background: var(--bg); color: var(--ink); cursor: pointer; font-weight: 600; }
   .big.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  @media (max-width: 560px) { .toggles { grid-template-columns: 1fr; } }
+  .tgl { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px;
+    border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+    text-align: left; font: inherit; }
+  .tgl[aria-checked="true"] { border-color: var(--accent); }
+  .tgl-text { display: flex; flex-direction: column; gap: 2px; }
+  .tgl-name { font-size: 20px; font-weight: 600; }
+  .tgl-sub { font-size: 14px; color: var(--muted); }
+  .tgl-sw { position: relative; flex: none; width: 64px; height: 36px; border-radius: 999px; background: var(--line);
+    transition: background .15s; }
+  .tgl-sw::after { content: ""; position: absolute; top: 4px; left: 4px; width: 28px; height: 28px; border-radius: 50%;
+    background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .tgl[aria-checked="true"] .tgl-sw { background: var(--accent); }
+  .tgl[aria-checked="true"] .tgl-sw::after { transform: translateX(28px); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   .row .big { flex: 1 1 160px; }
   label.f { display: block; margin: 14px 0 4px; font-weight: 600; font-size: 14px; }
@@ -226,10 +241,17 @@
       <button class="big" data-show="welcome">Welcome screen</button>
       <button class="big primary" data-show="auto">Back to automatic</button>
     </div>
-    <div class="row">
-      <button class="big" id="dayToggle">Today is…</button>
-      <button class="big" id="ninjaToggle">Band Ninja Day…</button>
+    <div class="toggles">
+      <button class="tgl" id="dayToggle" role="switch" aria-checked="false">
+        <span class="tgl-text"><span class="tgl-name">IF Day</span><span class="tgl-sub" id="daySub"></span></span>
+        <span class="tgl-sw" aria-hidden="true"></span>
+      </button>
+      <button class="tgl" id="ninjaToggle" role="switch" aria-checked="false">
+        <span class="tgl-text"><span class="tgl-name">🥋 Band Ninja Day</span><span class="tgl-sub" id="ninjaSub"></span></span>
+        <span class="tgl-sw" aria-hidden="true"></span>
+      </button>
     </div>
+    <p class="hint">Switches apply to today only. Tomorrow the board goes back to the normal schedule.</p>
     <div class="row">
       <button class="big" id="openSettings">Settings</button>
       <button class="big" id="closeMenu">Close</button>
@@ -543,12 +565,16 @@
       btn.onclick = function () { setOverride(b); closeAll(); };
       wrap.appendChild(btn);
     });
-    var t = dayType(now());
-    document.getElementById("dayToggle").textContent =
-      t === "if" ? "IF Day today · switch to Regular" :
-      t === "regular" ? "Regular day · switch to IF Day" : "Weekend · use Regular schedule";
-    document.getElementById("ninjaToggle").textContent =
-      isNinja(now()) ? "🥋 Band Ninja Day is ON · turn off" : "🥋 Band Ninja Day is off · turn on";
+    paintToggles();
+  }
+  function paintToggles() {
+    var d = now(), t = dayType(d), ifOn = t === "if", nOn = isNinja(d);
+    document.getElementById("dayToggle").setAttribute("aria-checked", ifOn ? "true" : "false");
+    document.getElementById("daySub").textContent =
+      ifOn ? "On: IF bell times today" : t === "weekend" ? "Off: weekend" : "Off: regular bell times";
+    document.getElementById("ninjaToggle").setAttribute("aria-checked", nOn ? "true" : "false");
+    document.getElementById("ninjaSub").textContent =
+      nOn ? "On: Band Ninja slides today" : "Off: agenda slides";
   }
   function closeAll() { menu.classList.remove("open"); settingsSheet.classList.remove("open"); }
 
@@ -564,12 +590,12 @@
     var d = now(), t = dayType(d);
     save(DAYTYPE_KEY, { date: ymd(d), type: t === "if" ? "regular" : "if" });
     save(OVERRIDE_KEY, null);
-    closeAll(); render(true);
+    render(true); paintToggles();
   };
   document.getElementById("ninjaToggle").onclick = function () {
     var d = now();
     save(NINJA_KEY, { date: ymd(d), on: !isNinja(d) });
-    closeAll(); render(true);
+    render(true); paintToggles();
   };
   document.getElementById("btnRefresh").onclick = function () { render(true); };
   document.getElementById("btnFull").onclick = function () {
