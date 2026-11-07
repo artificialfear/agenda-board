@@ -27,7 +27,9 @@ IF day is Tuesday in fall 2026, Thursday next semester. The switch date is a set
 - Mat runs Band Ninja pass-off days on IF days (shorter blocks). Deck "Band_Ninja_Day" `1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU` (personal Gmail): slide p3 = 8th grade, p2 = 7th, p1 = 6th.
 - `ninjaBlocks` maps blocks to those slides; `ninjaOnIf` (default true) turns it on every IF day; localStorage `agendaBoard.ninja` {date, on} is the menu's one-day override (any day type).
 - IF bell times still come from the IF schedule; only the deck/slide changes.
-- The deck must be Published to web for the board (not signed in) to show it. Not yet confirmed published 11/6.
+- The board's embed URL needs anyone-with-link viewing (on since 11/6); Publish to web alone isn't enough.
+- Restyled to the Raven look 11/6 (backup copy `1XcNmKWwvx3hh7nYQm2o-j08TmscaMnuyJePIf2nO5Lc`). The goal box has alt-text title `ninja:goal`.
+- `apps-script/NinjaGoals.gs` (copy kept here) goes in the Daily Slides Apps Script project as its own file: every morning it puts this quarter's target from Progress Charts → Pass-Off Targets (grade from the slide title) and "Due <quarter end − 5 days, back to Friday on weekends>" into that box. Setup = run `setupNinjaGoalsTrigger` once.
 
 ## Slide IDs
 1st `h6417f591313bdade_2_0`, 3rd `g3f643065e38_0_0`, 4th `h6417f591313bdade_2_16`, 6th `h6417f591313bdade_2_32`, 7th `h6417f591313bdade_2_48`.
@@ -48,5 +50,6 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 
 ## Open items
 - Semester 2 start date for the IF Tuesday→Thursday switch.
+- Pass-Off Targets: Q2 changed to 10/30/50 on 11/6, so 8th Q3 (47) is now below Q2 and 7th Q2 = Q3 (30). Mat to review Q3/Q4.
 - Confirm on the real board: full-screen button works in the ViewSonic browser, and the board's clock/time zone is correct.
 - Possible later: small countdown or clock overlay on agenda slides; schedule exceptions (assemblies, early release) as dated entries.
