@@ -115,6 +115,40 @@
   body.timer-open #btnTimer { display: none; }
   #overrideBadge { left: 150px; }               /* sits beside the Timer button */
   body.timer-open #overrideBadge { left: 10px; }
+  body.can-score #overrideBadge { left: 290px; }
+
+  /* ---------- Closing scores ---------- */
+  #btnScores { position: fixed; left: 140px; bottom: 10px; z-index: 21; display: none; background: #1f2a44; color: #c9a227;
+    border: 2px solid #c9a227; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+    font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  body.can-score #btnScores { display: block; }
+  body.timer-open #btnScores { left: 10px; bottom: auto; top: 10px; }
+  #scores { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center;
+    background: rgba(10,14,26,.55); }
+  #scores.open { display: flex; }
+  #scores .s-card { width: min(980px, 96vw); background: #1f2a44; color: #fff; border: 3px solid #c9a227; border-radius: 22px;
+    padding: 18px 22px 20px; box-shadow: 0 10px 40px rgba(0,0,0,.5); font-family: "Oswald", "Arial Narrow", Arial, sans-serif; }
+  #scores .s-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  #scores .s-title { font-size: 30px; letter-spacing: .03em; }
+  #scores .s-title span { color: #c9a227; }
+  #scores .s-x { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #34405e; background: #141c30; color: #fff;
+    font-size: 22px; cursor: pointer; }
+  #scores .s-grid { display: grid; gap: 8px; align-items: stretch; }
+  #scores .s-h { font-size: 18px; color: #c9d0de; text-align: center; letter-spacing: .08em; padding: 4px 0; }
+  #scores .s-h.today { color: #141c30; background: #c9a227; border-radius: 10px; }
+  #scores .s-lab { font-size: 26px; display: flex; align-items: center; }
+  #scores .s-val { font-size: 30px; display: flex; align-items: center; justify-content: center; background: #141c30;
+    border-radius: 10px; color: #c9d0de; min-height: 64px; }
+  #scores .s-today { display: flex; gap: 8px; }
+  #scores .s-n { flex: 1 1 0; min-height: 64px; border-radius: 12px; border: 2px solid #34405e; background: #141c30; color: #fff;
+    font: 600 32px "Oswald", "Arial Narrow", Arial, sans-serif; cursor: pointer; }
+  #scores .s-n.sel { background: #c9a227; border-color: #c9a227; color: #141c30; }
+  #scores .s-n.clr { flex: 0 0 56px; font-size: 20px; color: #c9d0de; }
+  #scores .s-n.pending { opacity: .7; }
+  #scores .s-msg { min-height: 1.4em; margin-top: 12px; font: 16px "Segoe UI", Arial, sans-serif; color: #c9d0de; }
+  #scores .s-msg.err { color: #ffb4a8; }
+  #scores .s-msg button { margin-left: 8px; padding: 6px 12px; border-radius: 8px; border: 1px solid #c9a227; background: none;
+    color: #c9a227; cursor: pointer; font: inherit; }
   #timer { position: fixed; z-index: 30; display: none; width: min(420px, 92vw); background: #1f2a44; color: #fff;
     border: 3px solid #c9a227; border-radius: 22px; padding: 14px 18px 16px; box-shadow: 0 10px 40px rgba(0,0,0,.5);
     font-family: "Oswald", "Arial Narrow", Arial, sans-serif; text-align: center; user-select: none; }
@@ -199,6 +233,19 @@
   <div class="p-tap">Tap anywhere to close</div>
 </div>
 <div id="packPill" title="Show the pack-up steps"></div>
+
+<!-- Closing scores: a student taps 1-3 for today; saved into the slide's CLOSING table -->
+<button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
+<div id="scores" role="dialog" aria-label="Closing scores">
+  <div class="s-card">
+    <div class="s-head">
+      <div class="s-title">Closing scores · <span id="sBlockName"></span></div>
+      <button class="s-x" id="sClose" aria-label="Close">✕</button>
+    </div>
+    <div class="s-grid" id="sGrid"></div>
+    <div class="s-msg" id="sMsg"></div>
+  </div>
+</div>
 
 <!-- Warm-up timer: a student runs it from the board -->
 <button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
@@ -312,6 +359,10 @@
       </div>
     </div>
 
+    <label class="f" for="sClosing">Closing scores link</label>
+    <input id="sClosing" placeholder="https://script.google.com/macros/s/…/exec?k=…">
+    <div class="hint">From the Daily Slides script (showClosingScoresLink). Blank = no ★ Closing button.</div>
+
     <label class="f" for="sPack">Pack-up alert (minutes before the bell)</label>
     <input id="sPack" type="number" min="0" max="20">
     <div class="hint">Chime + full-screen "Pack up time!" this many minutes before each block ends. 0 = off.</div>
@@ -357,6 +408,7 @@
     refreshMinutes: 5,
     theme: "dark",
     weekend: "welcome",
+    closingUrl: "",      // Daily Slides web app link (…/exec?k=…); blank hides the ★ Closing button
     packMinutes: 6,      // pack-up alert this many minutes before each block ends (0 = off)
     ninjaEmbedUrl: "https://docs.google.com/presentation/d/" + NINJA_DECK_ID + "/embed",
     ninjaOnIf: true,     // Band Ninja Day slides every IF day
@@ -517,6 +569,7 @@
     }
     shownKey = target;
     shownNinja = target !== "welcome" && ninja;
+    if (window.scoresSync) window.scoresSync();
   }
 
   function render(force) {
@@ -630,6 +683,7 @@
     document.getElementById("sTheme").value = settings.theme;
     document.getElementById("sWeekend").value = settings.weekend;
     document.getElementById("sPack").value = settings.packMinutes;
+    document.getElementById("sClosing").value = settings.closingUrl || "";
     document.getElementById("sSched").value = schedText();
     document.getElementById("status").textContent = "";
   }
@@ -658,6 +712,7 @@
     settings.refreshMinutes = Math.max(1, Math.min(60, +document.getElementById("sRefresh").value || 5));
     settings.theme = document.getElementById("sTheme").value;
     settings.weekend = document.getElementById("sWeekend").value;
+    settings.closingUrl = document.getElementById("sClosing").value.trim();
     var pm = document.getElementById("sPack").value;
     settings.packMinutes = pm === "" ? 0 : Math.max(0, Math.min(20, Math.round(+pm) || 0));
     settings.blocks = parsed.blocks;
@@ -796,6 +851,119 @@
   tApplyPos();
   tPaint();
 
+  // ===================== CLOSING SCORES =====================
+  // Talks to the Daily Slides web app (ClosingScores.gs): a=get / a=set. Taps show at once,
+  // saves go one at a time in order; the slide reloads when the panel closes.
+  var scoresEl = document.getElementById("scores"), sGrid = document.getElementById("sGrid"), sMsg = document.getElementById("sMsg");
+  var DAY_PREFIX = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  var sc = { block: null, data: {}, queue: [], busy: false, failed: null, changed: false, idleAt: 0 };
+
+  function scoresUrl(params) {
+    var u = settings.closingUrl || "";
+    var q = Object.keys(params).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
+    return u + (u.indexOf("?") >= 0 ? "&" : "?") + q;
+  }
+  function scoresCall(params) {
+    return fetch(scoresUrl(params), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.ok) throw new Error((j && j.error) || "No answer");
+      return j;
+    });
+  }
+  function todayCol(days) {
+    var pre = DAY_PREFIX[now().getDay()];
+    for (var i = 0; i < days.length; i++) if (String(days[i]).toUpperCase().indexOf(pre) === 0) return i;
+    return -1;
+  }
+  window.scoresSync = function () {
+    var ok = !!settings.closingUrl && shownKey && shownKey !== "welcome" && !shownNinja;
+    document.body.classList.toggle("can-score", !!ok);
+    if (!ok && scoresEl.classList.contains("open")) scoresClose();
+    if (ok && sc.block && sc.block !== shownKey && scoresEl.classList.contains("open")) scoresClose();
+  };
+  function scoresPaint() {
+    var d = sc.data[sc.block];
+    document.getElementById("sBlockName").textContent = sc.block + " Block";
+    if (!d) { sGrid.innerHTML = ""; return; }
+    var t = todayCol(d.days);
+    sGrid.style.gridTemplateColumns = "minmax(150px, 1.2fr) " + d.days.map(function (_, i) { return i === t ? "3.2fr" : "1fr"; }).join(" ");
+    var h = '<div></div>' + d.days.map(function (x, i) {
+      return '<div class="s-h' + (i === t ? ' today' : '') + '">' + esc(x) + (i === t ? ' · TODAY' : '') + '</div>';
+    }).join("");
+    d.rows.forEach(function (lab, r) {
+      h += '<div class="s-lab">' + esc(lab) + '</div>';
+      d.days.forEach(function (day, c) {
+        var v = (d.values[r] || [])[c] || "";
+        if (c !== t) { h += '<div class="s-val">' + (esc(v) || "–") + '</div>'; return; }
+        var pend = sc.queue.some(function (o) { return o.row === lab && o.day === day; }) || (sc.failed && sc.failed.row === lab);
+        h += '<div class="s-today">' + ["1", "2", "3"].map(function (n) {
+          return '<button class="s-n' + (v === n ? ' sel' : '') + (pend && v === n ? ' pending' : '') +
+            '" data-r="' + r + '" data-v="' + n + '">' + n + '</button>';
+        }).join("") + '<button class="s-n clr" data-r="' + r + '" data-v="" aria-label="Clear">✕</button></div>';
+      });
+    });
+    sGrid.innerHTML = h;
+    if (t < 0 && !sc.failed) sMsg.className = "s-msg", sMsg.textContent = "This slide has no column for today, so scores can't be entered today.";
+  }
+  function esc(x) { return String(x).replace(/[&<>"]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]; }); }
+  function scoresMsg(text, err, retry) {
+    sMsg.className = "s-msg" + (err ? " err" : "");
+    sMsg.textContent = text;
+    if (retry) {
+      var b = document.createElement("button"); b.textContent = "Try again"; b.onclick = function () { sc.failed = null; scoresFlush(); };
+      sMsg.appendChild(b);
+    }
+  }
+  function scoresOpen() {
+    sc.block = shownKey; sc.idleAt = Date.now();
+    scoresEl.classList.add("open");
+    scoresPaint();
+    if (!sc.data[sc.block]) scoresMsg("Loading…");
+    var blk = sc.block;
+    scoresCall({ a: "get", block: blk }).then(function (j) {
+      if (sc.queue.length || sc.busy) return;          // don't overwrite taps still saving
+      sc.data[blk] = j; if (sc.block === blk) { scoresMsg(""); scoresPaint(); }
+    }).catch(function (e) { if (sc.block === blk && !sc.data[blk]) scoresMsg("Couldn't load the scores: " + e.message, true); });
+  }
+  function scoresClose() {
+    scoresEl.classList.remove("open");
+    if (sc.changed && !sc.queue.length && !sc.busy) { sc.changed = false; show(shownKey, true, shownNinja); }
+  }
+  function scoresTap(r, v) {
+    var d = sc.data[sc.block]; if (!d) return;
+    var c = todayCol(d.days); if (c < 0) return;
+    sc.idleAt = Date.now();
+    if ((d.values[r] || [])[c] === v) return;
+    d.values[r][c] = v;
+    sc.queue.push({ block: sc.block, row: d.rows[r], day: d.days[c], v: v });
+    scoresPaint(); scoresFlush();
+  }
+  function scoresFlush() {
+    if (sc.busy || sc.failed || !sc.queue.length) return;
+    var op = sc.queue[0]; sc.busy = true;
+    scoresMsg("Saving…");
+    scoresCall({ a: "set", block: op.block, row: op.row, day: op.day, v: op.v }).then(function (j) {
+      sc.queue.shift(); sc.busy = false; sc.changed = true;
+      if (!sc.queue.length) { sc.data[op.block] = j; scoresMsg("Saved ✓"); }
+      if (sc.block === op.block) scoresPaint();
+      if (!scoresEl.classList.contains("open")) scoresClose(); else scoresFlush();
+    }).catch(function (e) {
+      sc.busy = false; sc.failed = op;
+      scoresMsg("Not saved: " + e.message, true, true); scoresPaint();
+    });
+  }
+  document.getElementById("btnScores").onclick = scoresOpen;
+  document.getElementById("sClose").onclick = scoresClose;
+  scoresEl.addEventListener("click", function (e) { if (e.target === scoresEl) scoresClose(); });
+  sGrid.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("button[data-r]");
+    if (b) scoresTap(+b.getAttribute("data-r"), b.getAttribute("data-v"));
+  });
+  // Closes itself after 2 minutes without a tap (unless something is still saving or failed).
+  setInterval(function () {
+    if (scoresEl.classList.contains("open") && !sc.queue.length && Date.now() - sc.idleAt > 120000) scoresClose();
+  }, 5000);
+  window.scoresSync();
+
   // ===================== PACK-UP ALERT =====================
   // Goes by the bell schedule (not by what's on screen), once per block per day.
   // Browsers only allow sound after someone has touched the page, so any tap readies it.
@@ -876,6 +1044,8 @@
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
+    scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
+      msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },
     pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
       pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },
     timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };

@@ -234,10 +234,70 @@ def main():
         print(("PASS" if ok else "FAIL"), "pack-up alert off when set to 0")
         failures += 0 if ok else 1
         ctx.close()
+
+        # Closing scores: panel shows today's column, taps save through the web app, slide reloads on close
+        import json as _json
+        from urllib.parse import urlparse, parse_qs
+        state = {"days": ["MON", "WED", "THURS", "FRI"], "rows": ["Effort", "Performance", "Attitude"],
+                 "values": [["", "", "", ""], ["2", "", "", ""], ["", "", "", ""]]}
+        calls = []
+        def fake_script(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            calls.append(q)
+            if q.get("k") != "KEY":
+                return route.fulfill(status=200, content_type="application/json", body=_json.dumps({"ok": False, "error": "Wrong key"}))
+            if q.get("a") == "set":
+                r = state["rows"].index(q["row"]); c = state["days"].index(q["day"]); state["values"][r][c] = q["v"]
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"},
+                          body=_json.dumps(dict(state, ok=True, block=q.get("block"))))
+        init = "localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))"
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        loads = []
+        def gstub(r):
+            loads.append(r.request.url); r.fulfill(status=200, content_type="text/html", body="<p>stub</p>")
+        ctx.route("https://docs.google.com/**", gstub)
+        ctx.route("https://script.google.com/**", fake_script)
+        page = ctx.new_page()
+        page.clock.install(time="2026-11-06T10:10:00")            # Friday, 3rd Block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        S = lambda: page.evaluate("window.__agendaBoard.scores()")
+        can = S()["can"]
+        page.click("#btnScores"); page.wait_for_timeout(300)
+        today = page.inner_text(".s-h.today")
+        page.click("#sGrid button[data-r='0'][data-v='3']"); page.click("#sGrid button[data-r='2'][data-v='1']")
+        page.wait_for_timeout(500)
+        if shots_dir: page.screenshot(path=str(shots_dir / "closing_scores.png"))
+        saved = state["values"][0][3] == "3" and state["values"][2][3] == "1" and S()["msg"].startswith("Saved")
+        sets = [c for c in calls if c.get("a") == "set"]
+        order_ok = [(c["row"], c["day"], c["v"], c["block"]) for c in sets] == [("Effort", "FRI", "3", "3rd"), ("Attitude", "FRI", "1", "3rd")]
+        n_before = len(loads); page.click("#sClose"); page.wait_for_timeout(200)
+        reloaded = len(loads) > n_before
+        ok = can and today.startswith("FRI") and saved and order_ok and reloaded and not S()["open"]
+        print(("PASS" if ok else "FAIL"), f"{'closing scores save + reload':34s}" + ("" if ok else f" {can} {today} {saved} {order_ok} {reloaded} {sets}"))
+        failures += 0 if ok else 1
+        # hidden on welcome screen and on Band Ninja days; Tuesday has no column
+        page.clock.fast_forward("02:00:00"); page.wait_for_timeout(300)    # 12:10 lunch -> welcome
+        hid = not S()["can"]
+        ctx.close()
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://script.google.com/**", fake_script)
+        page = ctx.new_page(); page.clock.install(time="2026-11-10T10:00:00")   # IF Tuesday = Band Ninja slide
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        ninja_hidden = not S()["can"]
+        page.click("#btnMenu"); page.click("#ninjaToggle"); page.click("#closeMenu"); page.wait_for_timeout(200)
+        page.click("#btnScores"); page.wait_for_timeout(300)
+        no_col = "no column for today" in S()["msg"] and page.locator("#sGrid button[data-r]").count() == 0
+        ok = hid and ninja_hidden and no_col
+        print(("PASS" if ok else "FAIL"), f"{'closing scores hidden/no column':34s}" + ("" if ok else f" {hid} {ninja_hidden} {no_col} {S()['msg']}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
