@@ -50,6 +50,7 @@
     line-height: 1; color: var(--brand); }
   #welcome .rule { width: min(60vw, 1000px); height: 5px; background: var(--accent); margin: 3.5vh auto 2.5vh; border-radius: 3px; }
   #welcome .date { color: var(--accent) !important; }
+  #welcome .brand .word .gold { color: var(--accent); }
   #welcome .clock { font-size: clamp(48px, 16vw, 320px); font-weight: 300; font-variant-numeric: tabular-nums;
     line-height: 1; letter-spacing: -.02em; }
   #welcome .ampm { font-size: .3em; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
@@ -98,7 +99,7 @@
 </div>
 
 <div id="welcome">
-  <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt="Raven Band logo"><span class="word">Raven Band</span></div>
+  <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt="Raven Band logo"><span class="word">Raven <span class="gold">Band</span></span></div>
   <div class="rule"></div>
   <div class="clock" id="clock">--:--</div>
   <div class="date" id="date"></div>
