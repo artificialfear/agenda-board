@@ -27,6 +27,11 @@ IF day is Tuesday in fall 2026, Thursday next semester. The switch date is a set
 1st `h6417f591313bdade_2_0`, 3rd `g3f643065e38_0_0`, 4th `h6417f591313bdade_2_16`, 6th `h6417f591313bdade_2_32`, 7th `h6417f591313bdade_2_48`.
 If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings → "Schedules and slides", or update `DEFAULTS.blocks` here. Get IDs from the Slides API or from the `#slide=id.…` part of the edit URL when that slide is selected.
 
+## Look
+- Welcome screen matches the Raven Band Hub: navy (#1f2a44) + gold (#c9a227), Oswald 600 for the wordmark (bundled in `assets/`, OFL license included), and the Hub's shield logo `assets/raven-logo.png`.
+- The logo was extracted from the Hub (artificialfear/raven-hub-code, `src/RavenHubPage.html`) and is only 128×128, so it's capped at 220px tall to limit blur on big boards. A larger original would look sharper.
+- Asset URLs carry `?v=<version>`; bump it when an asset changes so the board doesn't serve a cached copy.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), flip today between Regular/IF, Settings.

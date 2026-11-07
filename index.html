@@ -5,21 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Raven Band Agenda</title>
 <style>
+  /* Colors match the Raven Band Hub (navy + gold) */
+  @font-face { font-family: "Oswald"; font-weight: 600; font-style: normal; font-display: swap;
+    src: url("assets/oswald-latin-600-normal.woff2?v=1.1.0") format("woff2"); }
   :root {
-    --bg: #0e0f13;
-    --panel: #181a21;
-    --ink: #f3f1ea;
-    --muted: #9a9caa;
+    --bg: #1f2a44;
+    --bg-deep: #141c30;
+    --panel: #1b2233;
+    --ink: #ffffff;
+    --muted: #b7bfd0;
     --accent: #c9a227;
-    --line: #2a2d38;
+    --brand: #ffffff;
+    --line: #34405e;
   }
   :root[data-theme="light"] {
-    --bg: #f4f2ec;
+    --bg: #f4f5f8;
+    --bg-deep: #e6e9f0;
     --panel: #ffffff;
-    --ink: #15161b;
-    --muted: #5d606d;
-    --accent: #8a6d0f;
-    --line: #d9d5c9;
+    --ink: #1b2233;
+    --muted: #646b7a;
+    --accent: #a8851a;
+    --brand: #1f2a44;
+    --line: #e1e4ec;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
@@ -33,11 +40,16 @@
 
   /* ---------- Welcome view ---------- */
   #welcome { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center;
-    justify-content: center; text-align: center; padding: 4vh 4vw; }
-  #welcome .brand { font-size: clamp(28px, 7vw, 140px); font-weight: 800; letter-spacing: .06em;
-    text-transform: uppercase; line-height: 1; }
-  #welcome .brand span { color: var(--accent); }
-  #welcome .rule { width: min(40vw, 600px); height: 4px; background: var(--accent); margin: 3vh auto; border-radius: 2px; }
+    justify-content: center; text-align: center; padding: 4vh 4vw;
+    background: radial-gradient(ellipse at 50% 35%, var(--bg) 0%, var(--bg-deep) 100%); }
+  #welcome .brand { display: flex; align-items: center; justify-content: center; gap: 2.2vw; }
+  #welcome .brand img { height: clamp(64px, 17vh, 220px); width: auto; display: block;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,.35)); }
+  #welcome .brand .word { font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600;
+    font-size: clamp(36px, 9.5vw, 190px); letter-spacing: .07em; text-transform: uppercase;
+    line-height: 1; color: var(--brand); }
+  #welcome .rule { width: min(60vw, 1000px); height: 5px; background: var(--accent); margin: 3.5vh auto 2.5vh; border-radius: 3px; }
+  #welcome .date { color: var(--accent) !important; }
   #welcome .clock { font-size: clamp(48px, 16vw, 320px); font-weight: 300; font-variant-numeric: tabular-nums;
     line-height: 1; letter-spacing: -.02em; }
   #welcome .ampm { font-size: .3em; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
@@ -86,7 +98,7 @@
 </div>
 
 <div id="welcome">
-  <div class="brand">Raven <span>Band</span></div>
+  <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt="Raven Band logo"><span class="word">Raven Band</span></div>
   <div class="rule"></div>
   <div class="clock" id="clock">--:--</div>
   <div class="date" id="date"></div>

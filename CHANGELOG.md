@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.0 — 2026-11-06
+- Welcome screen now uses the Raven Band Hub look: gold shield logo, navy background, Oswald lettering, gold date.
+
 ## 1.0.0 — 2026-11-06
 - First version. Shows the right block's agenda slide automatically on regular and IF days.
 - Raven Band welcome screen with clock outside band blocks.
