@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.0 — 2026-11-07
+- Closing scores: ★ Closing button (bottom-left, agenda slides only) opens a panel like the slide's CLOSING table. Tap 1 / 2 / 3 (or ✕) in today's column for Effort, Performance, Attitude. Saves through the Daily Slides web app (apps-script/ClosingScores.gs) into the slide table and a "Closing Scores" log tab; the slide reloads when the panel closes. Tables clear Mondays ~4 AM. Settings: "Closing scores link".
+
 ## 1.4.1 — 2026-11-07
 - ☰ menu: IF Day and Band Ninja Day are on/off switches (today only); the menu stays open so you see the change.
 

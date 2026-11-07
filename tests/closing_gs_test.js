@@ -27,7 +27,7 @@ global.Utilities={formatDate:()=>'2026-11-09',getUuid:()=>'abcd-efgh-ijkl-mnop-q
 global.Logger={log(){}};
 let trig=[];global.ScriptApp={getProjectTriggers:()=>trig,deleteTrigger(){},WeekDay:{MONDAY:'MON'},getService:()=>({getUrl:()=>'https://script.google.com/macros/s/X/exec'}),
  newTrigger:f=>({timeBased:()=>({onWeekDay:()=>({atHour:()=>({create(){trig.push(f);}})})})})};
-eval(fs.readFileSync('require('path').join(__dirname,'..','apps-script','ClosingScores.gs')','utf8'));
+eval(fs.readFileSync(require('path').join(__dirname,'..','apps-script','ClosingScores.gs'),'utf8'));
 setupClosingScores(); const K=props.closingKey; a.ok(K&&K.length===20); a.deepEqual(trig,['clearClosingScores']);
 a.equal(doGet({parameter:{a:'get',block:'1st',k:'nope'}}).ok,false);
 let r=doGet({parameter:{a:'get',block:'1st',k:K}}); a.deepEqual(r.days,['MON','WED','THURS','FRI']); a.deepEqual(r.rows,['Effort','Performance','Attitude']); a.equal(r.values[0][0],'');

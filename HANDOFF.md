@@ -50,6 +50,12 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Sound: WebAudio chime. Browsers block sound until the page has been touched once since it loaded, so any tap on the board readies it (pointerdown → tUnlockAudio). After the board's browser restarts, someone must touch the page once or the first alert is silent (flash still shows).
 - Tests: 3 pack-up cases in tests/smoke.py.
 
+## Closing scores (1.5.0, Mat 11/7)
+- Mat's choices: scores 1–3; anyone at the board can enter; cleared Mondays automatically; every score logged.
+- Board: #btnScores "★ Closing" shown only when an agenda slide (not welcome, not Band Ninja) is on screen and Settings "Closing scores link" is filled. Panel = the slide's CLOSING table: other days read-only, today's column (header starting MON/TUE/WED/THU/FRI) gets 1/2/3/✕. Taps show at once, saves queued in order (one fetch each), failure → "Not saved · Try again". Slide iframe reloads when the panel closes after a save. Auto-closes after 2 min idle; closes at block change.
+- Server: apps-script/ClosingScores.gs in the Daily Slides project, deployed as a Web app (Execute as Mat, Anyone). doGet ?k=<key>&a=get|set&block=&row=&day=&v= (key in Script Property closingKey, made by setupClosingScores). Finds the block slide by "<block> Block Agenda" text + table whose cell(0,0) starts "CLOSING"; rows/columns by label, so Mat can rename days (e.g. TUES next semester when IF moves to Thursday). Writes keep the cell's font/size/bold/color/alignment. Log: Daily Slides content sheet (1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E) tab "Closing Scores" (Date | Block | Day | Category | Score | Entered), one row per date+block+category, ✕ deletes it. clearClosingScores trigger Mondays 4 AM.
+- Tests: 2 board cases in tests/smoke.py (fake web app), node tests/closing_gs_test.js (fake Slides/Sheets).
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
