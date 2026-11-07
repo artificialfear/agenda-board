@@ -147,6 +147,26 @@
   #scores .s-n.pending { opacity: .7; }
   #scores .s-msg { min-height: 1.4em; margin-top: 12px; font: 16px "Segoe UI", Arial, sans-serif; color: #c9d0de; }
   #scores .s-msg.err { color: #ffb4a8; }
+  #scores .s-change { display: none; }
+  #scores.big { background: #1f2a44; }
+  #scores.big .s-card { width: 100vw; height: 100vh; max-width: none; border: 0; border-radius: 0; box-shadow: none;
+    padding: 3vh 3vw; display: flex; flex-direction: column; }
+  #scores.big .s-title { font-size: 6vh; }
+  #scores.big .s-change { display: block; font-size: 4vh; color: #c9a227; font-variant-numeric: tabular-nums; margin-left: auto; margin-right: 2vw; }
+  #scores.big .s-grid { flex: 1; gap: 1.6vh 1vw; align-content: center; }
+  #scores.big .s-h { font-size: 2.8vh; padding: .6vh 0; }
+  #scores.big .s-lab { flex-direction: column; align-items: flex-start; justify-content: center; }
+  #scores .s-name { font-size: inherit; }
+  #scores.big .s-name { font-size: 5vh; line-height: 1.1; }
+  #scores .s-desc { display: none; }
+  #scores.big .s-desc { display: block; font: 2.7vh/1.3 "Segoe UI", Arial, sans-serif; color: #c9d0de; margin-top: .4vh; }
+  #scores.big .s-desc div.on { color: #c9a227; font-weight: 700; }
+  #scores.big .s-desc b { display: inline-block; width: 1.4em; color: #c9a227; }
+  #scores.big .s-val { font-size: 5vh; min-height: 13vh; }
+  #scores.big .s-today { gap: .8vw; }
+  #scores.big .s-n { font-size: 8vh; min-height: 13vh; border-radius: 16px; }
+  #scores.big .s-n.clr { flex: 0 0 6vw; font-size: 3vh; }
+  #scores.big .s-msg { font-size: 2.4vh; }
   #scores .s-msg button { margin-left: 8px; padding: 6px 12px; border-radius: 8px; border: 1px solid #c9a227; background: none;
     color: #c9a227; cursor: pointer; font: inherit; }
   #timer { position: fixed; z-index: 30; display: none; width: min(420px, 92vw); background: #1f2a44; color: #fff;
@@ -221,7 +241,7 @@
 
 <div id="overrideBadge" title="Tap to return to automatic"></div>
 
-<!-- Pack-up alert: a few minutes before each block's bell -->
+<!-- Pack-up alert: a few minutes before each block's class change -->
 <div id="packup" role="alert" title="Tap to close">
   <div class="p-title">Pack up time!</div>
   <div class="p-bell" id="packBell"></div>
@@ -240,6 +260,7 @@
   <div class="s-card">
     <div class="s-head">
       <div class="s-title">Closing scores · <span id="sBlockName"></span></div>
+      <div class="s-change" id="sChange"></div>
       <button class="s-x" id="sClose" aria-label="Close">✕</button>
     </div>
     <div class="s-grid" id="sGrid"></div>
@@ -363,9 +384,17 @@
     <input id="sClosing" placeholder="https://script.google.com/macros/s/…/exec?k=…">
     <div class="hint">From the Daily Slides script (showClosingScoresLink). Blank = no ★ Closing button.</div>
 
-    <label class="f" for="sPack">Pack-up alert (minutes before the bell)</label>
+    <label class="f" for="sScoreMin">Closing scoreboard (minutes before class change)</label>
+    <input id="sScoreMin" type="number" min="0" max="10">
+    <div class="hint">The board switches to the full-screen closing scoreboard this many minutes before class change. 0 = off.</div>
+
+    <label class="f" for="sDesc">Closing score descriptions</label>
+    <textarea id="sDesc" rows="4" spellcheck="false"></textarea>
+    <div class="hint">One line per category: Category | what 3 means | what 2 means | what 1 means</div>
+
+    <label class="f" for="sPack">Pack-up alert (minutes before class change)</label>
     <input id="sPack" type="number" min="0" max="20">
-    <div class="hint">Chime + full-screen "Pack up time!" this many minutes before each block ends. 0 = off.</div>
+    <div class="hint">Chime + full-screen "Pack up time!" this many minutes before class change. 0 = off.</div>
 
     <label class="f" for="sNinjaEmbed">Band Ninja Day deck link</label>
     <input id="sNinjaEmbed" placeholder="https://docs.google.com/presentation/d/…/pub or …/embed">
@@ -375,7 +404,7 @@
 
     <label class="f" for="sSched">Schedules and slides (advanced)</label>
     <textarea id="sSched" spellcheck="false"></textarea>
-    <div class="hint">Each block: start, end (24-hour), the agenda slide ID it shows ("blocks") and its Band Ninja slide ("ninjaBlocks"). Only edit if your bell schedule changes or a slide was recreated.</div>
+    <div class="hint">Each block: start, end (24-hour), the agenda slide ID it shows ("blocks") and its Band Ninja slide ("ninjaBlocks"). Only edit if your class schedule changes or a slide was recreated.</div>
 
     <div class="row">
       <button class="big primary" id="saveSettings">Save</button>
@@ -409,7 +438,11 @@
     theme: "dark",
     weekend: "welcome",
     closingUrl: "",      // Daily Slides web app link (…/exec?k=…); blank hides the ★ Closing button
-    packMinutes: 6,      // pack-up alert this many minutes before each block ends (0 = off)
+    packMinutes: 6,
+    scoreMinutes: 2,     // full-screen closing scoreboard this many minutes before class change (0 = off)
+    closingDesc: "Effort | Everyone gave their best + passed the pencil check | Most of us gave our best | Most of us did not give our best\n" +
+      "Performance | We played well and got better today | We held steady but didn't improve | We struggled or slipped backward\n" +
+      "Attitude | Positive all class, no disruptions | Mostly positive, a few disruptions | Negative attitude or many disruptions",      // pack-up alert this many minutes before each block ends (0 = off)
     ninjaEmbedUrl: "https://docs.google.com/presentation/d/" + NINJA_DECK_ID + "/embed",
     ninjaOnIf: true,     // Band Ninja Day slides every IF day
     ninjaBlocks: { "1st": "p3", "3rd": "p2", "4th": "p2", "6th": "p1", "7th": "p1" },
@@ -624,7 +657,7 @@
     var d = now(), t = dayType(d), ifOn = t === "if", nOn = isNinja(d);
     document.getElementById("dayToggle").setAttribute("aria-checked", ifOn ? "true" : "false");
     document.getElementById("daySub").textContent =
-      ifOn ? "On: IF bell times today" : t === "weekend" ? "Off: weekend" : "Off: regular bell times";
+      ifOn ? "On: IF schedule today" : t === "weekend" ? "Off: weekend" : "Off: regular schedule";
     document.getElementById("ninjaToggle").setAttribute("aria-checked", nOn ? "true" : "false");
     document.getElementById("ninjaSub").textContent =
       nOn ? "On: Band Ninja slides today" : "Off: agenda slides";
@@ -684,6 +717,8 @@
     document.getElementById("sWeekend").value = settings.weekend;
     document.getElementById("sPack").value = settings.packMinutes;
     document.getElementById("sClosing").value = settings.closingUrl || "";
+    document.getElementById("sScoreMin").value = settings.scoreMinutes;
+    document.getElementById("sDesc").value = settings.closingDesc || "";
     document.getElementById("sSched").value = schedText();
     document.getElementById("status").textContent = "";
   }
@@ -713,6 +748,9 @@
     settings.theme = document.getElementById("sTheme").value;
     settings.weekend = document.getElementById("sWeekend").value;
     settings.closingUrl = document.getElementById("sClosing").value.trim();
+    var sm = document.getElementById("sScoreMin").value;
+    settings.scoreMinutes = sm === "" ? 0 : Math.max(0, Math.min(10, Math.round(+sm) || 0));
+    settings.closingDesc = document.getElementById("sDesc").value.trim() || DEFAULTS.closingDesc;
     var pm = document.getElementById("sPack").value;
     settings.packMinutes = pm === "" ? 0 : Math.max(0, Math.min(20, Math.round(+pm) || 0));
     settings.blocks = parsed.blocks;
@@ -877,20 +915,43 @@
   window.scoresSync = function () {
     var ok = !!settings.closingUrl && shownKey && shownKey !== "welcome" && !shownNinja;
     document.body.classList.toggle("can-score", !!ok);
+    if (scoresEl.classList.contains("big")) return;          // the scoreboard follows the schedule, not the screen
     if (!ok && scoresEl.classList.contains("open")) scoresClose();
     if (ok && sc.block && sc.block !== shownKey && scoresEl.classList.contains("open")) scoresClose();
   };
+  function scoresLoad(blk) {
+    return scoresCall({ a: "get", block: blk }).then(function (j) {
+      if (sc.queue.length || sc.busy) return sc.data[blk];   // don't overwrite taps still saving
+      sc.data[blk] = j; if (sc.block === blk && scoresEl.classList.contains("open")) { scoresMsg(""); scoresPaint(); }
+      return j;
+    });
+  }
+  function closingDesc() {
+    var out = {};
+    String(settings.closingDesc || "").split(/\n/).forEach(function (line) {
+      var p = line.split("|").map(function (x) { return x.trim(); });
+      if (p.length >= 2 && p[0]) out[p[0].toLowerCase()] = { "3": p[1] || "", "2": p[2] || "", "1": p[3] || "" };
+    });
+    return out;
+  }
   function scoresPaint() {
     var d = sc.data[sc.block];
     document.getElementById("sBlockName").textContent = sc.block + " Block";
     if (!d) { sGrid.innerHTML = ""; return; }
     var t = todayCol(d.days);
-    sGrid.style.gridTemplateColumns = "minmax(150px, 1.2fr) " + d.days.map(function (_, i) { return i === t ? "3.2fr" : "1fr"; }).join(" ");
+    var big = scoresEl.classList.contains("big");
+    sGrid.style.gridTemplateColumns = (big ? "minmax(0, 3fr) " : "minmax(150px, 1.2fr) ") +
+      d.days.map(function (_, i) { return i === t ? (big ? "4fr" : "3.2fr") : "1fr"; }).join(" ");
     var h = '<div></div>' + d.days.map(function (x, i) {
       return '<div class="s-h' + (i === t ? ' today' : '') + '">' + esc(x) + (i === t ? ' · TODAY' : '') + '</div>';
     }).join("");
+    var desc = closingDesc();
     d.rows.forEach(function (lab, r) {
-      h += '<div class="s-lab">' + esc(lab) + '</div>';
+      var cur = t >= 0 ? ((d.values[r] || [])[t] || "") : "", dd = desc[String(lab).toLowerCase()];
+      h += '<div class="s-lab"><div class="s-name">' + esc(lab) + '</div>' + (dd ? '<div class="s-desc">' +
+        ["3", "2", "1"].filter(function (n) { return dd[n]; }).map(function (n) {
+          return '<div' + (cur === n ? ' class="on"' : '') + '><b>' + n + '</b>' + esc(dd[n]) + '</div>';
+        }).join("") + '</div>' : '') + '</div>';
       d.days.forEach(function (day, c) {
         var v = (d.values[r] || [])[c] || "";
         if (c !== t) { h += '<div class="s-val">' + (esc(v) || "–") + '</div>'; return; }
@@ -913,19 +974,19 @@
       sMsg.appendChild(b);
     }
   }
-  function scoresOpen() {
-    sc.block = shownKey; sc.idleAt = Date.now();
+  // big = the full-screen scoreboard at the end of class (block comes from the schedule)
+  function scoresOpen(big, block) {
+    sc.block = block || shownKey; sc.idleAt = Date.now();
+    scoresEl.classList.toggle("big", !!big);
     scoresEl.classList.add("open");
+    if (!sc.queue.length && !sc.failed) scoresMsg("");
     scoresPaint();
     if (!sc.data[sc.block]) scoresMsg("Loading…");
     var blk = sc.block;
-    scoresCall({ a: "get", block: blk }).then(function (j) {
-      if (sc.queue.length || sc.busy) return;          // don't overwrite taps still saving
-      sc.data[blk] = j; if (sc.block === blk) { scoresMsg(""); scoresPaint(); }
-    }).catch(function (e) { if (sc.block === blk && !sc.data[blk]) scoresMsg("Couldn't load the scores: " + e.message, true); });
+    scoresLoad(blk).catch(function (e) { if (sc.block === blk && !sc.data[blk]) scoresMsg("Couldn't load the scores: " + e.message, true); });
   }
   function scoresClose() {
-    scoresEl.classList.remove("open");
+    scoresEl.classList.remove("open", "big");
     if (sc.changed && !sc.queue.length && !sc.busy) { sc.changed = false; show(shownKey, true, shownNinja); }
   }
   function scoresTap(r, v) {
@@ -951,7 +1012,7 @@
       scoresMsg("Not saved: " + e.message, true, true); scoresPaint();
     });
   }
-  document.getElementById("btnScores").onclick = scoresOpen;
+  document.getElementById("btnScores").onclick = function () { scoresOpen(false); };
   document.getElementById("sClose").onclick = scoresClose;
   scoresEl.addEventListener("click", function (e) { if (e.target === scoresEl) scoresClose(); });
   sGrid.addEventListener("click", function (e) {
@@ -960,17 +1021,21 @@
   });
   // Closes itself after 2 minutes without a tap (unless something is still saving or failed).
   setInterval(function () {
-    if (scoresEl.classList.contains("open") && !sc.queue.length && Date.now() - sc.idleAt > 120000) scoresClose();
+    if (scoresEl.classList.contains("open") && !scoresEl.classList.contains("big") && !sc.queue.length &&
+        Date.now() - sc.idleAt > 120000) scoresClose();
   }, 5000);
   window.scoresSync();
 
-  // ===================== PACK-UP ALERT =====================
-  // Goes by the bell schedule (not by what's on screen), once per block per day.
+  // ===================== END OF CLASS: PACK-UP → CLOSING SCOREBOARD =====================
+  // Goes by the class schedule (not by what's on screen), once per block per day.
+  //   packMinutes before class change: chime + "Pack up time!" (stays up until the scoreboard)
+  //   scoreMinutes before class change: chime + full-screen closing scoreboard until class change
   // Browsers only allow sound after someone has touched the page, so any tap readies it.
   var PACK_KEY = "agendaBoard.packDone";
   var packEl = document.getElementById("packup"), packPill = document.getElementById("packPill");
   var packBell = document.getElementById("packBell");
-  var pack = { block: null, end: 0, shownAt: 0 };
+  var pack = { block: null, name: null, end: 0, shownAt: 0, phase: null };
+  var sChangeEl = document.getElementById("sChange");
   var packDone = load(PACK_KEY) || {};
   var HOLD_FLASH = 10000, HOLD_OPEN = 45000;
 
@@ -993,11 +1058,33 @@
   function packLeft(d) { return Math.max(0, pack.end - (d.getTime())); }
   function bellText(ms) { var s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
   function packClose() { packEl.classList.remove("open", "flash"); }
+  function scoreChime() {
+    try {
+      var ctx = audio || new (window.AudioContext || window.webkitAudioContext)();
+      audio = ctx;
+      [[0, 523], [0.22, 659], [0.44, 784], [0.66, 1047]].forEach(function (n) {
+        var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + n[0];
+        o.type = "sine"; o.frequency.value = n[1];
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
+        o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.5);
+      });
+    } catch (e) {}
+  }
+  // The scoreboard happens if it's on, the link is set, it isn't a Band Ninja day,
+  // and (once the slide's table has loaded) the table has a column for today.
+  function scoreboardPlanned(d) {
+    if (!(+settings.scoreMinutes > 0) || !settings.closingUrl || isNinja(d) || !pack.name) return false;
+    var data = sc.data[pack.name];
+    return !data || todayCol(data.days) >= 0;
+  }
+  function scoreboardOpen() { packClose(); packPill.classList.remove("show"); scoresOpen(true, pack.name); }
 
   function packCheck() {
-    var d = now(), mins_ = +settings.packMinutes || 0;
+    var d = now(), mins_ = Math.max(+settings.packMinutes || 0, +settings.scoreMinutes || 0);
     var st = scheduleState(d), today = ymd(d);
-    // Which block is in session by the bell (ignoring the early lead-in)?
+    // Which block is in session by the schedule (ignoring the early lead-in)?
     var blk = null;
     if (mins_ > 0 && st.type !== "weekend") {
       (settings.schedules[st.type] || []).forEach(function (b) {
@@ -1008,28 +1095,54 @@
     if (blk && nowMins(d) >= mins(blk[2]) - mins_) {
       var key = today + " " + blk[0] + " " + blk[2];
       var endD = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, mins(blk[2]));
-      if (pack.block !== key) { pack.block = key; pack.end = endD.getTime(); }
-      if (!packDone[key]) {
-        packDone = {}; packDone[key] = true; save(PACK_KEY, packDone);   // only today's block is kept
-        pack.shownAt = d.getTime();
-        packEl.classList.add("open", "flash");
-        packChime();
+      if (pack.block !== key) {
+        pack.block = key; pack.name = blk[0]; pack.end = endD.getTime(); pack.phase = null;
+        if (settings.closingUrl && +settings.scoreMinutes > 0 && !isNinja(d)) scoresLoad(blk[0]).catch(function () {});  // ready before it opens
       }
-      var left = packLeft(d);
-      packBell.textContent = "Bell in " + bellText(left);
-      packPill.textContent = "🎒 Pack up · bell in " + bellText(left);
-      if (packEl.classList.contains("open")) {
-        if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
-        if (d.getTime() - pack.shownAt > HOLD_OPEN) packClose();
+      var left = packLeft(d), planned = scoreboardPlanned(d);
+      var scoreAt = (+settings.scoreMinutes || 0) * 60000, packAt = (+settings.packMinutes || 0) * 60000;
+      var inScore = planned && left <= scoreAt;
+      if (inScore) {
+        if (!packDone[key + " score"]) {
+          packDone[key + " score"] = true; save(PACK_KEY, packDone);
+          pack.phase = "score"; scoreboardOpen(); scoreChime();
+        }
+        sChangeEl.textContent = "Class change in " + bellText(left);
+        packClose();
+        packPill.textContent = "★ Closing scores · class change in " + bellText(left);
+        packPill.classList.toggle("show", !scoresEl.classList.contains("open"));
+      } else if (packAt > 0 && left <= packAt) {
+        if (!packDone[key]) {
+          packDone = {}; packDone[key] = true; save(PACK_KEY, packDone);   // only today's block is kept
+          pack.phase = "pack"; pack.shownAt = d.getTime();
+          packEl.classList.add("open", "flash");
+          packChime();
+        }
+        var line = planned ? "Closing scores in " + bellText(left - scoreAt) : "Class change in " + bellText(left);
+        packBell.textContent = line;
+        packPill.textContent = "🎒 Pack up · " + line.charAt(0).toLowerCase() + line.slice(1);
+        if (packEl.classList.contains("open")) {
+          if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
+          // With a scoreboard coming it stays up as the countdown; without one it tucks away after 45 s.
+          if (!planned && d.getTime() - pack.shownAt > HOLD_OPEN) packClose();
+        }
+        packPill.classList.toggle("show", !packEl.classList.contains("open"));
+      } else {
+        packPill.classList.remove("show");
       }
-      packPill.classList.toggle("show", !packEl.classList.contains("open"));
     } else {
-      if (pack.block) { pack.block = null; packClose(); }
+      if (pack.block) {
+        pack.block = null; pack.name = null; packClose();
+        if (scoresEl.classList.contains("big")) scoresClose();         // class change: back to the normal screen
+      }
       packPill.classList.remove("show");
     }
   }
   packEl.addEventListener("click", function () { packClose(); packCheck(); });
-  packPill.addEventListener("click", function () { packEl.classList.add("open"); pack.shownAt = now().getTime() - HOLD_FLASH; });
+  packPill.addEventListener("click", function () {
+    if (packPill.textContent.indexOf("★") === 0) { scoresOpen(true, pack.name); packPill.classList.remove("show"); return; }
+    packEl.classList.add("open"); pack.shownAt = now().getTime() - HOLD_FLASH;
+  });
   setInterval(packCheck, 1000);
   packCheck();
 
@@ -1045,6 +1158,7 @@
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
+      big: scoresEl.classList.contains("big"), change: sChangeEl.textContent,
       msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },
     pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
       pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },

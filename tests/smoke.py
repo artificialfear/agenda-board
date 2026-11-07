@@ -219,7 +219,7 @@ def main():
         page.reload(); page.wait_for_timeout(300); e = P()    # no repeat after a reload
         page.clock.fast_forward("06:00"); f = P()              # past 8:36, bell rang
         ok = (not a["open"] and b["open"] and b["flash"] and c["open"] and not c["flash"] and not d["open"]
-              and d["pill"].startswith("🎒 Pack up · bell in 5:") and not e["open"] and e["pill"] and not f["pill"] and not f["open"])
+              and d["pill"].startswith("🎒 Pack up · class change in 5:") and not e["open"] and e["pill"] and not f["pill"] and not f["open"])
         print(("PASS" if ok else "FAIL"), f"{'pack-up alert (regular 1st)':34s} {[a, b, c, d, e, f]}" if not ok else "pack-up alert (regular 1st)")
         failures += 0 if ok else 1
         ctx.close()
@@ -294,10 +294,36 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'closing scores hidden/no column':34s}" + ("" if ok else f" {hid} {ninja_hidden} {no_col} {S()['msg']}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # End of class with closing scores: pack-up (6:00) counts down to the scoreboard (2:00), which runs until class change
+        state["values"] = [["", "", "", ""], ["", "", "", ""], ["", "", "", ""]]
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://script.google.com/**", fake_script)
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T08:30:05")   # Friday 1st, class change 8:36
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(600)
+        P = lambda: page.evaluate("window.__agendaBoard.pack()")
+        a1 = P(); line1 = page.inner_text("#packBell")
+        page.clock.fast_forward("01:00"); a2 = P()                          # 8:31: still up (no 45 s close)
+        page.clock.fast_forward("03:00"); page.wait_for_timeout(300)         # 8:34:05 -> scoreboard
+        b = S(); pk = P()
+        page.click("#sGrid button[data-r='1'][data-v='2']"); page.wait_for_timeout(400)
+        if shots_dir: page.screenshot(path=str(shots_dir / "scoreboard.png"))
+        desc_on = page.locator(".s-desc div.on").count() == 1
+        page.click("#sClose"); page.wait_for_timeout(200); pill = P()["pill"]
+        page.click("#packPill"); page.wait_for_timeout(200); reopened = S()["big"]
+        page.clock.fast_forward("02:00"); page.wait_for_timeout(300); c = S()   # 8:36:05 class change
+        ok = (a1["open"] and line1.startswith("Closing scores in 3:5") and a2["open"] and b["open"] and b["big"]
+              and b["change"].startswith("Class change in 1:5") and not pk["open"] and state["values"][1][3] == "2" and desc_on
+              and pill.startswith("★ Closing scores · class change in") and reopened and not c["open"] and not c["big"])
+        print(("PASS" if ok else "FAIL"), f"{'end of class: pack-up -> scoreboard':34s}" + ("" if ok else f" {a1} {line1} {a2} {b} {pk} {state['values']} {desc_on} {pill} {reopened} {c}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.0 — 2026-11-07
+- End of class is one sequence: 6:00 before class change "Pack up time!" (stays up as a countdown to scores), 2:00 before: rising chime + full-screen closing scoreboard (today's 1/2/3 buttons, earlier days, one-line meaning of each number, "Class change in m:ss") until class change. ✕ hides it; the gold pill brings it back. No scoreboard on Band Ninja days or when the slide has no column for today (then pack-up behaves as before).
+- "Bell" is now "class change" everywhere (the school has no bells).
+- Settings: Closing scoreboard minutes (2, 0 = off), Closing score descriptions (Category | 3 | 2 | 1 per line).
+
 ## 1.5.0 — 2026-11-07
 - Closing scores: ★ Closing button (bottom-left, agenda slides only) opens a panel like the slide's CLOSING table. Tap 1 / 2 / 3 (or ✕) in today's column for Effort, Performance, Attitude. Saves through the Daily Slides web app (apps-script/ClosingScores.gs) into the slide table and a "Closing Scores" log tab; the slide reloads when the panel closes. Tables clear Mondays ~4 AM. Settings: "Closing scores link".
 

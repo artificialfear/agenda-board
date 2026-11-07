@@ -56,6 +56,12 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Server: apps-script/ClosingScores.gs in the Daily Slides project, deployed as a Web app (Execute as Mat, Anyone). doGet ?k=<key>&a=get|set&block=&row=&day=&v= (key in Script Property closingKey, made by setupClosingScores). Finds the block slide by "<block> Block Agenda" text + table whose cell(0,0) starts "CLOSING"; rows/columns by label, so Mat can rename days (e.g. TUES next semester when IF moves to Thursday). Writes keep the cell's font/size/bold/color/alignment. Log: Daily Slides content sheet (1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E) tab "Closing Scores" (Date | Block | Day | Category | Score | Entered), one row per date+block+category, ✕ deletes it. clearClosingScores trigger Mondays 4 AM.
 - Tests: 2 board cases in tests/smoke.py (fake web app), node tests/closing_gs_test.js (fake Slides/Sheets).
 
+## End of class: pack-up → scoreboard (1.6.0, Mat 11/7)
+- Mat scores in the last minutes after packing; students self-score from the board, so the scoreboard is full screen. School has no bells: say "class change", never "bell".
+- packCheck: packMinutes (6) → #packup, stays up with "Closing scores in m:ss" when a scoreboard is planned (45 s auto-close only when not); scoreMinutes (2) → scoreChime + scoresOpen(true, block) (#scores.big) with #sChange "Class change in m:ss" until class change, then closes. Planned = scoreMinutes>0 + closingUrl + not Band Ninja + (table loaded ⇒ has today's column). Table prefetched when the end-of-class window starts. ✕ → pill "★ Closing scores · class change in…" (tap reopens). Fired once per block/day (packDone key + " score").
+- Descriptions: settings.closingDesc lines "Category | 3 | 2 | 1" (Mat's wording shortened 11/7; Performance 1 and Attitude 2/1 written by Claude, Mat to confirm). Shown only on the big scoreboard; the current score's line turns gold.
+- Test: 'end of class: pack-up -> scoreboard' in tests/smoke.py.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
