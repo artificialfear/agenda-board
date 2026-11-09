@@ -71,6 +71,7 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 
 ## Timer size/placement (1.7.1, Mat 11/8)
 - Mat: the timer must never cover the Work Session box (ends 64.4% down the slide); covering the Closing table (starts 65.8%) is fine. Compact timer = CSS in --u units (1% of the on-screen slide height, set by tFit() from the window, slide 16:9 centered). Bottom-left: left = slide left + 3% width, bottom = slide bottom + 1.5% height; ~25u tall, 84u wide (inside the Closing area at every size checked: 1280×1024 … 3840×2160). #leftBar moves just right of the open timer; ★ Closing hidden while it's open.
+- 1.7.3 (Mat): label in .t-left centered over .t-time; .t-icons first in .t-right (top-right); running: .t-msg flex:1 centered between icons and .t-ctl; #tPlus2 (+30s, same handler) shown only while running; pills 10u wide, centered.
 - 1.7.2 (Mat): #timer.running (any state but idle) hides .t-presets, shows .t-msg (now in .t-right) big in gold, shrinks Pause/Resume + Reset.
 
 ## Controls on the board (bottom-right, faded until touched)

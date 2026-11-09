@@ -193,14 +193,16 @@
   #timer.big.open { display: flex; }
   #timer .t-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
     color: #c9a227; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
-  #timer .t-head .t-icons { display: flex; gap: 6px; }
+  #timer .t-icons { display: flex; gap: 6px; }
+  #timer #tPlus2 { display: none; }
+  #timer.running #tPlus2 { display: block; }
   #timer .t-icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #34405e; background: #141c30;
     color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   #timer .t-time { font-size: 112px; line-height: 1.05; font-variant-numeric: tabular-nums; margin: 4px 0 8px;
     letter-spacing: .02em; }
   #timer.big .t-time { font-size: min(42vh, 30vw); }
-  #timer.big .t-head { font-size: 3vh; justify-content: center; position: relative; }
-  #timer.big .t-head .t-icons { position: absolute; right: 16px; }
+  #timer.big .t-head { font-size: 3vh; justify-content: center; }
+  #timer.big .t-icons { position: absolute; top: 16px; right: 16px; }
   #timer.big .t-msg { font-size: 6vh; }
   #timer.low .t-time { color: #c9a227; }
   #timer.done { animation: tFlash 1s linear infinite; }
@@ -245,9 +247,12 @@
     border-radius: calc(var(--u) * 2); border-width: 2px; }
   #timer:not(.big) .t-head { font-size: calc(var(--u) * 2.3); }
   #timer:not(.big) .t-icon { width: calc(var(--u) * 4.6); height: calc(var(--u) * 4.6); font-size: calc(var(--u) * 2.2); }
-  #timer:not(.big) .t-main { display: flex; align-items: center; gap: calc(var(--u) * 2.2); margin-top: calc(var(--u) * .6); }
-  #timer:not(.big) .t-left { flex: none; min-width: calc(var(--u) * 27); }
-  #timer:not(.big) .t-right { flex: 1; min-width: 0; }
+  #timer:not(.big) .t-main { display: flex; align-items: stretch; gap: calc(var(--u) * 2.2); }
+  #timer:not(.big) .t-left { flex: none; min-width: calc(var(--u) * 27); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+  #timer:not(.big) .t-head { justify-content: center; text-align: center; margin-bottom: calc(var(--u) * .6); }
+  #timer:not(.big) .t-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #timer:not(.big) .t-icons { align-self: flex-end; gap: calc(var(--u) * .6); margin-bottom: calc(var(--u) * .8); }
   #timer:not(.big) .t-time { font-size: calc(var(--u) * 13); line-height: 1; margin: 0; }
   #timer:not(.big) .t-msg { font-size: calc(var(--u) * 2.3); min-height: 1.3em; margin: calc(var(--u) * .4) 0 0; }
   #timer:not(.big) .t-presets, #timer:not(.big) .t-ctl { flex-wrap: nowrap; gap: calc(var(--u) * .8); }
@@ -258,12 +263,15 @@
   /* Once started: presets go away; the message takes their place; Pause/Resume + Reset shrink. */
   #timer.running .t-presets { display: none; }
   #timer:not(.running):not(.big) .t-msg { display: none; }
-  #timer.running:not(.big) .t-msg { font: 600 calc(var(--u) * 5) "Oswald", "Arial Narrow", Arial, sans-serif;
+  /* message centered between the icons (top) and the pills (bottom) */
+  #timer.running:not(.big) .t-msg { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+    font: 600 calc(var(--u) * 5) "Oswald", "Arial Narrow", Arial, sans-serif;
     color: #c9a227; letter-spacing: .03em; line-height: 1.1; margin: 0; min-height: 0; }
-  #timer.running:not(.big) .t-ctl { justify-content: flex-start; margin-top: calc(var(--u) * 1.4); }
-  #timer.running:not(.big) button.t-b { flex: 0 0 auto; padding: calc(var(--u) * .6) calc(var(--u) * 1.6);
+  #timer.running:not(.big) .t-ctl { justify-content: center; margin-top: 0; }
+  #timer.running:not(.big) .t-icons { margin-bottom: 0; }
+  #timer.running:not(.big) button.t-b { flex: 0 0 calc(var(--u) * 10); padding: calc(var(--u) * .6) 0;
     font-size: calc(var(--u) * 1.9); }
-  #timer.running.big .t-ctl button.t-b { flex: 0 0 auto; font-size: 2.6vh; padding: 1vh 2.4vw; }
+  #timer.running.big .t-ctl button.t-b { flex: 0 0 9vw; font-size: 2.6vh; padding: 1vh 0; }
   #timer.running.big .t-ctl { justify-content: center; }
   #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
@@ -329,19 +337,17 @@
 
 <!-- Warm-up timer: a student runs it from the board -->
 <div id="timer" class="pos-bl" role="timer" aria-live="off">
-  <div class="t-head">
-    <span>Warm-up timer</span>
-    <span class="t-icons">
-      <button class="t-icon" id="tMove" title="Move to another corner" aria-label="Move timer">⇄</button>
-      <button class="t-icon" id="tBig" title="Full screen timer" aria-label="Bigger timer">⤢</button>
-      <button class="t-icon" id="tClose" title="Hide timer" aria-label="Hide timer">✕</button>
-    </span>
-  </div>
   <div class="t-main">
   <div class="t-left">
-  <div class="t-time" id="tTime">4:00</div>
+    <div class="t-head"><span>Warm-up timer</span></div>
+    <div class="t-time" id="tTime">4:00</div>
   </div>
   <div class="t-right">
+  <span class="t-icons">
+    <button class="t-icon" id="tMove" title="Move to another corner" aria-label="Move timer">⇄</button>
+    <button class="t-icon" id="tBig" title="Full screen timer" aria-label="Bigger timer">⤢</button>
+    <button class="t-icon" id="tClose" title="Hide timer" aria-label="Hide timer">✕</button>
+  </span>
   <div class="t-msg" id="tMsg"></div>
   <div class="t-presets" id="tPresets">
     <button class="t-b" data-min="3">3 min</button>
@@ -352,6 +358,7 @@
   <div class="t-ctl">
     <button class="t-b go" id="tGo">Start</button>
     <button class="t-b" id="tReset">Reset</button>
+    <button class="t-b" id="tPlus2" title="Add 30 seconds">+30s</button>
   </div>
   </div>
   </div>
@@ -966,6 +973,7 @@
   Array.prototype.forEach.call(document.querySelectorAll("#tPresets [data-min]"), function (b) {
     b.onclick = function () { tSetLength(+b.getAttribute("data-min")); };
   });
+  document.getElementById("tPlus2").onclick = function () { document.getElementById("tPlus").onclick(); };
   document.getElementById("tPlus").onclick = function () {
     if (timer.state === "run") timer.endAt += 30000;
     else { timer.left += 30000; if (timer.state === "done") { timer.state = "pause"; } }

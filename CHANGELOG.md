@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.3 — 2026-11-08
+- Timer: "WARM-UP TIMER" centered over the countdown; ⇄ ⤢ ✕ top-right; while running, "Assemble & warm up" sits midway between the icons and three equal pills (Pause/Resume · Reset · +30s), centered under it.
+
 ## 1.7.2 — 2026-11-08
 - Timer: once started, the 3/4/5 min and +30s buttons go away, "Assemble & warm up" shows large in their place, and Pause/Resume + Reset are small. Reset brings the presets back.
 
