@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.1  (Raven Band, 11/9/2026)
+ * ClosingScores.gs  v1.2  (Raven Band, 11/9/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -11,6 +11,10 @@
  *   - Every Monday ~4 AM all closing tables are emptied for the new week.
  *   - v1.1: the board also reads its settings from the "Board Settings" tab of the same sheet
  *     (Setting | Value), so links can be changed from a laptop instead of typed on the board.
+ *   - v1.2: counts for the board (never any student names):
+ *       a=stats         pass-offs per block this week / this quarter / today (Admin "Pass-Off Log")
+ *       a=line&block=   how many are waiting in the Dojo pass-off line today + passed today
+ *     Same spreadsheet access as before, so no new permissions.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -32,6 +36,8 @@ var CLOSING = {
   LOG_SHEET_ID: '1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E',   // Daily Slides content sheet
   LOG_TAB: 'Closing Scores',
   BOARD_TAB: 'Board Settings',
+  ADMIN_ID: '1FZRxwbaoUscTIzidpVT1f7xzz1j1XaJgG6fn67y-yyI',     // Admin - Band Ninja (Pass-Off Log)
+  TRACKER_ID: '1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw',   // Band Ninja Tracker (Pass-Off Line, Pass-Off Targets)
   BLOCKS: ['1st', '3rd', '4th', '6th', '7th'],
   SCORES: ['1', '2', '3'],
   CLEAR_HOUR: 4
@@ -45,8 +51,10 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
-    if (p.a === 'config') {
-      out = { ok: true, config: boardSettings_() };
+    if (p.a === 'config' || p.a === 'stats' || p.a === 'line') {
+      out = p.a === 'config' ? { config: boardSettings_() } :
+            p.a === 'stats' ? boardStats_(new Date()) : boardLine_(String(p.block || ''), new Date());
+      out.ok = true;
       return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
     }
     var block = String(p.block || '');
@@ -80,6 +88,83 @@ function boardSettings_() {
     if (k && v) out[k] = v;
   });
   return out;
+}
+
+// ---------------------------------------------------------------- pass-off counts for the board (no names)
+
+function boardYmd_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var m = String(v || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+  m = String(v || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[0] : '';
+}
+function boardCached_(key, secs, fn) {
+  var c = CacheService.getScriptCache(), hit = c.get(key);
+  if (hit) return JSON.parse(hit);
+  var v = fn();
+  try { c.put(key, JSON.stringify(v), secs); } catch (e) {}
+  return v;
+}
+
+/** Current quarter from Pass-Off Targets: {name, start, end} as yyyy-MM-dd. */
+function boardQuarter_(today) {
+  var v = SpreadsheetApp.openById(CLOSING.TRACKER_ID).getSheetByName('Pass-Off Targets').getDataRange().getValues();
+  var prevEnd = '', start = '', qs = [];
+  v.forEach(function (r) {
+    var name = String(r[0]).trim(), d = boardYmd_(r[1] instanceof Date ? r[1] : new Date(r[1]));
+    if (/school year starts/i.test(name)) start = d;
+    if (/^Q\s*\d/i.test(name) && d) { qs.push({ name: name, start: prevEnd ? boardNextDay_(prevEnd) : start, end: d }); prevEnd = d; }
+  });
+  for (var i = 0; i < qs.length; i++) if (qs[i].end >= today) return qs[i];
+  return qs[qs.length - 1] || { name: '', start: '', end: '' };
+}
+function boardNextDay_(ymd) {
+  var p = ymd.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2] + 1);
+  return boardYmd_(d);
+}
+
+/** Pass-offs per block: today, this week (since Monday), this quarter. Cached 1 minute. */
+function boardStats_(now) {
+  var today = boardYmd_(now);
+  return boardCached_('boardStats:' + today, 60, function () {
+    var q = boardQuarter_(today);
+    var mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    var week = boardYmd_(mon);
+    var sh = SpreadsheetApp.openById(CLOSING.ADMIN_ID).getSheetByName('Pass-Off Log');
+    var counts = {};
+    CLOSING.BLOCKS.forEach(function (b) { counts[b] = { block: b, today: 0, week: 0, quarter: 0 }; });
+    if (sh && sh.getLastRow() > 1) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues().forEach(function (r) {
+        var d = boardYmd_(r[0]); if (!d) return;                               // undated history isn't counted
+        var b = String(r[2]).replace(/\s*block\s*$/i, '').trim(); if (!counts[b]) return;
+        if (q.start && d >= q.start && d <= q.end) counts[b].quarter++;
+        if (d >= week && d <= today) counts[b].week++;
+        if (d === today) counts[b].today++;
+      });
+    }
+    return { quarter: q.name, quarterEnd: q.end, weekStart: week,
+             blocks: CLOSING.BLOCKS.map(function (b) { return counts[b]; }) };
+  });
+}
+
+/** Dojo pass-off line for one block today: how many waiting, plus passed today (Pass-Off Log). Cached 20 s. */
+function boardLine_(block, now) {
+  if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
+  var today = boardYmd_(now);
+  return boardCached_('boardLine:' + block + ':' + today, 20, function () {
+    var sh = SpreadsheetApp.openById(CLOSING.TRACKER_ID).getSheetByName('Pass-Off Line'), waiting = 0;
+    if (sh && sh.getLastRow() > 1) {
+      var n = Math.min(400, sh.getLastRow() - 1), first = sh.getLastRow() - n + 1;
+      sh.getRange(first, 2, n, 5).getValues().forEach(function (r) {       // Joined | Student | Block | # | Status
+        if (boardYmd_(r[0]) !== today) return;
+        if (String(r[2]).replace(/\s*block\s*$/i, '').trim() !== block) return;
+        if (String(r[4]).trim() === '') waiting++;
+      });
+    }
+    var st = boardStats_(now), row = st.blocks.filter(function (x) { return x.block === block; })[0] || {};
+    return { block: block, waiting: waiting, passedToday: row.today || 0 };
+  });
 }
 
 // ---------------------------------------------------------------- table on the slide

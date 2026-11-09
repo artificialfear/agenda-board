@@ -61,6 +61,17 @@
   #welcome .ampm { font-size: .3em; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
   #welcome .date { font-size: clamp(18px, 2.6vw, 52px); color: var(--muted); margin-top: 2vh; }
   #welcome .next { font-size: clamp(16px, 2vw, 40px); margin-top: 4vh; color: var(--ink); opacity: .85; min-height: 1.2em; }
+  #welcome .warns { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column;
+    gap: 6px; align-items: center; padding-top: 10px; z-index: 3; }
+  #welcome .warn { background: #3a2f10; color: #ffd76a; border: 1px solid #c9a227; border-radius: 999px; padding: 8px 16px;
+    font: 600 clamp(14px, 1.3vw, 22px) "Segoe UI", Arial, sans-serif; display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+  #welcome .warn button { border: 0; border-radius: 999px; padding: 6px 12px; background: #c9a227; color: #141c30;
+    font: inherit; cursor: pointer; }
+  .setup-panel input { width: 100%; font: 600 34px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .12em;
+    text-transform: uppercase; text-align: center; padding: 10px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); margin: 6px 0; }
+  .setup-msg { min-height: 1.4em; margin: 6px 0 10px; color: var(--muted); }
+  .setup-msg.err { color: #ffb4a8; } .setup-msg.ok { color: #c9a227; }
 
   /* ---------- Corner controls ---------- */
   #corner { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 20;
@@ -321,6 +332,22 @@
   <div class="clock" id="clock">--:--</div>
   <div class="date" id="date"></div>
   <div class="next" id="next"></div>
+  <div id="stats" class="stats" aria-label="Pass-offs this week"></div>
+  <div id="warns" class="warns"></div>
+</div>
+
+<!-- Setup code: restores the board's private links (closing scores) without typing them -->
+<div class="sheet" id="setupSheet">
+  <div class="card setup-panel">
+    <h2>Enter setup code</h2>
+    <p class="hint">8 letters/numbers, from Mat's notes. Dashes and spaces don't matter.</p>
+    <input id="setupCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX">
+    <div class="setup-msg" id="setupMsg"></div>
+    <div class="row">
+      <button class="big" id="setupGo">Restore settings</button>
+      <button class="big" id="setupCancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 
@@ -500,6 +527,9 @@
     <label class="f" for="sBook">Method book PDF link</label>
     <input id="sBook" placeholder="https://drive.google.com/file/d/…/view">
     <div class="hint">A Google Drive PDF shared "Anyone with the link can view". Shows the 📖 Book button. Blank = no button.</div>
+
+    <div class="row"><button class="big" id="openSetup">🔑 Enter setup code</button></div>
+    <div class="hint">Restores the closing scores link (and with it the book link) if this board's settings were wiped.</div>
 
     <label class="f" for="sClosing">Closing scores link</label>
     <input id="sClosing" placeholder="https://script.google.com/macros/s/…/exec?k=…">
@@ -1150,6 +1180,71 @@
   };
   window.bookSync();
 
+  // ===================== SETUP CODE + WARNINGS =====================
+  // setup.json (in the site) holds the board's private links, encrypted with an 8-character code
+  // (AES-GCM, key from PBKDF2-SHA256). Typing the code on the board decrypts it and saves the settings.
+  var SETUP_ITER = 310000;
+  function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function setupNormalize(code) { return String(code || "").toUpperCase().replace(/[^0-9A-Z]/g, ""); }
+  function setupRestore(code) {
+    var c = setupNormalize(code);
+    if (c.length !== 8) return Promise.reject(new Error("The code has 8 letters/numbers."));
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error("This browser can't unlock setup codes."));
+    return fetch("setup.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("No setup has been saved for this board yet.");
+      return r.json();
+    }).then(function (f) {
+      var enc = new TextEncoder();
+      return crypto.subtle.importKey("raw", enc.encode(c), "PBKDF2", false, ["deriveKey"]).then(function (base) {
+        return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(f.salt), iterations: f.iter || SETUP_ITER, hash: "SHA-256" },
+          base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+      }).then(function (key) {
+        return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(f.iv) }, key, b64(f.data));
+      }).catch(function () { throw new Error("That code didn't work. Check it and try again."); });
+    }).then(function (buf) {
+      var got = JSON.parse(new TextDecoder().decode(buf)), n = 0;
+      Object.keys(got).forEach(function (k) { if (k in DEFAULTS) { settings[k] = got[k]; n++; } });
+      save(STORE_KEY, settings);
+      fillSettings && fillSettings(); render(true); remoteConfig(); refreshWarns();
+      return n;
+    });
+  }
+  var setupSheet = document.getElementById("setupSheet"), setupMsg = document.getElementById("setupMsg");
+  function openSetup() {
+    document.querySelectorAll(".sheet.open").forEach(function (x) { x.classList.remove("open"); });
+    setupSheet.classList.add("open"); setupMsg.textContent = ""; setupMsg.className = "setup-msg";
+    var i = document.getElementById("setupCode"); i.value = ""; setTimeout(function () { i.focus(); }, 50);
+  }
+  document.getElementById("openSetup").onclick = openSetup;
+  document.getElementById("setupCancel").onclick = function () { setupSheet.classList.remove("open"); };
+  document.getElementById("setupGo").onclick = function () {
+    setupMsg.className = "setup-msg"; setupMsg.textContent = "Checking…";
+    setupRestore(document.getElementById("setupCode").value).then(function () {
+      setupMsg.className = "setup-msg ok"; setupMsg.textContent = "✓ Restored. Closing scores and the book are connected.";
+      setTimeout(function () { setupSheet.classList.remove("open"); }, 1800);
+    }).catch(function (e) { setupMsg.className = "setup-msg err"; setupMsg.textContent = e.message; });
+  };
+  document.getElementById("setupCode").addEventListener("keydown", function (e) { if (e.key === "Enter") document.getElementById("setupGo").click(); });
+
+  // Warnings on the welcome screen: things that would quietly break the end of class.
+  var health = { scriptFails: 0, soundReady: false };
+  function refreshWarns() {
+    var el = document.getElementById("warns"), out = [], d = now();
+    if (!settings.closingUrl) out.push('⚠ Closing scores aren\'t connected <button data-w="setup">Enter setup code</button>');
+    else if (health.scriptFails >= 2) out.push("⚠ Can't reach the Daily Slides script (closing scores, book, stats)");
+    var school = d.getDay() >= 1 && d.getDay() <= 5 && d.getHours() >= 6 && d.getHours() < 16;
+    if (school && !health.soundReady) out.push("🔈 Tap the board once so the chimes can play");
+    var html = out.map(function (t) { return '<div class="warn">' + t + '</div>'; }).join("");
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }
+  document.getElementById("warns").addEventListener("click", function (e) {
+    if (e.target.getAttribute && e.target.getAttribute("data-w") === "setup") openSetup();
+  });
+  // (redraw after the tap has finished, or the redraw would swallow a tap on a warning's own button)
+  document.addEventListener("pointerdown", function () { if (!health.soundReady) { health.soundReady = true; setTimeout(refreshWarns, 700); } }, true);
+  setInterval(refreshWarns, 30000);
+  refreshWarns();
+
   // ===================== SETTINGS FROM THE SHEET =====================
   // The Daily Slides script (same link as closing scores, a=config) serves the "Board Settings" tab of the
   // Daily Agenda Content Pool sheet, so links can be changed from a laptop. A value there wins over the board's own.
@@ -1163,7 +1258,11 @@
         if (key && settings[key] !== cfg[name]) { settings[key] = cfg[name]; changed = true; }
       });
       if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); }
-    }).catch(function () { /* older script or offline: keep what the board has */ });
+      health.scriptFails = 0; refreshWarns();
+    }).catch(function (e) {
+      // An older script answers "Unknown block" (it's reachable); anything else counts as unreachable.
+      health.scriptFails = /unknown block/i.test(e && e.message) ? 0 : health.scriptFails + 1; refreshWarns();
+    });
   }
   setTimeout(remoteConfig, 1500);
   setInterval(remoteConfig, 10 * 60000);
