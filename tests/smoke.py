@@ -398,7 +398,7 @@ def main():
         page = ctx.new_page(); page.clock.install(time="2026-11-06T10:00:00")
         page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
         O = lambda: page.evaluate("[getComputedStyle(document.getElementById('corner')).opacity, getComputedStyle(document.getElementById('btnTimer')).opacity]")
-        page.clock.fast_forward("00:11"); page.wait_for_timeout(400); hidden = O()
+        page.clock.fast_forward("00:06"); page.wait_for_timeout(400); hidden = O()
         top = page.evaluate("document.elementFromPoint(800, 450).id")
         page.mouse.click(800, 450); page.wait_for_timeout(400); shown = O()
         page.click("#btnTimer"); opened = page.is_visible("#timer")

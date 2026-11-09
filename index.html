@@ -825,7 +825,7 @@
     } catch (e) { /* not supported */ }
   };
   // Any touch shows the buttons for 10 s (on an agenda slide they are otherwise hidden).
-  var wakeTimer, WAKE_MS = 10000;
+  var wakeTimer, WAKE_MS = 5000;
   function wake() {
     document.body.classList.add("ui-awake");
     clearTimeout(wakeTimer);
