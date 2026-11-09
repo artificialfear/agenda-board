@@ -109,20 +109,32 @@
   #status { font-size: 13px; color: var(--muted); margin-top: 12px; }
 
   /* ---------- Warm-up timer ---------- */
-  #btnTimer { position: fixed; left: 10px; bottom: 10px; z-index: 21; background: #c9a227; color: #141c30;
+  #leftBar { position: fixed; left: 10px; bottom: 10px; z-index: 21; display: flex; gap: 10px; align-items: center; }
+  #leftBar > * { position: static !important; }
+  body.timer-open #leftBar { bottom: auto; top: 10px; }
+  #btnTimer { background: #c9a227; color: #141c30;
     border: 0; border-radius: 999px; padding: 12px 20px; font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif;
     letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
   body.timer-open #btnTimer { display: none; }
-  #overrideBadge { left: 150px; }               /* sits beside the Timer button */
-  body.timer-open #overrideBadge { left: 10px; }
-  body.can-score #overrideBadge { left: 290px; }
+
 
   /* ---------- Closing scores ---------- */
-  #btnScores { position: fixed; left: 140px; bottom: 10px; z-index: 21; display: none; background: #1f2a44; color: #c9a227;
+  #btnScores, #btnRhythm { display: none; background: #1f2a44; color: #c9a227;
     border: 2px solid #c9a227; border-radius: 999px; padding: 10px 18px; cursor: pointer;
     font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-  body.can-score #btnScores { display: block; }
-  body.timer-open #btnScores { left: 10px; bottom: auto; top: 10px; }
+  body.can-score #btnScores, body.can-rhythm #btnRhythm { display: block; }
+
+  /* ---------- Rhythm of the day, full width ---------- */
+  #rhythm { position: fixed; inset: 0; z-index: 33; display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3vh; background: #1f2a44; cursor: pointer; }
+  #rhythm.open { display: flex; }
+  #rhythm .r-title { font: 600 5vh "Oswald", "Arial Narrow", Arial, sans-serif; color: #c9a227; letter-spacing: .06em; }
+  #rhythm .r-view { position: relative; overflow: hidden; border-radius: 18px; background: #2a3858; }
+  #rhythm iframe { position: absolute; border: 0; pointer-events: none; }
+  #rhythm .r-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #c9d0de; font: 2.4vh "Segoe UI", Arial, sans-serif; }
+  #rhythm .r-hint { font: 2.2vh "Segoe UI", Arial, sans-serif; color: #c9d0de; opacity: .8; }
+  #rhythm .r-catch { position: absolute; inset: 0; }
   #scores { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center;
     background: rgba(10,14,26,.55); }
   #scores.open { display: flex; }
@@ -244,7 +256,6 @@
   <div class="next" id="next"></div>
 </div>
 
-<div id="overrideBadge" title="Tap to return to automatic"></div>
 
 <!-- Pack-up alert: a few minutes before each block's class change -->
 <div id="packup" role="alert" title="Tap to close">
@@ -260,8 +271,23 @@
 <div id="packPill" title="Show the pack-up steps"></div>
 <div id="testBar" role="status"><span id="testText"></span><button id="testExit">End test</button></div>
 
+<!-- Bottom-left: Timer · Closing · Rhythm · manual-override badge -->
+<div id="leftBar">
+  <button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
+  <button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
+  <button id="btnRhythm" aria-label="Show the rhythm of the day big">♪ Rhythm</button>
+  <div id="overrideBadge" title="Tap to return to automatic"></div>
+</div>
+
+<!-- Rhythm of the day, zoomed to full width (a second copy of the slide, cropped to the rhythm card) -->
+<div id="rhythm" role="dialog" aria-label="Rhythm of the day">
+  <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
+  <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe></div>
+  <div class="r-hint">Tap anywhere to go back to the agenda</div>
+  <div class="r-catch"></div>
+</div>
+
 <!-- Closing scores: a student taps 1-3 for today; saved into the slide's CLOSING table -->
-<button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
 <div id="scores" role="dialog" aria-label="Closing scores">
   <div class="s-card">
     <div class="s-head">
@@ -275,7 +301,6 @@
 </div>
 
 <!-- Warm-up timer: a student runs it from the board -->
-<button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
 <div id="timer" class="pos-bl" role="timer" aria-live="off">
   <div class="t-head">
     <span>Warm-up timer</span>
@@ -625,6 +650,7 @@
     shownKey = target;
     shownNinja = target !== "welcome" && ninja;
     if (window.scoresSync) window.scoresSync();
+    if (window.rhythmSync) window.rhythmSync();
   }
 
   function render(force) {
@@ -910,6 +936,46 @@
   }, 250);
   tApplyPos();
   tPaint();
+
+  // ===================== RHYTHM OF THE DAY, BIG =====================
+  // Zooms a second copy of the slide so the rhythm card (Raven layout: the white card in OPENING)
+  // fills the screen width. Google draws it at that size, so it stays sharp. Tap anywhere to go back.
+  var SLIDE_EMU = { w: 9144000, h: 5143500 };
+  var RHYTHM_EMU = { x: 411480, y: 1271016, w: 5074920, h: 566928, pad: 70000 };   // rv*_rcard on each agenda slide
+  var rhythmEl = document.getElementById("rhythm"), rFrame = document.getElementById("rFrame");
+  var rView = document.getElementById("rView"), rLoad = document.getElementById("rLoad");
+  var rhythmBlock = null;
+  function rhythmLayout() {
+    var r = RHYTHM_EMU, x0 = r.x - r.pad, y0 = r.y - r.pad, w = r.w + 2 * r.pad, h = r.h + 2 * r.pad;
+    var s = Math.min(window.innerWidth * 0.96 / w, window.innerHeight * 0.62 / h);     // px per EMU
+    rView.style.width = Math.round(w * s) + "px"; rView.style.height = Math.round(h * s) + "px";
+    rFrame.style.width = Math.round(SLIDE_EMU.w * s) + "px"; rFrame.style.height = Math.round(SLIDE_EMU.h * s) + "px";
+    rFrame.style.left = Math.round(-x0 * s) + "px"; rFrame.style.top = Math.round(-y0 * s) + "px";
+    return s;
+  }
+  function rhythmOpen() {
+    if (!shownKey || shownKey === "welcome" || shownNinja) return;
+    rhythmLayout();
+    if (rhythmBlock !== shownKey || !rFrame.getAttribute("src")) {
+      rhythmBlock = shownKey; rLoad.style.display = "flex";
+      rFrame.src = slideUrl(shownKey, false);
+    }
+    document.getElementById("rTitle").textContent = "RHYTHM OF THE DAY · " + shownKey.toUpperCase() + " BLOCK";
+    rhythmEl.classList.add("open");
+  }
+  function rhythmClose() { rhythmEl.classList.remove("open"); }
+  rFrame.addEventListener("load", function () { rLoad.style.display = "none"; });
+  rhythmEl.addEventListener("click", rhythmClose);
+  document.getElementById("btnRhythm").onclick = rhythmOpen;
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") rhythmClose(); });
+  window.addEventListener("resize", function () { if (rhythmEl.classList.contains("open")) rhythmLayout(); });
+  window.rhythmSync = function () {
+    var ok = shownKey && shownKey !== "welcome" && !shownNinja;
+    document.body.classList.toggle("can-rhythm", !!ok);
+    if (rhythmEl.classList.contains("open") && (!ok || shownKey !== rhythmBlock)) rhythmClose();
+    if (rhythmBlock && rhythmBlock !== shownKey) { rFrame.removeAttribute("src"); rhythmBlock = null; }   // fresh copy next time
+  };
+  window.rhythmSync();
 
   // ===================== CLOSING SCORES =====================
   // Talks to the Daily Slides web app (ClosingScores.gs): a=get / a=set. Taps show at once,
@@ -1213,6 +1279,9 @@
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
+    rhythm: function () { return { can: document.body.classList.contains("can-rhythm"), open: rhythmEl.classList.contains("open"),
+      src: rFrame.getAttribute("src") || "", view: [rView.offsetWidth, rView.offsetHeight], frame: [rFrame.offsetWidth, rFrame.offsetHeight,
+      parseInt(rFrame.style.left, 10), parseInt(rFrame.style.top, 10)] }; },
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
       big: scoresEl.classList.contains("big"), change: sChangeEl.textContent,
       msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },

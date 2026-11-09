@@ -65,6 +65,10 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 ## Test mode (1.6.1)
 - `?test=2026-11-09T08:29:45&speed=5` (speed 1–60): now() runs from that time at that speed. #testBar shows it + End test. In a test: a=set calls are faked (never sent; "Test only · not saved"), pack-up "done" marks aren't stored. Menu 🧪 Test end of class builds the URL: block on screen (else first block), today or next weekday, 15 s before pack-up, speed 5.
 
+## Rhythm of the day, big (1.7.0, Mat 11/8)
+- #btnRhythm (agenda slides only, body.can-rhythm) → #rhythm: a second iframe of the same block's slide sized so the rhythm card region (RHYTHM_EMU = rv*_rcard: x 411480, y 1271016, w 5074920, h 566928, +70000 pad; slide 9144000×5143500) is ~96% of the screen width (max 62% height), offset negative inside an overflow:hidden box. Google renders it at that size (sharp). Clicks go to the overlay (iframe pointer-events none). Copy dropped at block change. **If the rhythm card is moved/resized on the slides, update RHYTHM_EMU.** (Card moved 11/8 to y 1271016, h 566928 so OPENING doesn't touch it.)
+- Bottom-left #leftBar flex row: Timer · Closing · Rhythm · override badge (moves to top-left while the timer is open).
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

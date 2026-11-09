@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.0 — 2026-11-08
+- ♪ Rhythm button (bottom-left, agenda slides): shows the rhythm of the day across the whole board width; tap anywhere (or Esc) to go back to the agenda. Closes itself when the block changes.
+- Timer / Closing / Rhythm / manual badge now sit in one row bottom-left.
+
 ## 1.6.1 — 2026-11-07
 - ☰ → 🧪 Test end of class: plays pack-up → scoreboard → class change for the block on screen (next school day if it's the weekend), 5× faster, with a pink TEST bar and End test. Scores tapped in a test are never sent. Any time can be tried with ?test=YYYY-MM-DDTHH:MM:SS&speed=n.
 

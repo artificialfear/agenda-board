@@ -349,10 +349,28 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'test mode (menu + no saving)':34s}" + ("" if ok else f" {url_ok} {p1} {s1} {today_ok} {s2} {no_save} {calls}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Rhythm of the day: button on agenda slides only, opens a zoomed copy of the block's slide, tap to go back
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:10:00")      # Friday 3rd Block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        Rh = lambda: page.evaluate("window.__agendaBoard.rhythm()")
+        r0 = Rh(); page.click("#btnRhythm"); page.wait_for_timeout(300); r1 = Rh()
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_big.png"))
+        page.mouse.click(960, 900); page.wait_for_timeout(200); r2 = Rh()
+        # math: the card (with padding) fills ~96% of the width; frame is the whole slide, offset to the card
+        w_ok = 1800 <= r1["view"][0] <= 1850 and abs(r1["frame"][0] / r1["frame"][1] - 9144000 / 5143500) < 0.01 and r1["frame"][2] < 0 and r1["frame"][3] < 0
+        page.clock.fast_forward("01:00:00"); page.wait_for_timeout(300); r3 = Rh()   # 11:10 -> 4th block: copy dropped
+        ok = (r0["can"] and not r0["open"] and r1["open"] and "slide=id.g3f643065e38_0_0" in r1["src"] and w_ok
+              and not r2["open"] and r3["src"] == "")
+        print(("PASS" if ok else "FAIL"), f"{'rhythm big view':34s}" + ("" if ok else f" {r0} {r1} {r2} {r3}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
