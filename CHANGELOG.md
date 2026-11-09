@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.9.1 — 2026-11-09
+- The board reads settings from the "Board Settings" tab of the Daily Agenda Content Pool sheet (through the closing-scores script, ClosingScores.gs v1.1, a=config) at start and every 10 minutes, so links don't have to be typed on the board. First one: Method book PDF link.
+
 ## 1.9.0 — 2026-11-09
 - 📖 Book button: opens the method book PDF (Google Drive link in Settings → "Method book PDF link") full screen in Google's viewer — scroll, zoom. "✕ Back to agenda" closes it; it also closes at class change and reopens on the same page later in the day.
 

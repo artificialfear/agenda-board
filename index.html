@@ -1150,6 +1150,24 @@
   };
   window.bookSync();
 
+  // ===================== SETTINGS FROM THE SHEET =====================
+  // The Daily Slides script (same link as closing scores, a=config) serves the "Board Settings" tab of the
+  // Daily Agenda Content Pool sheet, so links can be changed from a laptop. A value there wins over the board's own.
+  var REMOTE_SETTINGS = { "method book pdf link": "bookUrl" };
+  function remoteConfig() {
+    if (!settings.closingUrl) return;
+    scoresCall({ a: "config" }).then(function (j) {
+      var cfg = j.config || {}, changed = false;
+      Object.keys(cfg).forEach(function (name) {
+        var key = REMOTE_SETTINGS[String(name).toLowerCase().trim()];
+        if (key && settings[key] !== cfg[name]) { settings[key] = cfg[name]; changed = true; }
+      });
+      if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); }
+    }).catch(function () { /* older script or offline: keep what the board has */ });
+  }
+  setTimeout(remoteConfig, 1500);
+  setInterval(remoteConfig, 10 * 60000);
+
   // ===================== CLOSING SCORES =====================
   // Talks to the Daily Slides web app (ClosingScores.gs): a=get / a=set. Taps show at once,
   // saves go one at a time in order; the slide reloads when the panel closes.

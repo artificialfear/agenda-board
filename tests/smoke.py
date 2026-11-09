@@ -423,10 +423,31 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'method book viewer':34s}" + ("" if ok else f" {b0} {b1} {b2} {b3}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Settings from the sheet: the script's a=config supplies the method book link; the board saves it
+        def cfg_script(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            body = {"ok": True, "config": {"Method book PDF link": "https://drive.google.com/file/d/1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765/view"}} \
+                if q.get("a") == "config" else dict(state, ok=True)
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://script.google.com/**", cfg_script)
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:10:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        before = page.evaluate("window.__agendaBoard.book().has")
+        page.clock.fast_forward("00:03"); page.wait_for_timeout(400)
+        after = page.evaluate("window.__agendaBoard.book().has")
+        stored = page.evaluate("JSON.parse(localStorage.getItem('agendaBoard.settings')).bookUrl")
+        ok = (not before) and after and stored.endswith("1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765/view")
+        print(("PASS" if ok else "FAIL"), f"{'settings from the sheet':34s}" + ("" if ok else f" {before} {after} {stored}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

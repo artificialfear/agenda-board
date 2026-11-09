@@ -41,4 +41,12 @@ a.equal(doGet({parameter:{a:'set',block:'3rd',k:K,row:'Effort',day:'TUES',v:'2'}
 a.equal(doGet({parameter:{a:'set',block:'2nd',k:K,row:'Effort',day:'MON',v:'2'}}).ok,false);
 doGet({parameter:{a:'set',block:'3rd',k:K,row:'Attitude',day:'MON',v:''}}); a.equal(rows.length,2);   // cleared box removes log row
 clearClosingScores(); a.equal(doGet({parameter:{a:'get',block:'3rd',k:K}}).values[0][0],''); a.equal(tables['3rd'].g[1][0].getText().asString(),'Effort\n');
+// v1.1 config: no Board Settings tab -> empty; with rows -> name/value pairs (blank values dropped); key still required
+global.SpreadsheetApp={openById:()=>({getSheetByName:n=>n==='Board Settings'?null:sh,insertSheet:()=>sh})};
+a.deepEqual(doGet({parameter:{a:'config',k:K}}).config,{});
+const bsRows=[['Setting','Value'],['Method book PDF link','https://drive.google.com/file/d/abc/view'],['Unused','']];
+const bs={getLastRow:()=>bsRows.length,getRange:(r,c,nr,nc)=>({getDisplayValues:()=>bsRows.slice(r-1,r-1+nr).map(x=>x.slice(c-1,c-1+nc))})};
+global.SpreadsheetApp={openById:()=>({getSheetByName:n=>n==='Board Settings'?bs:sh,insertSheet:()=>sh})};
+a.deepEqual(doGet({parameter:{a:'config',k:K}}).config,{'Method book PDF link':'https://drive.google.com/file/d/abc/view'});
+a.equal(doGet({parameter:{a:'config',k:'x'}}).ok,false);
 console.log('ClosingScores.gs checks ok');

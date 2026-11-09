@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.0  (Raven Band, 11/7/2026)
+ * ClosingScores.gs  v1.1  (Raven Band, 11/9/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -9,6 +9,8 @@
  *   - Every score is also logged to the "Closing Scores" tab of the Daily Slides content sheet
  *     (one row per date + block + category; a correction replaces the row).
  *   - Every Monday ~4 AM all closing tables are emptied for the new week.
+ *   - v1.1: the board also reads its settings from the "Board Settings" tab of the same sheet
+ *     (Setting | Value), so links can be changed from a laptop instead of typed on the board.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -22,13 +24,14 @@
  *   3. Run showClosingScoresLink and copy the link from the log (Execution log).
  *      Paste it on the board: ☰ → Settings → "Closing scores link". Save.
  *   If you ever change this file: Deploy → Manage deployments → ✏ → Version: New version → Deploy
- *   (keeps the same URL).
+ *   (keeps the same URL, so nothing changes on the board).
  */
 
 var CLOSING = {
   SLIDES_ID: '1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY',      // Daily Rehearsal (All Band Classes)
   LOG_SHEET_ID: '1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E',   // Daily Slides content sheet
   LOG_TAB: 'Closing Scores',
+  BOARD_TAB: 'Board Settings',
   BLOCKS: ['1st', '3rd', '4th', '6th', '7th'],
   SCORES: ['1', '2', '3'],
   CLEAR_HOUR: 4
@@ -42,6 +45,10 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
+    if (p.a === 'config') {
+      out = { ok: true, config: boardSettings_() };
+      return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+    }
     var block = String(p.block || '');
     if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
     if (p.a === 'set') {
@@ -59,6 +66,20 @@ function doGet(e) {
     out = { ok: false, error: String(err && err.message || err) };
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------------------------------------------------------------- board settings
+
+/** "Board Settings" tab: column A = setting name, column B = value (row 1 = headers). Blank values are left out. */
+function boardSettings_() {
+  var sh = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID).getSheetByName(CLOSING.BOARD_TAB);
+  var out = {};
+  if (!sh || sh.getLastRow() < 2) return out;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues().forEach(function (r) {
+    var k = String(r[0]).trim(), v = String(r[1]).trim();
+    if (k && v) out[k] = v;
+  });
+  return out;
 }
 
 // ---------------------------------------------------------------- table on the slide
