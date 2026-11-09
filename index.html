@@ -155,6 +155,14 @@
   #scores .s-val { font-size: 30px; display: flex; align-items: center; justify-content: center; background: #141c30;
     border-radius: 10px; color: #c9d0de; min-height: 64px; }
   #scores .s-today { display: flex; gap: 8px; }
+  /* Scoring order: the category that's up glows gold; the ones after it wait dimmed. */
+  #scores .s-lab.up { background: #c9a227; color: #141c30; border-radius: 12px; padding: 0 14px; }
+  #scores .s-lab.up .s-desc, #scores .s-lab.up .s-desc b { color: #141c30; }
+  #scores .s-today.up { border-radius: 16px; box-shadow: 0 0 0 4px #c9a227, 0 0 26px rgba(201,162,39,.55); }
+  #scores .s-lab.later, #scores .s-val.later, #scores .s-today.later { opacity: .38; }
+  #scores .s-done { grid-column: 1 / -1; text-align: center; color: #c9a227; font-size: 26px; letter-spacing: .04em; padding-top: 6px; }
+  #scores.big .s-done { font-size: 4.5vh; }
+  #scores.big .s-lab.up { padding: 1vh 1.4vw; border-radius: 16px; }
   #scores .s-n { flex: 1 1 0; min-height: 64px; border-radius: 12px; border: 2px solid #34405e; background: #141c30; color: #fff;
     font: 600 32px "Oswald", "Arial Narrow", Arial, sans-serif; cursor: pointer; }
   #scores .s-n.sel { background: #c9a227; border-color: #c9a227; color: #141c30; }
@@ -227,7 +235,7 @@
   #packup .p-title { font-size: min(16vh, 11vw); line-height: 1; letter-spacing: .04em; text-transform: uppercase; }
   #packup .p-bell { font-size: min(6vh, 4vw); margin: 2vh 0 4vh; opacity: .9; font-variant-numeric: tabular-nums; }
   #packup ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2.2vh;
-    font-size: min(6.5vh, 4.4vw); text-align: left; }
+    font-size: min(5.8vh, 4vw); text-align: left; }
   #packup li { display: flex; align-items: center; gap: .6em; }
   #packup li b { display: inline-flex; width: 1.4em; height: 1.4em; border-radius: 50%; align-items: center;
     justify-content: center; background: #c9a227; color: #141c30; font-size: .8em; flex: none; }
@@ -302,6 +310,7 @@
     <li><b>1</b>Pack up your instrument</li>
     <li><b>2</b>Straighten your chair</li>
     <li><b>3</b>Push your music stand away from your feet</li>
+    <li><b>4</b>Have a seat and be ready for rehearsal scores</li>
   </ol>
   <div class="p-tap">Tap anywhere to close</div>
 </div>
@@ -1129,22 +1138,27 @@
       return '<div class="s-h' + (i === t ? ' today' : '') + '">' + esc(x) + (i === t ? ' · TODAY' : '') + '</div>';
     }).join("");
     var desc = closingDesc();
+    // Scored in order: the first category with no score today is "up" (gold); later ones are dimmed.
+    var active = -1;
+    if (t >= 0) for (var ar = 0; ar < d.rows.length; ar++) if (!((d.values[ar] || [])[t])) { active = ar; break; }
     d.rows.forEach(function (lab, r) {
       var cur = t >= 0 ? ((d.values[r] || [])[t] || "") : "", dd = desc[String(lab).toLowerCase()];
-      h += '<div class="s-lab"><div class="s-name">' + esc(lab) + '</div>' + (dd ? '<div class="s-desc">' +
+      var rc = active < 0 ? "" : r === active ? " up" : r > active ? " later" : "";
+      h += '<div class="s-lab' + rc + '"><div class="s-name">' + esc(lab) + '</div>' + (dd ? '<div class="s-desc">' +
         ["3", "2", "1"].filter(function (n) { return dd[n]; }).map(function (n) {
           return '<div' + (cur === n ? ' class="on"' : '') + '><b>' + n + '</b>' + esc(dd[n]) + '</div>';
         }).join("") + '</div>' : '') + '</div>';
       d.days.forEach(function (day, c) {
         var v = (d.values[r] || [])[c] || "";
-        if (c !== t) { h += '<div class="s-val">' + (esc(v) || "–") + '</div>'; return; }
+        if (c !== t) { h += '<div class="s-val' + rc + '">' + (esc(v) || "–") + '</div>'; return; }
         var pend = sc.queue.some(function (o) { return o.row === lab && o.day === day; }) || (sc.failed && sc.failed.row === lab);
-        h += '<div class="s-today">' + ["1", "2", "3"].map(function (n) {
+        h += '<div class="s-today' + rc + '">' + ["1", "2", "3"].map(function (n) {
           return '<button class="s-n' + (v === n ? ' sel' : '') + (pend && v === n ? ' pending' : '') +
             '" data-r="' + r + '" data-v="' + n + '">' + n + '</button>';
         }).join("") + '<button class="s-n clr" data-r="' + r + '" data-v="" aria-label="Clear">✕</button></div>';
       });
     });
+    if (t >= 0 && active < 0) h += '<div class="s-done">✓ All three scores in</div>';
     sGrid.innerHTML = h;
     if (t < 0 && !sc.failed) sMsg.className = "s-msg", sMsg.textContent = "This slide has no column for today, so scores can't be entered today.";
   }

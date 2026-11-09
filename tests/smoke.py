@@ -311,11 +311,15 @@ def main():
         page.click("#sGrid button[data-r='1'][data-v='2']"); page.wait_for_timeout(400)
         if shots_dir: page.screenshot(path=str(shots_dir / "scoreboard.png"))
         desc_on = page.locator(".s-desc div.on").count() == 1
+        up_name = page.inner_text("#sGrid .s-lab.up .s-name")                      # Performance scored first: Effort still up
+        page.click("#sGrid button[data-r='0'][data-v='3']"); page.wait_for_timeout(300)
+        up_next = page.inner_text("#sGrid .s-lab.up .s-name")                     # then Attitude (Performance done)
+        desc_on = desc_on and up_name == "Effort" and up_next == "Attitude" and page.locator("#sGrid .s-today.later").count() == 0
         page.click("#sClose"); page.wait_for_timeout(200); pill = P()["pill"]
         page.click("#packPill"); page.wait_for_timeout(200); reopened = S()["big"]
         page.clock.fast_forward("02:00"); page.wait_for_timeout(300); c = S()   # 8:36:05 class change
         ok = (a1["open"] and line1.startswith("Closing scores in 3:5") and a2["open"] and b["open"] and b["big"]
-              and b["change"].startswith("Class change in 1:5") and not pk["open"] and state["values"][1][3] == "2" and desc_on
+              and b["change"].startswith("Class change in 1:5") and not pk["open"] and state["values"][1][3] == "2" and state["values"][0][3] == "3" and desc_on
               and pill.startswith("★ Closing scores · class change in") and reopened and not c["open"] and not c["big"])
         print(("PASS" if ok else "FAIL"), f"{'end of class: pack-up -> scoreboard':34s}" + ("" if ok else f" {a1} {line1} {a2} {b} {pk} {state['values']} {desc_on} {pill} {reopened} {c}"))
         failures += 0 if ok else 1

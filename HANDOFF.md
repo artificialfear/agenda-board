@@ -78,6 +78,9 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Mat saw the board "flash/reload" in class = the refreshMinutes reload blanking the Google embed. loadSlide(url): new iframe.pending (opacity 0) appended behind; on load + SWAP_DELAY (2.5 s) it fades in and the old one is removed. The newest iframe always has id="frame" (tests read #frame src). clearSlides() on the welcome screen.
 - Override badge = "Tap for auto" only, smaller.
 
+## Scoring order (1.8.0, Mat 11/9)
+- Mat scores Effort → Performance → Attitude. scoresPaint: active = first row with no value in today's column → cells get .up (gold label, gold outline/glow on .s-today); rows after it .later (opacity .38); all done → .s-done "✓ All three scores in". Pack-up list has step 4 "Have a seat and be ready for rehearsal scores" (Mat wrote "score"; plural used, told him).
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.0 — 2026-11-09
+- Pack-up screen step 4: "Have a seat and be ready for rehearsal scores".
+- Closing scores go in order: the first category without a score today is highlighted gold (label + glowing outline round its buttons), the ones after it are dimmed; when all three are in it says "✓ All three scores in". Any row can still be corrected.
+
 ## 1.7.4 — 2026-11-09
 - No more flashing: the 5-minute slide refresh (and block changes) load the fresh slide invisibly behind the one on screen and fade it in 2.5 s after it has loaded.
 - Manual-mode badge is smaller and just says "Tap for auto".
