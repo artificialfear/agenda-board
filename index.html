@@ -946,7 +946,8 @@
   var rView = document.getElementById("rView"), rLoad = document.getElementById("rLoad");
   var rhythmBlock = null;
   function rhythmLayout() {
-    var r = RHYTHM_EMU, x0 = r.x - r.pad, y0 = r.y - r.pad, w = r.w + 2 * r.pad, h = r.h + 2 * r.pad;
+    var r = RHYTHM_EMU, top = Math.round(r.pad * 0.35);    // less above the card: the OPENING label sits just over it
+    var x0 = r.x - r.pad, y0 = r.y - top, w = r.w + 2 * r.pad, h = r.h + top + r.pad;
     var s = Math.min(window.innerWidth * 0.96 / w, window.innerHeight * 0.62 / h);     // px per EMU
     rView.style.width = Math.round(w * s) + "px"; rView.style.height = Math.round(h * s) + "px";
     rFrame.style.width = Math.round(SLIDE_EMU.w * s) + "px"; rFrame.style.height = Math.round(SLIDE_EMU.h * s) + "px";
