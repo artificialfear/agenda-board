@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.2 — 2026-11-09
+- Timer at 0:00: flashes for 8 s, shows a steady "Time's up" for 4 s, then closes and resets itself (was: flashing for a minute).
+
 ## 1.8.1 — 2026-11-09
 - On agenda slides the buttons (Timer, Closing, Rhythm, ⟳ ⛶ ☰) are hidden; tap anywhere on the board to show them for 5 seconds (10 s in 1.8.1). "Tap for auto" stays visible.
 - Taps on the slide no longer reach Google's viewer, so its ◀ ▶ arrows don't appear and students can't flip to another slide.

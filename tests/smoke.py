@@ -198,7 +198,7 @@ def main():
         e = T()
         if shots_dir:
             page.click("#tBig"); page.wait_for_timeout(200); page.screenshot(path=str(shots_dir / "timer_done_big.png")); page.click("#tBig")
-        page.clock.fast_forward("01:05"); f = T()
+        page.clock.fast_forward("00:13"); f = T()
         page.reload(); page.wait_for_timeout(300); page.click("#btnTimer"); g = T()   # remembers 3 min
         ok = (a["text"] == "3:00" and b["text"] == "2:00" and b["state"] == "run" and c["text"] == "2:00"
               and c["state"] == "pause" and not d["open"] and e["state"] == "done" and e["open"] and e["text"] == "0:00"

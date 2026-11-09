@@ -86,6 +86,9 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - #tapCatch (transparent, z 5) covers the slide iframes: taps wake the UI and never reach the Google viewer (its ◀ ▶ arrows were showing and could change slides).
 - Tests: smoke.py sets window.__agendaKeepAwake in every context except the 'buttons hide until a tap' check.
 
+## Timer end (1.8.2, Mat 11/9)
+- T_FLASH_MS 8000 (class .flash on #timer.done), T_CLOSE_MS 12000 → reset + close.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
