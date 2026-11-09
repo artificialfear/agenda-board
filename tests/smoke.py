@@ -472,10 +472,32 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'setup code + warnings':34s}" + ("" if ok else f" {w1!r} {bad!r} {url!r} {w2!r}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Metronome in the rhythm view: count-off numbers in the title, then dots keep time; tapping it never closes the view
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page()
+        page.goto(f"http://127.0.0.1:{PORT}/index.html?test=2026-11-06T10:05:00&speed=1"); page.wait_for_timeout(400)
+        M = lambda: page.evaluate("window.__agendaBoard.metro()")
+        page.click("#btnRhythm"); page.wait_for_timeout(300)
+        page.click("#mFaster"); page.click("#mFaster"); page.click("#mBeats button[data-b='3']")
+        m0 = M()
+        page.click("#mGo"); page.wait_for_timeout(450); m1 = M()                     # 88 bpm, 3 beats: inside the count-off
+        if shots_dir: page.screenshot(path=str(shots_dir / "metronome_countoff.png"))
+        page.wait_for_timeout(2600); m2 = M()                                         # past the count-off bar (~2 s)
+        if shots_dir: page.screenshot(path=str(shots_dir / "metronome.png"))
+        still_open = page.evaluate("window.__agendaBoard.rhythm().open")
+        page.mouse.click(960, 1040); page.wait_for_timeout(200); m3 = M()             # tap outside: closes view + stops
+        ok = (m0["bpm"] == 88 and m0["beats"] == 3 and m1["on"] and m1["title"] in ("1", "2", "3") and m2["on"]
+              and m2["title"].startswith("RHYTHM OF THE DAY") and "1" in m2["dot"] and still_open and not m3["on"]
+              and not page.evaluate("window.__agendaBoard.rhythm().open"))
+        print(("PASS" if ok else "FAIL"), f"{'metronome count-off':34s}" + ("" if ok else f" {m0} {m1} {m2} {still_open} {m3}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

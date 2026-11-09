@@ -170,6 +170,29 @@
     color: #c9d0de; font: 2.4vh "Segoe UI", Arial, sans-serif; }
   #rhythm .r-hint { font: 2.2vh "Segoe UI", Arial, sans-serif; color: #c9d0de; opacity: .8; }
   #rhythm .r-catch { position: absolute; inset: 0; }
+  /* metronome under the rhythm */
+  #rhythm .r-metro { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2vh;
+    cursor: default; font-family: "Oswald", "Arial Narrow", Arial, sans-serif; color: #fff; }
+  #rhythm .m-dots { display: flex; gap: 1.6vw; min-height: 3.2vh; }
+  #rhythm .m-dots i { width: 3.2vh; height: 3.2vh; border-radius: 50%; background: #2a3858; border: 2px solid #34405e; }
+  #rhythm .m-dots i.one { border-color: #c9a227; }
+  #rhythm .m-dots i.on { background: #c9a227; border-color: #c9a227; box-shadow: 0 0 18px rgba(201,162,39,.7); }
+  #rhythm .m-row { display: flex; align-items: center; gap: 1.2vw; background: #2a3858; border-radius: 999px; padding: 1vh 1.4vw; }
+  #rhythm .m-b { width: 6.4vh; height: 6.4vh; border-radius: 50%; border: 1px solid #34405e; background: #141c30; color: #fff;
+    font: 600 4vh "Oswald", sans-serif; line-height: 1; cursor: pointer; }
+  #rhythm .m-bpm { display: flex; align-items: baseline; gap: .4vw; min-width: 11vh; justify-content: center; }
+  #rhythm .m-bpm span { font-size: 5.4vh; font-variant-numeric: tabular-nums; }
+  #rhythm .m-bpm small { font-size: 2vh; color: #c9d0de; letter-spacing: .08em; }
+  #rhythm .m-sep { width: 1px; height: 5vh; background: #34405e; }
+  #rhythm .m-beats { display: flex; gap: .5vw; }
+  #rhythm .m-beats button { width: 5.6vh; height: 5.6vh; border-radius: 12px; border: 1px solid #34405e; background: #141c30;
+    color: #c9d0de; font: 600 2.8vh "Oswald", sans-serif; cursor: pointer; }
+  #rhythm .m-beats button.sel { border-color: #c9a227; color: #c9a227; }
+  #rhythm .m-go { border: 0; border-radius: 999px; padding: 1.4vh 2.4vw; background: #c9a227; color: #141c30; cursor: pointer;
+    font: 600 3vh "Oswald", sans-serif; letter-spacing: .03em; min-width: 22vh; }
+  #rhythm .m-go.stop { background: #141c30; color: #fff; border: 1px solid #c9d0de; }
+  #rhythm .r-title { height: 13vh; display: flex; align-items: center; }      /* count-off numbers don't move the rhythm */
+  #rhythm .r-title.count { font-size: 12vh; line-height: 1; color: #fff; }
   #scores { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center;
     background: rgba(10,14,26,.55); }
   #scores.open { display: flex; }
@@ -379,7 +402,21 @@
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
   <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
   <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe></div>
-  <div class="r-hint">Tap anywhere to go back to the agenda</div>
+  <div class="r-metro" id="metro">
+    <div class="m-dots" id="mDots"></div>
+    <div class="m-row">
+      <button class="m-b" id="mSlower" aria-label="Slower">−</button>
+      <div class="m-bpm"><span id="mBpm">80</span><small>BPM</small></div>
+      <button class="m-b" id="mFaster" aria-label="Faster">+</button>
+      <div class="m-sep"></div>
+      <div class="m-beats" id="mBeats" aria-label="Beats per measure">
+        <button data-b="2">2</button><button data-b="3">3</button><button data-b="4">4</button><button data-b="6">6</button>
+      </div>
+      <div class="m-sep"></div>
+      <button class="m-go" id="mGo">▶ Count off</button>
+    </div>
+  </div>
+  <div class="r-hint">Tap anywhere else to go back to the agenda</div>
   <div class="r-catch"></div>
 </div>
 
@@ -1141,7 +1178,81 @@
     document.getElementById("rTitle").textContent = "RHYTHM OF THE DAY · " + shownKey.toUpperCase() + " BLOCK";
     rhythmEl.classList.add("open");
   }
-  function rhythmClose() { rhythmEl.classList.remove("open"); }
+  function rhythmClose() { metroStop(); rhythmEl.classList.remove("open"); }
+
+  // ---------- Metronome: one bar of count-off (big numbers + accented click), then a steady click ----------
+  var METRO_KEY = "agendaBoard.metro";
+  var mPrefs = Object.assign({ bpm: 80, beats: 4 }, load(METRO_KEY) || {});
+  var metro = { on: false, next: 0, beat: 0, count: 0, timer: null, marks: [] };
+  var rTitle = document.getElementById("rTitle"), titleText = "";
+  function metroPaint() {
+    document.getElementById("mBpm").textContent = mPrefs.bpm;
+    Array.prototype.forEach.call(document.querySelectorAll("#mBeats button"), function (b) {
+      b.classList.toggle("sel", +b.getAttribute("data-b") === mPrefs.beats);
+    });
+    var dots = document.getElementById("mDots");
+    if (dots.children.length !== mPrefs.beats) {
+      dots.innerHTML = ""; for (var i = 0; i < mPrefs.beats; i++) { var e = document.createElement("i"); if (!i) e.className = "one"; dots.appendChild(e); }
+    }
+    var go = document.getElementById("mGo");
+    go.textContent = metro.on ? "■ Stop" : "▶ Count off"; go.classList.toggle("stop", metro.on);
+  }
+  function metroClick(t, accent) {
+    var ctx = audio, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "square"; o.frequency.value = accent ? 1760 : 1175;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.22, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.06);
+  }
+  function metroSchedule() {
+    var spb = 60 / mPrefs.bpm;
+    while (metro.next < audio.currentTime + 0.12) {
+      metroClick(metro.next, metro.beat === 0);
+      metro.marks.push({ t: metro.next, beat: metro.beat, count: metro.count });
+      metro.next += spb; metro.count++; metro.beat = (metro.beat + 1) % mPrefs.beats;
+    }
+  }
+  function metroDraw() {
+    if (!metro.on) return;
+    var now_ = audio.currentTime, cur = null;
+    while (metro.marks.length && metro.marks[0].t <= now_) cur = metro.marks.shift();
+    if (cur) {
+      Array.prototype.forEach.call(document.getElementById("mDots").children, function (e, i) { e.classList.toggle("on", i === cur.beat); });
+      if (cur.count < mPrefs.beats) { rTitle.classList.add("count"); rTitle.textContent = String(cur.beat + 1); }   // count-off bar
+      else if (rTitle.classList.contains("count")) { rTitle.classList.remove("count"); rTitle.textContent = titleText; }
+    }
+    requestAnimationFrame(metroDraw);
+  }
+  function metroStart() {
+    tUnlockAudio(); if (!audio) return;
+    titleText = rTitle.textContent;
+    metro.on = true; metro.beat = 0; metro.count = 0; metro.marks = [];
+    metro.next = audio.currentTime + 0.25;
+    metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
+    requestAnimationFrame(metroDraw); metroPaint();
+  }
+  function metroStop() {
+    if (!metro.on) return;
+    metro.on = false; clearInterval(metro.timer); metro.marks = [];
+    Array.prototype.forEach.call(document.getElementById("mDots").children, function (e) { e.classList.remove("on"); });
+    if (rTitle.classList.contains("count")) { rTitle.classList.remove("count"); rTitle.textContent = titleText; }
+    metroPaint();
+  }
+  function metroSet(bpm, beats) {
+    var was = metro.on; metroStop();
+    if (bpm) mPrefs.bpm = Math.max(40, Math.min(200, bpm));
+    if (beats) mPrefs.beats = beats;
+    save(METRO_KEY, mPrefs); metroPaint();
+    if (was && !beats) metroStart();                      // tempo change keeps going (with a fresh count-off)
+  }
+  document.getElementById("metro").addEventListener("click", function (e) { e.stopPropagation(); });   // never closes the view
+  document.getElementById("mSlower").onclick = function () { metroSet(mPrefs.bpm - 4); };
+  document.getElementById("mFaster").onclick = function () { metroSet(mPrefs.bpm + 4); };
+  document.getElementById("mBeats").addEventListener("click", function (e) {
+    var b = e.target.getAttribute && e.target.getAttribute("data-b"); if (b) metroSet(0, +b);
+  });
+  document.getElementById("mGo").onclick = function () { metro.on ? metroStop() : metroStart(); };
+  metroPaint();
   rFrame.addEventListener("load", function () { rLoad.style.display = "none"; });
   rhythmEl.addEventListener("click", rhythmClose);
   document.getElementById("btnRhythm").onclick = rhythmOpen;
@@ -1576,6 +1687,8 @@
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
       src: bookFrame.getAttribute("src") || "" }; },
+    metro: function () { return { on: metro.on, bpm: mPrefs.bpm, beats: mPrefs.beats, title: rTitle.textContent,
+      dot: Array.prototype.map.call(document.getElementById("mDots").children, function (e) { return e.classList.contains("on") ? 1 : 0; }).join("") }; },
     rhythm: function () { return { can: document.body.classList.contains("can-rhythm"), open: rhythmEl.classList.contains("open"),
       src: rFrame.getAttribute("src") || "", view: [rView.offsetWidth, rView.offsetHeight], frame: [rFrame.offsetWidth, rFrame.offsetHeight,
       parseInt(rFrame.style.left, 10), parseInt(rFrame.style.top, 10)] }; },
