@@ -89,6 +89,10 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 ## Timer end (1.8.2, Mat 11/9)
 - T_FLASH_MS 8000 (class .flash on #timer.done), T_CLOSE_MS 12000 → reset + close.
 
+## Method book (1.9.0, Mat 11/9)
+- settings.bookUrl (Drive link, kept only in board Settings — the repo is public and the book is copyrighted, so the file ID is NOT in the code). #btnBook in #leftBar (body.has-book). #book overlay = iframe drive.google.com/file/d/<id>/preview (file must be "anyone with link"); ✕ Back to agenda; closes when shownKey changes (bookSync from show()). iframe src kept, so reopening stays on the page.
+- Mat's file 11/9: "Traditions_-_clarinet.pdf" (clarinet edition; told him notes/fingerings are clarinet-specific).
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

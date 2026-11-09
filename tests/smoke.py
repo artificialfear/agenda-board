@@ -406,10 +406,27 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'buttons hide until a tap':34s}" + ("" if ok else f" {hidden} {top} {shown} {opened}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Method book: button only when a Drive link is set; opens Drive's /preview; closes on ✕ and at class change
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.add_init_script("localStorage.setItem('agendaBoard.settings', JSON.stringify({bookUrl: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view?usp=sharing'}))")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("https://drive.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>book</p>"))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:10:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        B = lambda: page.evaluate("window.__agendaBoard.book()")
+        b0 = B(); page.click("#btnBook"); page.wait_for_timeout(200); b1 = B()
+        page.click("#bookClose"); b2 = B()
+        page.click("#btnBook"); page.clock.fast_forward("00:15:00"); page.wait_for_timeout(300); b3 = B()   # 10:25 -> 4th block
+        ok = (b0["has"] and not b0["open"] and b1["open"] and b1["src"] == "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/preview"
+              and not b2["open"] and not b3["open"])
+        print(("PASS" if ok else "FAIL"), f"{'method book viewer':34s}" + ("" if ok else f" {b0} {b1} {b2} {b3}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

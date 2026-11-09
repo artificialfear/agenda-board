@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.9.0 — 2026-11-09
+- 📖 Book button: opens the method book PDF (Google Drive link in Settings → "Method book PDF link") full screen in Google's viewer — scroll, zoom. "✕ Back to agenda" closes it; it also closes at class change and reopens on the same page later in the day.
+
 ## 1.8.2 — 2026-11-09
 - Timer at 0:00: flashes for 8 s, shows a steady "Time's up" for 4 s, then closes and resets itself (was: flashing for a minute).
 

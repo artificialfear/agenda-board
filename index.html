@@ -132,6 +132,20 @@
   body.can-score #btnScores, body.can-rhythm #btnRhythm { display: block; }
   body.timer-open #btnScores { display: none !important; }   /* not needed during warm-ups */
 
+  /* ---------- Method book ---------- */
+  body.has-book #btnBook { display: block; }
+  #btnBook { display: none; background: #1f2a44; color: #c9a227; border: 2px solid #c9a227; border-radius: 999px;
+    padding: 10px 18px; cursor: pointer; font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  #book { position: fixed; inset: 0; z-index: 34; display: none; background: #1f2a44; }
+  #book.open { display: block; }
+  #book iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #1f2a44; }
+  #book .b-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #c9d0de;
+    font: 2.4vh "Segoe UI", Arial, sans-serif; pointer-events: none; }
+  #bookClose { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 2; background: #c9a227;
+    color: #141c30; border: 0; border-radius: 999px; padding: 12px 26px; cursor: pointer;
+    font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+
   /* ---------- Rhythm of the day, full width ---------- */
   #rhythm { position: fixed; inset: 0; z-index: 33; display: none; flex-direction: column; align-items: center;
     justify-content: center; gap: 3vh; background: #1f2a44; cursor: pointer; }
@@ -328,6 +342,7 @@
   <button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
   <button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
   <button id="btnRhythm" aria-label="Show the rhythm of the day big">♪ Rhythm</button>
+  <button id="btnBook" aria-label="Show the method book">📖 Book</button>
   <div id="overrideBadge" title="Tap to return to automatic"></div>
 </div>
 
@@ -337,6 +352,13 @@
   <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe></div>
   <div class="r-hint">Tap anywhere to go back to the agenda</div>
   <div class="r-catch"></div>
+</div>
+
+<!-- Method book PDF, full screen (Google Drive's viewer: scroll + zoom) -->
+<div id="book" role="dialog" aria-label="Method book">
+  <iframe id="bookFrame" title="Method book" allow="fullscreen"></iframe>
+  <div class="b-load" id="bookLoad">Loading the book…</div>
+  <button id="bookClose">✕ Back to agenda</button>
 </div>
 
 <!-- Closing scores: a student taps 1-3 for today; saved into the slide's CLOSING table -->
@@ -472,6 +494,10 @@
       </div>
     </div>
 
+    <label class="f" for="sBook">Method book PDF link</label>
+    <input id="sBook" placeholder="https://drive.google.com/file/d/…/view">
+    <div class="hint">A Google Drive PDF shared "Anyone with the link can view". Shows the 📖 Book button. Blank = no button.</div>
+
     <label class="f" for="sClosing">Closing scores link</label>
     <input id="sClosing" placeholder="https://script.google.com/macros/s/…/exec?k=…">
     <div class="hint">From the Daily Slides script (showClosingScoresLink). Blank = no ★ Closing button.</div>
@@ -529,6 +555,7 @@
     refreshMinutes: 5,
     theme: "dark",
     weekend: "welcome",
+    bookUrl: "",         // Google Drive PDF link for the 📖 Book button (blank hides it)
     closingUrl: "",      // Daily Slides web app link (…/exec?k=…); blank hides the ★ Closing button
     packMinutes: 6,
     scoreMinutes: 2,     // full-screen closing scoreboard this many minutes before class change (0 = off)
@@ -736,6 +763,7 @@
     document.body.classList.toggle("on-agenda", target !== "welcome");
     if (window.scoresSync) window.scoresSync();
     if (window.rhythmSync) window.rhythmSync();
+    if (window.bookSync) window.bookSync();
   }
 
   function render(force) {
@@ -856,6 +884,7 @@
     document.getElementById("sWeekend").value = settings.weekend;
     document.getElementById("sPack").value = settings.packMinutes;
     document.getElementById("sClosing").value = settings.closingUrl || "";
+    document.getElementById("sBook").value = settings.bookUrl || "";
     document.getElementById("sScoreMin").value = settings.scoreMinutes;
     document.getElementById("sDesc").value = settings.closingDesc || "";
     document.getElementById("sSched").value = schedText();
@@ -887,6 +916,7 @@
     settings.theme = document.getElementById("sTheme").value;
     settings.weekend = document.getElementById("sWeekend").value;
     settings.closingUrl = document.getElementById("sClosing").value.trim();
+    settings.bookUrl = document.getElementById("sBook").value.trim();
     var sm = document.getElementById("sScoreMin").value;
     settings.scoreMinutes = sm === "" ? 0 : Math.max(0, Math.min(10, Math.round(+sm) || 0));
     settings.closingDesc = document.getElementById("sDesc").value.trim() || DEFAULTS.closingDesc;
@@ -1091,6 +1121,31 @@
     if (rhythmBlock && rhythmBlock !== shownKey) { rFrame.removeAttribute("src"); rhythmBlock = null; }   // fresh copy next time
   };
   window.rhythmSync();
+
+  // ===================== METHOD BOOK =====================
+  // Opens the Drive PDF in Google's own viewer (scroll, zoom). Closes itself at class change.
+  var bookEl = document.getElementById("book"), bookFrame = document.getElementById("bookFrame"), bookLoad = document.getElementById("bookLoad");
+  var bookFor = null;   // the block (or "welcome") it was opened during
+  function bookPreviewUrl(link) {
+    var m = String(link || "").match(/\/d\/([\w-]{20,})/) || String(link || "").match(/[?&]id=([\w-]{20,})/) ||
+      String(link || "").match(/^([\w-]{25,})$/);
+    return m ? "https://drive.google.com/file/d/" + m[1] + "/preview" : "";
+  }
+  function bookOpen() {
+    var url = bookPreviewUrl(settings.bookUrl); if (!url) return;
+    if (bookFrame.getAttribute("src") !== url) { bookLoad.style.display = "flex"; bookFrame.src = url; }   // keeps the page you were on
+    bookFor = shownKey;
+    bookEl.classList.add("open");
+  }
+  function bookClose() { bookEl.classList.remove("open"); }
+  bookFrame.addEventListener("load", function () { bookLoad.style.display = "none"; });
+  document.getElementById("btnBook").onclick = bookOpen;
+  document.getElementById("bookClose").onclick = bookClose;
+  window.bookSync = function () {
+    document.body.classList.toggle("has-book", !!bookPreviewUrl(settings.bookUrl));
+    if (bookEl.classList.contains("open") && bookFor !== shownKey) bookClose();   // class change
+  };
+  window.bookSync();
 
   // ===================== CLOSING SCORES =====================
   // Talks to the Daily Slides web app (ClosingScores.gs): a=get / a=set. Taps show at once,
@@ -1399,6 +1454,8 @@
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
+    book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
+      src: bookFrame.getAttribute("src") || "" }; },
     rhythm: function () { return { can: document.body.classList.contains("can-rhythm"), open: rhythmEl.classList.contains("open"),
       src: rFrame.getAttribute("src") || "", view: [rView.offsetWidth, rView.offsetHeight], frame: [rFrame.offsetWidth, rFrame.offsetHeight,
       parseInt(rFrame.style.left, 10), parseInt(rFrame.style.top, 10)] }; },
