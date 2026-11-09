@@ -34,7 +34,9 @@
 
   /* ---------- Agenda view ---------- */
   #agenda { position: fixed; inset: 0; display: none; background: #000; }
-  #agenda iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #agenda iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;
+    transition: opacity .4s ease; }
+  #agenda iframe.pending { opacity: 0; pointer-events: none; }   /* fresh copy loading behind the one on screen */
   #agenda .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: 2vw; pointer-events: none; }
 
@@ -68,7 +70,7 @@
     background: var(--panel); color: var(--ink); font-size: 22px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; }
   #overrideBadge { position: fixed; left: 10px; bottom: 10px; z-index: 20; background: var(--accent); color: #111;
-    font-weight: 700; padding: 8px 14px; border-radius: 999px; font-size: 16px; display: none; cursor: pointer; }
+    font-weight: 700; padding: 5px 11px; border-radius: 999px; font-size: 13px; display: none; cursor: pointer; }
 
   /* ---------- Sheets (menu + settings) ---------- */
   .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center;
@@ -673,17 +675,44 @@
   var shownNinja = false;   // whether the block on screen is its Band Ninja slide
   var lastLoad = 0;
 
+  // No-flash reloads: a fresh copy of the slide loads invisibly behind the one on screen and
+  // fades in only after Google has finished drawing it; then the old copy is removed.
+  // The newest iframe always carries id="frame".
+  var SWAP_DELAY = 2500;    // ms after "load" before swapping (Google keeps drawing after load)
+  function loadSlide(url) {
+    var old = frame;
+    if (!old.getAttribute("src")) { old.src = url; return; }          // nothing on screen yet: load directly
+    Array.prototype.forEach.call(agendaEl.querySelectorAll("iframe.pending"), function (f) { f.remove(); });
+    var next = document.createElement("iframe");
+    next.className = "pending"; next.title = "Daily agenda"; next.setAttribute("allowfullscreen", "");
+    old.id = "framePrev"; next.id = "frame";
+    frame = next;
+    next.addEventListener("load", function () {
+      setTimeout(function () {
+        if (frame !== next) return;                                   // replaced again meanwhile
+        next.classList.remove("pending");
+        setTimeout(function () { if (old.parentNode) old.remove(); }, 500);
+      }, SWAP_DELAY);
+    });
+    next.src = url;
+    agendaEl.appendChild(next);
+  }
+  function clearSlides() {
+    Array.prototype.forEach.call(agendaEl.querySelectorAll("iframe"), function (f) { if (f !== frame) f.remove(); });
+    frame.classList.remove("pending"); frame.removeAttribute("src");
+  }
+
   function show(target, force, ninja) {
     if (target === "welcome") {
       agendaEl.style.display = "none";
       welcomeEl.style.display = "flex";
-      if (shownKey !== "welcome") frame.removeAttribute("src");
+      if (shownKey !== "welcome") clearSlides();
     } else {
       welcomeEl.style.display = "none";
       agendaEl.style.display = "block";
       var stale = Date.now() - lastLoad > (Math.max(1, +settings.refreshMinutes || 5) * 60000);
       if (force || shownKey !== target || shownNinja !== ninja || stale) {
-        frame.src = slideUrl(target, ninja);
+        loadSlide(slideUrl(target, ninja));
         lastLoad = Date.now();
       }
     }
@@ -701,7 +730,7 @@
     if (o) {
       target = o.show;
       badge.style.display = "block";
-      badge.textContent = (o.show === "welcome" ? "Welcome screen" : o.show + " Block") + " (manual) · tap for auto";
+      badge.textContent = "Tap for auto";
     } else {
       badge.style.display = "none";
       target = st.block ? st.block[0] : "welcome";

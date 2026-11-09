@@ -367,10 +367,25 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'rhythm big view':34s}" + ("" if ok else f" {r0} {r1} {r2} {r3}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # No-flash refresh: the 5-minute reload loads behind the slide on screen, then swaps; badge says only "Tap for auto"
+        ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:00:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        F = lambda: page.evaluate("[...document.querySelectorAll('#agenda iframe')].map(f => [f.id, f.className])")
+        f0 = F(); page.clock.fast_forward("05:01"); page.wait_for_timeout(200); f1 = F()
+        page.clock.fast_forward("00:03"); page.wait_for_timeout(700); f2 = F()
+        page.click("#btnMenu"); page.click("text=6th Block"); page.wait_for_timeout(200)
+        btxt = page.inner_text("#overrideBadge")
+        ok = (f0 == [["frame", ""]] and len(f1) == 2 and ["frame", "pending"] in f1 and f2 == [["frame", ""]] and btxt.strip() == "Tap for auto")
+        print(("PASS" if ok else "FAIL"), f"{'no-flash refresh + short badge':34s}" + ("" if ok else f" {f0} {f1} {f2} {btxt!r}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

@@ -74,6 +74,10 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - 1.7.3 (Mat): label in .t-left centered over .t-time; .t-icons first in .t-right (top-right); running: .t-msg flex:1 centered between icons and .t-ctl; #tPlus2 (+30s, same handler) shown only while running; pills 10u wide, centered.
 - 1.7.2 (Mat): #timer.running (any state but idle) hides .t-presets, shows .t-msg (now in .t-right) big in gold, shrinks Pause/Resume + Reset.
 
+## No-flash reloads (1.7.4, Mat 11/9 after the first live day)
+- Mat saw the board "flash/reload" in class = the refreshMinutes reload blanking the Google embed. loadSlide(url): new iframe.pending (opacity 0) appended behind; on load + SWAP_DELAY (2.5 s) it fades in and the old one is removed. The newest iframe always has id="frame" (tests read #frame src). clearSlides() on the welcome screen.
+- Override badge = "Tap for auto" only, smaller.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

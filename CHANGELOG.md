@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.4 — 2026-11-09
+- No more flashing: the 5-minute slide refresh (and block changes) load the fresh slide invisibly behind the one on screen and fade it in 2.5 s after it has loaded.
+- Manual-mode badge is smaller and just says "Tap for auto".
+
 ## 1.7.3 — 2026-11-08
 - Timer: "WARM-UP TIMER" centered over the countdown; ⇄ ⤢ ✕ top-right; while running, "Assemble & warm up" sits midway between the icons and three equal pills (Pause/Resume · Reset · +30s), centered under it.
 
