@@ -61,6 +61,24 @@
   #welcome .ampm { font-size: .3em; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
   #welcome .date { font-size: clamp(18px, 2.6vw, 52px); color: var(--muted); margin-top: 2vh; }
   #welcome .next { font-size: clamp(16px, 2vw, 40px); margin-top: 4vh; color: var(--ink); opacity: .85; min-height: 1.2em; }
+  /* pass-offs this week, per class */
+  #welcome .stats { display: none; margin-top: 4.5vh; gap: 1.4vw; align-items: stretch; }
+  #welcome.has-stats .stats { display: flex; }
+  #welcome.has-stats .clock { font-size: clamp(48px, 12vw, 260px); }
+  #welcome.has-stats .rule { margin: 2.6vh auto 1.6vh; }
+  #welcome .stats .st-title { writing-mode: vertical-rl; transform: rotate(180deg); font: 600 1.6vh "Oswald", sans-serif;
+    letter-spacing: .14em; color: #c9d0de; text-align: center; }
+  #welcome .stats .st { min-width: 9.5vw; background: #2a3858; border-radius: 16px; padding: 1.4vh 1vw; text-align: center;
+    border: 2px solid transparent; }
+  #welcome .stats .st.lead { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.35); }
+  #welcome .stats .st b { display: block; font: 600 2.2vh "Oswald", sans-serif; color: #c9a227; letter-spacing: .06em; }
+  #welcome .stats .st span { display: block; font: 600 6.4vh/1.1 "Oswald", sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+  #welcome .stats .st small { display: block; font-size: 1.6vh; color: #c9d0de; }
+  #linePill { position: fixed; z-index: 22; display: none; background: #1f2a44; color: #fff; border: 2px solid #c9a227;
+    border-radius: 999px; padding: .55em 1.1em; font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em;
+    white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  #linePill.show { display: block; }
+  #linePill em { font-style: normal; color: #c9a227; }
   #welcome .warns { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column;
     gap: 6px; align-items: center; padding-top: 10px; z-index: 3; }
   #welcome .warn { background: #3a2f10; color: #ffd76a; border: 1px solid #c9a227; border-radius: 999px; padding: 8px 16px;
@@ -387,6 +405,7 @@
   <div class="p-tap">Tap anywhere to close</div>
 </div>
 <div id="packPill" title="Show the pack-up steps"></div>
+<div id="linePill" aria-live="polite"></div>
 <div id="testBar" role="status"><span id="testText"></span><button id="testExit">End test</button></div>
 
 <!-- Bottom-left: Timer · Closing · Rhythm · manual-override badge -->
@@ -1356,6 +1375,51 @@
   setInterval(refreshWarns, 30000);
   refreshWarns();
 
+  // ===================== PASS-OFF STATS (welcome) + PASS-OFF LINE (Band Ninja days) =====================
+  // Counts only, never names, from the Daily Slides script (a=stats, a=line).
+  var statsEl = document.getElementById("stats"), linePill = document.getElementById("linePill");
+  var statsAt = 0, lineAt = 0, lineFor = null;
+  function paintStats(j) {
+    var bl = (j && j.blocks) || [];
+    if (!bl.length) { welcomeEl.classList.remove("has-stats"); return; }
+    var max = Math.max.apply(null, bl.map(function (b) { return b.week; }));
+    statsEl.innerHTML = '<div class="st-title">PASS-OFFS THIS WEEK</div>' + bl.map(function (b) {
+      return '<div class="st' + (max > 0 && b.week === max ? ' lead' : '') + '"><b>' + b.block.toUpperCase() + ' BLOCK</b><span>' +
+        b.week + '</span><small>' + (j.quarter || "Quarter") + ': ' + b.quarter + '</small></div>';
+    }).join("");
+    welcomeEl.classList.add("has-stats");
+  }
+  function statsTick() {
+    if (!settings.closingUrl || settings.showStats === false) { welcomeEl.classList.remove("has-stats"); return; }
+    if (shownKey === "welcome" && Date.now() - statsAt > 5 * 60000) {
+      statsAt = Date.now();
+      scoresCall({ a: "stats" }).then(paintStats).catch(function () { /* older script: no stats yet */ });
+    }
+  }
+  function linePlace() {
+    var W = window.innerWidth, H = window.innerHeight, sh = Math.min(H, W * 9 / 16), sw = sh * 16 / 9;
+    linePill.style.top = Math.round((H - sh) / 2 + sh * 0.03) + "px";
+    linePill.style.right = Math.round((W - sw) / 2 + sw * 0.03) + "px";
+    linePill.style.fontSize = Math.round(sh * 0.026) + "px";
+  }
+  function paintLine(j) {
+    var w = j.waiting || 0, p = j.passedToday || 0;
+    linePill.innerHTML = "🥋 Pass-off line: <em>" + (w ? w + " waiting" : "nobody waiting") + "</em> · ✓ " + p + " passed today";
+    linePill.classList.add("show"); linePlace();
+  }
+  function lineTick() {
+    var on = !!settings.closingUrl && shownNinja && shownKey && shownKey !== "welcome";
+    if (!on) { linePill.classList.remove("show"); lineFor = null; return; }
+    if (lineFor !== shownKey || Date.now() - lineAt > 30000) {
+      lineFor = shownKey; lineAt = Date.now();
+      var blk = shownKey;
+      scoresCall({ a: "line", block: blk }).then(function (j) { if (shownKey === blk && shownNinja) paintLine(j); })
+        .catch(function () { /* older script: no line count */ });
+    }
+  }
+  window.addEventListener("resize", linePlace);
+  setInterval(function () { statsTick(); lineTick(); }, 2000);
+
   // ===================== SETTINGS FROM THE SHEET =====================
   // The Daily Slides script (same link as closing scores, a=config) serves the "Board Settings" tab of the
   // Daily Agenda Content Pool sheet, so links can be changed from a laptop. A value there wins over the board's own.
@@ -1695,6 +1759,8 @@
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
       big: scoresEl.classList.contains("big"), change: sChangeEl.textContent,
       msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },
+    stats: function () { return { shown: welcomeEl.classList.contains("has-stats"), text: statsEl.innerText,
+      line: linePill.classList.contains("show") ? linePill.innerText : "" }; },
     pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
       pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },
     timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };

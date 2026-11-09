@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 — 2026-11-09
+- Setup code: ☰ → Settings → 🔑 Enter setup code (or the welcome-screen warning) restores the board's private links from an encrypted setup.json — nothing long to type on the board.
+- Welcome-screen warnings: closing scores not connected (with Enter setup code), Daily Slides script unreachable, "tap the board once so the chimes can play" on school days until the first touch.
+- Metronome in the ♪ Rhythm view: − / + tempo (4 BPM steps, 40–200), 2/3/4/6 beats, ▶ Count off = one bar of big count numbers with an accented click, then a steady click with beat dots; stops when the view closes. Tempo and beats are remembered.
+- Welcome screen: pass-offs this week per class (this week's leader outlined in gold) with the quarter total under each.
+- Band Ninja days: "🥋 Pass-off line: n waiting · ✓ n passed today" for the class on screen (from the Dojo's line), every 30 s.
+- Needs ClosingScores.gs v1.2 (a=stats, a=line). Counts only, never student names.
+
 ## 1.9.1 — 2026-11-09
 - The board reads settings from the "Board Settings" tab of the Daily Agenda Content Pool sheet (through the closing-scores script, ClosingScores.gs v1.1, a=config) at start and every 10 minutes, so links don't have to be typed on the board. First one: Method book PDF link.
 

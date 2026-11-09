@@ -98,6 +98,14 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Board remoteConfig(): 1.5 s after load + every 10 min, if closingUrl is set; REMOTE_SETTINGS maps lower-case names to settings keys ("method book pdf link" → bookUrl); sheet value wins and is saved to localStorage. Errors ignored (older script returns "Unknown block").
 - To add another remotely managed setting: add it to REMOTE_SETTINGS and a row in the tab.
 
+## 2.0.0 (Mat 11/9): setup code, warnings, metronome, pass-off stats, pass-off line
+- **Setup code:** setup.json = {v, iter 310000, salt, iv, data} AES-GCM, key PBKDF2-SHA256 from an 8-char code (alphabet without 0/O/1/I/L). Made by `python3 tools/make_setup.py '<closing link …/exec?k=…>'` (prints the code; never commit the code). Board: setupRestore() → WebCrypto decrypt → copies known DEFAULTS keys into settings (currently just closingUrl; the book link then comes from Board Settings). **setup.json does not exist yet: needs Mat's full closing link.**
+- **Warnings** (#warns on the welcome screen, refreshWarns every 30 s): no closingUrl; ≥2 failed config fetches; school-hours "tap once" until the first pointerdown (redraw delayed 700 ms so it doesn't swallow the tap).
+- **Metronome** (#metro inside #rhythm, clicks stopPropagation): WebAudio lookahead scheduler (25 ms tick, 120 ms ahead), square clicks 1760/1175 Hz, first bar = count-off shown as big numbers in #rTitle (fixed 13vh height), dots per beat. agendaBoard.metro {bpm, beats}. Stops on rhythmClose.
+- **Stats** (#stats on the welcome screen): a=stats every 5 min while the welcome screen shows; per block {today, week (since Monday), quarter (Pass-Off Targets: Q start = previous Ends + 1; Q1 from "School year starts")} from Admin "Pass-Off Log" dated rows only. Leader by week outlined. settings.showStats === false hides it.
+- **Line pill** (#linePill, top-right of the slide, Band Ninja slides only): a=line&block= every 30 s → waiting = today's "Pass-Off Line" rows (Progress Charts, newest 400) for "<block> Block" with blank Status; passedToday = today's Pass-Off Log rows for that block. Script caches stats 60 s, line 20 s.
+- ClosingScores.gs v1.2 needs Mat to replace the file + Deploy → Manage deployments → New version. Tests: tests/board_counts_test.js, closing_gs_test.js (node), 5 new smoke cases.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.

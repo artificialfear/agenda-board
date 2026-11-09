@@ -494,10 +494,43 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'metronome count-off':34s}" + ("" if ok else f" {m0} {m1} {m2} {still_open} {m3}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Welcome screen pass-offs this week, and the pass-off line count on Band Ninja days (counts only)
+        def stats_script(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            if q.get("a") == "stats":
+                body = {"ok": True, "quarter": "Q2", "blocks": [{"block": b, "week": w, "quarter": qq, "today": 0}
+                        for b, w, qq in [("1st", 14, 61), ("3rd", 9, 40), ("4th", 17, 52), ("6th", 6, 22), ("7th", 3, 15)]]}
+            elif q.get("a") == "line":
+                body = {"ok": True, "block": q.get("block"), "waiting": 4, "passedToday": 11}
+            else:
+                body = {"ok": True, "config": {}}
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+        def stats_ctx(t):
+            c = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+            c.add_init_script(init)
+            c.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body='<body style="background:#1f2a44"></body>'))
+            c.route("https://script.google.com/**", stats_script)
+            pg = c.new_page(); pg.clock.install(time=t); pg.goto(f"http://127.0.0.1:{PORT}/index.html"); pg.wait_for_timeout(300)
+            pg.clock.fast_forward("00:03"); pg.wait_for_timeout(500)
+            return c, pg
+        ctx, page = stats_ctx("2026-11-06T12:00:00")          # lunch: welcome
+        st = page.evaluate("window.__agendaBoard.stats()")
+        lead = page.inner_text("#stats .st.lead b")
+        if shots_dir: page.mouse.click(5, 5); page.wait_for_timeout(800); page.screenshot(path=str(shots_dir / "welcome_stats.png"))
+        ctx.close()
+        ctx, page = stats_ctx("2026-11-10T10:00:00")          # IF Tuesday 3rd: Band Ninja slide
+        ln = page.evaluate("window.__agendaBoard.stats()")["line"]
+        if shots_dir: page.screenshot(path=str(shots_dir / "line_pill.png"))
+        ctx.close()
+        ok = st["shown"] and "PASS-OFFS THIS WEEK" in st["text"] and lead == "4TH BLOCK" and "Q2: 61" in st["text"] \
+            and "4 waiting" in ln and "11 passed today" in ln
+        print(("PASS" if ok else "FAIL"), f"{'welcome stats + line count':34s}" + ("" if ok else f" {st} {lead!r} {ln!r}"))
+        failures += 0 if ok else 1
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
