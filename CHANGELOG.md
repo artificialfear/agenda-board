@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.2 — 2026-11-08
+- Timer: once started, the 3/4/5 min and +30s buttons go away, "Assemble & warm up" shows large in their place, and Pause/Resume + Reset are small. Reset brings the presets back.
+
 ## 1.7.1 — 2026-11-08
 - Warm-up timer is short and wide (time on the left, buttons on the right) and sized to the slide, so bottom-left it sits over the Closing table and never covers the Work Session box. The ♪ Rhythm button waits just to its right; ★ Closing hides while the timer is open.
 

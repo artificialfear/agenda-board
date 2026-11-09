@@ -255,6 +255,16 @@
   #timer:not(.big) button.t-b { min-width: 0; padding: calc(var(--u) * 1.2) calc(var(--u) * .4); font-size: calc(var(--u) * 2.6);
     border-radius: calc(var(--u) * 1.2); }
   #timer.big .t-main { display: block; }
+  /* Once started: presets go away; the message takes their place; Pause/Resume + Reset shrink. */
+  #timer.running .t-presets { display: none; }
+  #timer:not(.running):not(.big) .t-msg { display: none; }
+  #timer.running:not(.big) .t-msg { font: 600 calc(var(--u) * 5) "Oswald", "Arial Narrow", Arial, sans-serif;
+    color: #c9a227; letter-spacing: .03em; line-height: 1.1; margin: 0; min-height: 0; }
+  #timer.running:not(.big) .t-ctl { justify-content: flex-start; margin-top: calc(var(--u) * 1.4); }
+  #timer.running:not(.big) button.t-b { flex: 0 0 auto; padding: calc(var(--u) * .6) calc(var(--u) * 1.6);
+    font-size: calc(var(--u) * 1.9); }
+  #timer.running.big .t-ctl button.t-b { flex: 0 0 auto; font-size: 2.6vh; padding: 1vh 2.4vw; }
+  #timer.running.big .t-ctl { justify-content: center; }
   #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
 </head>
@@ -330,9 +340,9 @@
   <div class="t-main">
   <div class="t-left">
   <div class="t-time" id="tTime">4:00</div>
-  <div class="t-msg" id="tMsg"></div>
   </div>
   <div class="t-right">
+  <div class="t-msg" id="tMsg"></div>
   <div class="t-presets" id="tPresets">
     <button class="t-b" data-min="3">3 min</button>
     <button class="t-b" data-min="4">4 min</button>
@@ -873,6 +883,7 @@
     tTime.textContent = tFmt(ms);
     timerEl.classList.toggle("low", timer.state === "run" && ms <= 30000);
     timerEl.classList.toggle("done", timer.state === "done");
+    timerEl.classList.toggle("running", timer.state !== "idle");
     tGo.textContent = timer.state === "run" ? "Pause" : timer.state === "pause" ? "Resume" : "Start";
     tMsg.textContent = timer.state === "done" ? "Time's up · instruments up!" :
       timer.state === "pause" ? "Paused" : timer.state === "run" ? "Assemble & warm up" : "";
