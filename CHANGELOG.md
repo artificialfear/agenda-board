@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.1 — 2026-11-08
+- Warm-up timer is short and wide (time on the left, buttons on the right) and sized to the slide, so bottom-left it sits over the Closing table and never covers the Work Session box. The ♪ Rhythm button waits just to its right; ★ Closing hides while the timer is open.
+
 ## 1.7.0 — 2026-11-08
 - ♪ Rhythm button (bottom-left, agenda slides): shows the rhythm of the day across the whole board width; tap anywhere (or Esc) to go back to the agenda. Closes itself when the block changes.
 - Timer / Closing / Rhythm / manual badge now sit in one row bottom-left.

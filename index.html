@@ -111,7 +111,7 @@
   /* ---------- Warm-up timer ---------- */
   #leftBar { position: fixed; left: 10px; bottom: 10px; z-index: 21; display: flex; gap: 10px; align-items: center; }
   #leftBar > * { position: static !important; }
-  body.timer-open #leftBar { bottom: auto; top: 10px; }
+  body.timer-open #leftBar { bottom: auto; top: 10px; }     /* other corners; bottom-left: placed by tFit() */
   #btnTimer { background: #c9a227; color: #141c30;
     border: 0; border-radius: 999px; padding: 12px 20px; font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif;
     letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
@@ -123,6 +123,7 @@
     border: 2px solid #c9a227; border-radius: 999px; padding: 10px 18px; cursor: pointer;
     font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
   body.can-score #btnScores, body.can-rhythm #btnRhythm { display: block; }
+  body.timer-open #btnScores { display: none !important; }   /* not needed during warm-ups */
 
   /* ---------- Rhythm of the day, full width ---------- */
   #rhythm { position: fixed; inset: 0; z-index: 33; display: none; flex-direction: column; align-items: center;
@@ -238,6 +239,22 @@
     font: 600 18px "Segoe UI", Arial, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); white-space: nowrap; }
   #testBar.show { display: flex; }
   #testBar button { border: 0; border-radius: 8px; padding: 6px 12px; background: #141c30; color: #fff; font: inherit; cursor: pointer; }
+  /* Compact timer (not full screen): short and wide, sized in slide units (--u = 1% of the slide's height)
+     so in the bottom-left it fits under the Work Session box, over the Closing table. */
+  #timer:not(.big) { --u: 9px; width: calc(var(--u) * 84); padding: calc(var(--u) * 1.3) calc(var(--u) * 1.8);
+    border-radius: calc(var(--u) * 2); border-width: 2px; }
+  #timer:not(.big) .t-head { font-size: calc(var(--u) * 2.3); }
+  #timer:not(.big) .t-icon { width: calc(var(--u) * 4.6); height: calc(var(--u) * 4.6); font-size: calc(var(--u) * 2.2); }
+  #timer:not(.big) .t-main { display: flex; align-items: center; gap: calc(var(--u) * 2.2); margin-top: calc(var(--u) * .6); }
+  #timer:not(.big) .t-left { flex: none; min-width: calc(var(--u) * 27); }
+  #timer:not(.big) .t-right { flex: 1; min-width: 0; }
+  #timer:not(.big) .t-time { font-size: calc(var(--u) * 13); line-height: 1; margin: 0; }
+  #timer:not(.big) .t-msg { font-size: calc(var(--u) * 2.3); min-height: 1.3em; margin: calc(var(--u) * .4) 0 0; }
+  #timer:not(.big) .t-presets, #timer:not(.big) .t-ctl { flex-wrap: nowrap; gap: calc(var(--u) * .8); }
+  #timer:not(.big) .t-ctl { margin-top: calc(var(--u) * .8); }
+  #timer:not(.big) button.t-b { min-width: 0; padding: calc(var(--u) * 1.2) calc(var(--u) * .4); font-size: calc(var(--u) * 2.6);
+    border-radius: calc(var(--u) * 1.2); }
+  #timer.big .t-main { display: block; }
   #timer.big .t-presets, #timer.big .t-ctl { max-width: 900px; margin-left: auto; margin-right: auto; width: 90%; }
 </style>
 </head>
@@ -310,8 +327,12 @@
       <button class="t-icon" id="tClose" title="Hide timer" aria-label="Hide timer">✕</button>
     </span>
   </div>
+  <div class="t-main">
+  <div class="t-left">
   <div class="t-time" id="tTime">4:00</div>
   <div class="t-msg" id="tMsg"></div>
+  </div>
+  <div class="t-right">
   <div class="t-presets" id="tPresets">
     <button class="t-b" data-min="3">3 min</button>
     <button class="t-b" data-min="4">4 min</button>
@@ -321,6 +342,8 @@
   <div class="t-ctl">
     <button class="t-b go" id="tGo">Start</button>
     <button class="t-b" id="tReset">Reset</button>
+  </div>
+  </div>
   </div>
 </div>
 
@@ -896,16 +919,35 @@
     timerEl.classList.toggle("open", on);
     document.body.classList.toggle("timer-open", on);
     if (!on) timerEl.classList.remove("big");
-    tPaint();
+    tFit(); tPaint();
   }
   function tApplyPos() {
     POSITIONS.forEach(function (p) { timerEl.classList.remove(p); });
     timerEl.classList.add(POSITIONS.indexOf(tPrefs.pos) >= 0 ? tPrefs.pos : "pos-bl");
+    tFit();
   }
+  // Size the timer from the slide on screen (16:9, centered in the board) and, bottom-left,
+  // tuck it into the slide's bottom-left corner below the Work Session box.
+  function tFit() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var sh = Math.min(H, W * 9 / 16), sw = sh * 16 / 9, sx = (W - sw) / 2, sy = (H - sh) / 2;
+    timerEl.style.setProperty("--u", (sh / 100).toFixed(2) + "px");
+    var bl = timerEl.classList.contains("pos-bl") && !timerEl.classList.contains("big");
+    timerEl.style.left = bl ? Math.round(sx + sw * 0.03) + "px" : "";
+    timerEl.style.bottom = bl ? Math.round(H - (sy + sh) + sh * 0.015) + "px" : "";
+    // Bottom-left timer open: the Timer/Closing/Rhythm row waits just to its right (still in the Closing area).
+    var bar = document.getElementById("leftBar"), open = timerEl.classList.contains("open");
+    if (bl && open) {
+      bar.style.top = "auto";
+      bar.style.left = Math.round(sx + sw * 0.03 + timerEl.offsetWidth + 10) + "px";
+      bar.style.bottom = timerEl.style.bottom;
+    } else { bar.style.top = bar.style.left = bar.style.bottom = ""; }
+  }
+  window.addEventListener("resize", tFit);
 
   document.getElementById("btnTimer").onclick = function () { tOpen(true); };
   document.getElementById("tClose").onclick = function () { tOpen(false); };   // keeps counting while hidden
-  document.getElementById("tBig").onclick = function () { timerEl.classList.toggle("big"); tPaint(); };
+  document.getElementById("tBig").onclick = function () { timerEl.classList.toggle("big"); tFit(); tPaint(); };
   document.getElementById("tMove").onclick = function () {
     tPrefs.pos = POSITIONS[(POSITIONS.indexOf(tPrefs.pos) + 1) % POSITIONS.length];
     tSavePrefs(); tApplyPos();

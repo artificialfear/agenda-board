@@ -69,6 +69,9 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - #btnRhythm (agenda slides only, body.can-rhythm) → #rhythm: a second iframe of the same block's slide sized so the rhythm card region (RHYTHM_EMU = rv*_rcard: x 411480, y 1271016, w 5074920, h 566928, +70000 pad; slide 9144000×5143500) is ~96% of the screen width (max 62% height), offset negative inside an overflow:hidden box. Google renders it at that size (sharp). Clicks go to the overlay (iframe pointer-events none). Copy dropped at block change. **If the rhythm card is moved/resized on the slides, update RHYTHM_EMU.** (Card moved 11/8 to y 1271016, h 566928 so OPENING doesn't touch it.)
 - Bottom-left #leftBar flex row: Timer · Closing · Rhythm · override badge (moves to top-left while the timer is open).
 
+## Timer size/placement (1.7.1, Mat 11/8)
+- Mat: the timer must never cover the Work Session box (ends 64.4% down the slide); covering the Closing table (starts 65.8%) is fine. Compact timer = CSS in --u units (1% of the on-screen slide height, set by tFit() from the window, slide 16:9 centered). Bottom-left: left = slide left + 3% width, bottom = slide bottom + 1.5% height; ~25u tall, 84u wide (inside the Closing area at every size checked: 1280×1024 … 3840×2160). #leftBar moves just right of the open timer; ★ Closing hidden while it's open.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
