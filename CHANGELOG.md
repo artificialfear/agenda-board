@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.1 — 2026-11-09
+- Setup codes removed (Mat chose not to put even an encrypted copy of the closing link on the public site). The welcome-screen warning now says where to paste the link: ☰ → Settings → Closing scores link.
+
 ## 2.0.0 — 2026-11-09
 - Setup code: ☰ → Settings → 🔑 Enter setup code (or the welcome-screen warning) restores the board's private links from an encrypted setup.json — nothing long to type on the board.
 - Welcome-screen warnings: closing scores not connected (with Enter setup code), Daily Slides script unreachable, "tap the board once so the chimes can play" on school days until the first touch.

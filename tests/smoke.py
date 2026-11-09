@@ -445,31 +445,16 @@ def main():
         failures += 0 if ok else 1
         ctx.close()
 
-        # Setup code: warning when the closing link is missing; the code restores it from an encrypted setup.json
-        import importlib.util, tempfile, os as _os
-        spec = importlib.util.spec_from_file_location("make_setup", str(ROOT / "tools" / "make_setup.py"))
-        ms = importlib.util.module_from_spec(spec); spec.loader.exec_module(ms)
-        tmpf = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
-        ms.make({"closingUrl": "https://script.google.com/macros/s/TEST/exec?k=TESTKEY"}, "AB3D5F7H", tmpf)
-        setup_body = open(tmpf).read(); _os.unlink(tmpf)
+        # Warnings on the welcome screen: closing link missing; "tap once" for sound until the first touch
         ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
-        ctx.route("**/setup.json*", lambda r: r.fulfill(status=200, content_type="application/json", body=setup_body))
         ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
-        ctx.route("https://script.google.com/**", lambda r: r.fulfill(status=200, content_type="application/json",
-                  headers={"Access-Control-Allow-Origin": "*"}, body='{"ok":true,"config":{}}'))
         page = ctx.new_page(); page.clock.install(time="2026-11-06T12:00:00")     # lunch: welcome screen
         page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
         w1 = page.inner_text("#warns")
         if shots_dir: page.screenshot(path=str(shots_dir / "warns.png"))
-        page.click("#warns button[data-w='setup']"); page.fill("#setupCode", "ab3d-5f7j"); page.click("#setupGo")
-        page.wait_for_function("document.getElementById('setupMsg').textContent.length > 12", timeout=20000)
-        bad = page.inner_text("#setupMsg")
-        page.fill("#setupCode", "ab3d-5f7h"); page.click("#setupGo")
-        page.wait_for_function("document.getElementById('setupMsg').textContent.indexOf('Restored') >= 0", timeout=20000)
-        url = page.evaluate("window.__agendaBoard.settings().closingUrl")
-        page.wait_for_timeout(400); w2 = page.inner_text("#warns")
-        ok = ("aren't connected" in w1 and "didn't work" in bad and url.endswith("k=TESTKEY") and "aren't connected" not in w2)
-        print(("PASS" if ok else "FAIL"), f"{'setup code + warnings':34s}" + ("" if ok else f" {w1!r} {bad!r} {url!r} {w2!r}"))
+        page.mouse.click(800, 450); page.wait_for_timeout(900); w2 = page.inner_text("#warns")
+        ok = "aren't connected" in w1 and "Tap the board once" in w1 and "Tap the board once" not in w2 and "aren't connected" in w2
+        print(("PASS" if ok else "FAIL"), f"{'welcome warnings':34s}" + ("" if ok else f" {w1!r} {w2!r}"))
         failures += 0 if ok else 1
         ctx.close()
 
