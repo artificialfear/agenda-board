@@ -70,6 +70,11 @@ def main():
     failures = 0
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chromium")
+        # The board hides its buttons until a tap; most checks click them directly, so keep them awake.
+        _raw_new_context = browser.new_context
+        def _awake_context(*a, **k):
+            c = _raw_new_context(*a, **k); c.add_init_script("window.__agendaKeepAwake = true"); return c
+        browser.new_context = _awake_context
         for label, iso, expected in CASES:
             ctx = browser.new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
 
@@ -386,10 +391,25 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'no-flash refresh + short badge':34s}" + ("" if ok else f" {f0} {f1} {f2} {btxt!r}"))
         failures += 0 if ok else 1
         ctx.close()
+
+        # Buttons hide on an agenda slide after 10 s; a tap on the slide shows them; taps never reach the slide
+        ctx = _raw_new_context(viewport={"width": 1600, "height": 900}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:00:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        O = lambda: page.evaluate("[getComputedStyle(document.getElementById('corner')).opacity, getComputedStyle(document.getElementById('btnTimer')).opacity]")
+        page.clock.fast_forward("00:11"); page.wait_for_timeout(400); hidden = O()
+        top = page.evaluate("document.elementFromPoint(800, 450).id")
+        page.mouse.click(800, 450); page.wait_for_timeout(400); shown = O()
+        page.click("#btnTimer"); opened = page.is_visible("#timer")
+        ok = hidden == ["0", "0"] and top == "tapCatch" and shown == ["1", "1"] and opened
+        print(("PASS" if ok else "FAIL"), f"{'buttons hide until a tap':34s}" + ("" if ok else f" {hidden} {top} {shown} {opened}"))
+        failures += 0 if ok else 1
+        ctx.close()
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

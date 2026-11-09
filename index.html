@@ -65,7 +65,12 @@
   /* ---------- Corner controls ---------- */
   #corner { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 20;
     opacity: .18; transition: opacity .2s; }
-  #corner:hover, #corner:focus-within, #corner.awake { opacity: 1; }
+  #corner:hover, #corner:focus-within, body.ui-awake #corner { opacity: 1; }
+  /* On an agenda slide the buttons are hidden until someone taps the board (then shown for 10 s),
+     so nothing covers the slide. The welcome screen keeps them faintly visible. */
+  #leftBar > button { transition: opacity .3s; }
+  body.on-agenda:not(.ui-awake) #corner, body.on-agenda:not(.ui-awake) #leftBar > button { opacity: 0; pointer-events: none; }
+  #tapCatch { position: absolute; inset: 0; z-index: 5; }   /* over the slide: taps wake the buttons, never reach Google's viewer */
   #corner button { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line);
     background: var(--panel); color: var(--ink); font-size: 22px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; }
@@ -291,6 +296,7 @@
 <div id="agenda">
   <div class="loading">Loading agenda…</div>
   <iframe id="frame" title="Daily agenda" allowfullscreen></iframe>
+  <div id="tapCatch" aria-hidden="true"></div>
 </div>
 
 <div id="welcome">
@@ -727,6 +733,7 @@
     }
     shownKey = target;
     shownNinja = target !== "welcome" && ninja;
+    document.body.classList.toggle("on-agenda", target !== "welcome");
     if (window.scoresSync) window.scoresSync();
     if (window.rhythmSync) window.rhythmSync();
   }
@@ -817,13 +824,19 @@
       else (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     } catch (e) { /* not supported */ }
   };
-  // Wake the faded corner buttons on any touch so they are findable on the board
-  var wakeTimer;
-  document.addEventListener("pointerdown", function () {
-    corner.classList.add("awake");
+  // Any touch shows the buttons for 10 s (on an agenda slide they are otherwise hidden).
+  var wakeTimer, WAKE_MS = 10000;
+  function wake() {
+    document.body.classList.add("ui-awake");
     clearTimeout(wakeTimer);
-    wakeTimer = setTimeout(function () { corner.classList.remove("awake"); }, 6000);
-  });
+    if (window.__agendaKeepAwake) return;                 // tests only
+    wakeTimer = setTimeout(function () {
+      if (document.querySelector(".sheet.open")) { wake(); return; }    // keep them while a menu is open
+      document.body.classList.remove("ui-awake");
+    }, WAKE_MS);
+  }
+  document.addEventListener("pointerdown", wake, true);
+  wake();
 
   // ===================== SETTINGS =====================
   function schedText() {
