@@ -102,6 +102,12 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/** Run once from the editor: asks Google for the Drive permission the picture upload needs (nothing else happens). */
+function authorizeRhythmUpload() {
+  ScriptApp.requireScopes(ScriptApp.AuthMode.FULL, ['https://www.googleapis.com/auth/drive']);
+  Logger.log('Drive permission is in place: rhythm pictures can be uploaded.');
+}
+
 var RHYTHM_NAME_ = /^(8th|7th|6int|6beg)_\d-\d_\d{3}\.png$/;
 var RHYTHM_OLD_FOLDER_ = 'Old rhythm pictures';
 
