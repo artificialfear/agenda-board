@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Music Around the World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --navy: #141c30; --navy2: #1f2a44; --gold: #c9a227; --ink: #fff; --soft: #c9d0de; --ocean: #0d3b66;
+    --na: #ef6c6c; --sa: #f2a65a; --eu: #6fa8ff; --af: #f4d35e; --as: #5ed39b; --oc: #c792ea; --ru: #4fc3c7; --an: #dfe7ef;
+    --born: #7dd3fc; --work: #f9a8d4; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--navy); color: var(--ink); overflow: hidden;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+  button { font: inherit; cursor: pointer; }
+  .osw { font-family: "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; }
+
+  /* ---------- top bar ---------- */
+  #top { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; gap: 14px;
+    padding: 0 14px; background: linear-gradient(#141c30, rgba(20,28,48,.92)); z-index: 5; border-bottom: 2px solid var(--gold); }
+  #top h1 { margin: 0; font: 700 26px "Oswald", "Arial Narrow", Arial, sans-serif; color: var(--gold); white-space: nowrap; letter-spacing: .05em; }
+  .tabs { display: flex; gap: 6px; }
+  .tab { background: var(--navy2); color: var(--soft); border: 2px solid #34405f; border-radius: 999px; padding: 7px 14px;
+    font: 600 17px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; white-space: nowrap; }
+  .tab.on { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+  #searchWrap { position: relative; flex: 1; min-width: 160px; max-width: 520px; margin-left: auto; }
+  #search { width: 100%; padding: 10px 14px 10px 38px; border-radius: 999px; border: 2px solid #34405f; background: #0f1626;
+    color: #fff; font-size: 17px; outline: none; }
+  #search:focus { border-color: var(--gold); }
+  #searchWrap::before { content: "🔎"; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 15px; }
+  #results { position: absolute; top: 48px; left: 0; right: 0; background: #0f1626; border: 2px solid var(--gold); border-radius: 12px;
+    max-height: 60vh; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  #results.open { display: block; }
+  #results button { display: flex; width: 100%; gap: 10px; align-items: baseline; text-align: left; background: none; border: 0;
+    border-bottom: 1px solid #22304d; color: #fff; padding: 10px 14px; font-size: 17px; }
+  #results button:hover, #results button:focus { background: #1b2742; outline: none; }
+  #results .k { color: var(--gold); font: 600 13px "Oswald", Arial, sans-serif; letter-spacing: .06em; min-width: 76px; text-transform: uppercase; }
+  #results .s { color: var(--soft); font-size: 14px; margin-left: auto; }
+  #close { background: var(--gold); color: var(--navy); border: 0; border-radius: 999px; padding: 9px 18px;
+    font: 600 18px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; display: none; }
+  body.embedded #close { display: block; }
+
+  /* ---------- map ---------- */
+  #mapBox { position: absolute; left: 0; right: 0; top: 64px; bottom: 0; background: radial-gradient(ellipse at 50% 40%, #155089 0%, #0d3b66 55%, #0a2f52 100%); }
+  body.timeline #mapBox { bottom: 25vh; }
+  svg#map { width: 100%; height: 100%; display: block; touch-action: none; }
+  .sphere { fill: none; stroke: rgba(255,255,255,.18); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+  .grat { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+  .land { stroke: #0d3b66; stroke-width: .7px; vector-effect: non-scaling-stroke; cursor: pointer; transition: filter .2s; }
+  .land:hover { filter: brightness(1.15); }
+  .land.music { stroke: var(--gold); stroke-width: 1.6px; }
+  .land.sel { filter: brightness(1.3) saturate(1.2); stroke: #fff; stroke-width: 2.6px; }
+  .land.dim { opacity: .45; }
+  .arc { fill: none; stroke: var(--gold); stroke-width: 2.5px; stroke-dasharray: 7 6; vector-effect: non-scaling-stroke;
+    animation: dash 1.2s linear infinite; }
+  .arc.cw { stroke: var(--born); }
+  @keyframes dash { to { stroke-dashoffset: -26; } }
+  .mk { cursor: pointer; }
+  .mk text { pointer-events: none; }
+  .badge circle { fill: var(--gold); stroke: var(--navy); stroke-width: 2px; }
+  .badge text { fill: var(--navy); font: 700 13px "Oswald", Arial, sans-serif; text-anchor: middle; dominant-baseline: central; }
+  .home path { fill: var(--gold); stroke: #fff; stroke-width: 1.5px; }
+  .home text, .lbl { fill: #fff; font: 600 14px "Oswald", Arial, sans-serif; letter-spacing: .03em; paint-order: stroke;
+    stroke: rgba(10,20,40,.85); stroke-width: 4px; stroke-linejoin: round; }
+  .pin circle { stroke: #fff; stroke-width: 2px; }
+  .pin.song circle { fill: var(--gold); }
+  .pin.born circle { fill: var(--born); }
+  .pin.worked circle { fill: var(--work); }
+  .pin.also circle { fill: #fff; }
+  .pin text.g { fill: var(--navy); font: 700 13px Arial, sans-serif; text-anchor: middle; dominant-baseline: central; }
+  .inst text.e { font-size: 26px; text-anchor: middle; dominant-baseline: central; }
+  .inst circle { fill: rgba(20,28,48,.85); stroke: var(--gold); stroke-width: 2px; }
+  .inst.sel circle { fill: var(--gold); }
+
+  /* ---------- map buttons ---------- */
+  #zoomBtns { position: absolute; left: 12px; bottom: 14px; display: flex; flex-direction: column; gap: 8px; z-index: 3; }
+  body.timeline #zoomBtns { bottom: calc(25vh + 14px); }
+  #zoomBtns button { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--gold); background: var(--navy2);
+    color: var(--gold); font: 700 26px Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  #legend { position: absolute; left: 76px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px 12px; max-width: 60vw;
+    background: rgba(20,28,48,.82); border: 1px solid #34405f; border-radius: 12px; padding: 8px 12px; font-size: 13px; color: var(--soft); }
+  body.timeline #legend { bottom: calc(25vh + 14px); }
+  #legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  #legend b { color: var(--gold); }
+
+  /* ---------- card ---------- */
+  #card { position: absolute; top: 76px; right: 12px; width: min(480px, 40vw); max-height: calc(100% - 92px); overflow-y: auto; z-index: 4;
+    background: rgba(20,28,48,.96); border: 2px solid var(--gold); border-radius: 18px; padding: 18px 20px 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55); transform: translateX(calc(100% + 24px)); transition: transform .3s ease; }
+  body.timeline #card { max-height: calc(75vh - 92px); }
+  #card.open { transform: none; }
+  #cardX { position: sticky; top: 0; float: right; margin: -6px -8px 0 8px; width: 40px; height: 40px; border-radius: 50%;
+    border: 0; background: #2a3657; color: #fff; font-size: 20px; }
+  .c-kicker { color: var(--gold); font: 600 14px "Oswald", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+  .c-title { font: 700 32px/1.15 "Oswald", "Arial Narrow", Arial, sans-serif; margin: 4px 0 8px; letter-spacing: .02em; }
+  .c-flag { font-size: 40px; line-height: 1; margin-right: 8px; vertical-align: -4px; }
+  .c-sub { color: var(--soft); font-size: 17px; margin-bottom: 10px; }
+  .c-row { margin: 12px 0; font-size: 19px; line-height: 1.4; }
+  .c-row .h { display: block; color: var(--gold); font: 600 13px "Oswald", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+  .c-hello { font: 600 26px "Oswald", Arial, sans-serif; color: #fff; }
+  .c-miles { margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: #0f1626; font-size: 17px; color: var(--soft); }
+  .c-miles b { color: var(--gold); font: 700 22px "Oswald", Arial, sans-serif; }
+  .c-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .c-list button { text-align: left; background: #0f1626; border: 1px solid #2c3a5c; color: #fff; border-radius: 10px; padding: 9px 12px; font-size: 17px; }
+  .c-list button small { color: var(--soft); margin-left: 6px; }
+  .c-list button .n { color: var(--gold); font: 600 15px "Oswald", Arial, sans-serif; margin-right: 8px; }
+  .c-chip { display: inline-block; background: #0f1626; border: 1px solid #2c3a5c; color: #fff; border-radius: 999px; padding: 6px 12px;
+    font-size: 16px; margin: 4px 6px 0 0; }
+  .c-chip.link { cursor: pointer; border-color: var(--gold); }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: 0; border: 2px solid #fff; }
+  .c-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .c-btns button { background: var(--gold); color: var(--navy); border: 0; border-radius: 999px; padding: 10px 18px; font: 600 17px "Oswald", Arial, sans-serif; letter-spacing: .04em; }
+  .c-btns button.ghost { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
+
+  /* ---------- timeline ---------- */
+  #timeline { position: absolute; left: 0; right: 0; bottom: 0; height: 25vh; background: #0f1626; border-top: 2px solid var(--gold); display: none; z-index: 3; }
+  body.timeline #timeline { display: block; }
+  #timeline svg { width: 100%; height: 100%; display: block; }
+  .era rect { opacity: .9; }
+  .era text { fill: var(--navy); font: 700 15px "Oswald", Arial, sans-serif; letter-spacing: .04em; text-anchor: middle; }
+  .tl-c { cursor: pointer; }
+  .tl-c circle { fill: var(--gold); stroke: #fff; stroke-width: 2px; }
+  .tl-c.sel circle { fill: #fff; stroke: var(--gold); stroke-width: 4px; }
+  .tl-c text { fill: #fff; font: 600 14px "Oswald", Arial, sans-serif; text-anchor: middle; }
+  .tl-c line { stroke: #5a6788; stroke-width: 1.5px; }
+  .tl-axis text { fill: var(--soft); font: 12px Arial, sans-serif; text-anchor: middle; }
+
+  /* ---------- mystery ---------- */
+  #mystery { position: absolute; top: 76px; left: 12px; width: min(520px, 46vw); z-index: 4; display: none;
+    background: rgba(20,28,48,.96); border: 2px solid var(--gold); border-radius: 18px; padding: 18px 20px 20px; box-shadow: 0 12px 40px rgba(0,0,0,.55); }
+  body.mystery #mystery { display: block; }
+  #mystery h2 { margin: 0 0 6px; font: 700 30px "Oswald", Arial, sans-serif; color: var(--gold); letter-spacing: .04em; }
+  #mClues { margin: 0; padding: 0; list-style: none; counter-reset: c; }
+  #mClues li { counter-increment: c; font-size: 21px; line-height: 1.4; margin: 10px 0; padding-left: 44px; position: relative; }
+  #mClues li::before { content: counter(c); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--gold);
+    color: var(--navy); font: 700 18px/32px "Oswald", Arial, sans-serif; text-align: center; }
+  #mClues .lab { color: var(--soft); font-size: 15px; display: block; }
+  #mAnswer { font: 700 34px "Oswald", Arial, sans-serif; color: #fff; margin-top: 10px; display: none; }
+  #mAnswer.on { display: block; }
+
+  /* ---------- instruments list ---------- */
+  #instPanel { position: absolute; top: 76px; left: 12px; width: 250px; z-index: 4; display: none; background: rgba(20,28,48,.94);
+    border: 2px solid var(--gold); border-radius: 16px; padding: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  body.instruments #instPanel { display: block; }
+  .ip-h { color: var(--gold); font: 600 14px "Oswald", Arial, sans-serif; letter-spacing: .06em; margin-bottom: 8px; }
+  #instList { display: flex; flex-direction: column; gap: 5px; }
+  #instList button { text-align: left; background: #0f1626; color: #fff; border: 1px solid #2c3a5c; border-radius: 10px; padding: 7px 10px; font-size: 16px; }
+  #instList button.on { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+  @media (max-height: 820px) { #instList button { padding: 4px 9px; font-size: 14px; } }
+
+  /* ---------- video ---------- */
+  #video { position: absolute; inset: 0; background: rgba(5,10,20,.85); display: none; align-items: center; justify-content: center; z-index: 9; }
+  #video.open { display: flex; }
+  #video .v-box { width: min(1100px, 92vw); aspect-ratio: 16 / 9; background: #000; border: 3px solid var(--gold); border-radius: 12px; overflow: hidden; }
+  #video iframe { width: 100%; height: 100%; border: 0; }
+  #videoX { position: absolute; top: 18px; right: 18px; background: var(--gold); color: var(--navy); border: 0; border-radius: 999px; padding: 10px 20px;
+    font: 600 20px "Oswald", Arial, sans-serif; }
+
+  #msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--soft); font-size: 22px; z-index: 2; }
+  @media (max-width: 900px) {
+    #top { height: auto; flex-wrap: wrap; padding: 8px 10px; gap: 8px; }
+    #top h1 { font-size: 20px; }
+    #mapBox { top: 112px; }
+    #card { top: auto; bottom: 0; right: 0; left: 0; width: auto; max-height: 55vh; border-radius: 18px 18px 0 0; transform: translateY(105%); }
+    #mystery { left: 8px; right: 8px; width: auto; top: 120px; }
+    .tab { font-size: 15px; padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>🌍 MUSIC AROUND THE WORLD</h1>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-mode="map">🗺 Songs</button>
+    <button class="tab" data-mode="instruments">🎺 Instruments</button>
+    <button class="tab" data-mode="timeline">🕰 Timeline</button>
+    <button class="tab" data-mode="mystery">❓ Mystery Country</button>
+  </div>
+  <div id="searchWrap"><input id="search" type="search" placeholder="Song, number, composer or country…" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button id="close">✕ Close</button>
+</div>
+<div id="mapBox"><svg id="map" aria-label="World map"></svg><div id="msg">Loading the map…</div></div>
+<div id="zoomBtns"><button id="zIn" aria-label="Zoom in">+</button><button id="zOut" aria-label="Zoom out">−</button><button id="zHome" aria-label="Whole world">⌂</button></div>
+<div id="legend"></div>
+<div id="card" aria-live="polite"><button id="cardX" aria-label="Close card">✕</button><div id="cardBody"></div></div>
+<div id="timeline"><svg id="tl"></svg></div>
+<div id="instPanel"><div class="ip-h">🎺 WHERE OUR INSTRUMENTS CAME FROM</div><div id="instList"></div></div>
+<div id="mystery">
+  <h2>❓ MYSTERY COUNTRY</h2>
+  <ol id="mClues"></ol>
+  <div id="mAnswer"></div>
+  <div class="c-btns"><button id="mNext">Next clue</button><button id="mReveal" class="ghost">Reveal</button><button id="mNew" class="ghost">New country</button></div>
+</div>
+<div id="video"><button id="videoX">✕ Close</button><div class="v-box"><iframe id="videoFrame" allow="autoplay; encrypted-media" allowfullscreen title="Listen"></iframe></div></div>
+
+<script src="d3.min.js"></script>
+<script src="topojson-client.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var EMBED = window.parent && window.parent !== window;
+  if (EMBED) document.body.classList.add("embedded");
+
+  // ---------------- helpers ----------------
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[“”"'’.,!?()]/g, "").replace(/\s+/g, " ").trim(); }
+  var MILES = 3958.8;
+  function miles(a, b) { return Math.round(d3.geoDistance([a.lon, a.lat], [b.lon, b.lat]) * MILES); }
+  function fmt(n) { return n.toLocaleString("en-US"); }
+
+  // Country names people type → the map's names
+  var ALIAS = { "usa": "United States of America", "us": "United States of America", "united states": "United States of America", "america": "United States of America",
+    "uk": "United Kingdom", "england": "United Kingdom", "scotland": "United Kingdom", "wales": "United Kingdom", "great britain": "United Kingdom",
+    "britain": "United Kingdom", "northern ireland": "United Kingdom", "czech republic": "Czechia", "holland": "Netherlands", "korea": "South Korea",
+    "trinidad": "Trinidad and Tobago", "the netherlands": "Netherlands" };
+  function countryName(s) { var k = norm(s); return ALIAS[k] || s; }
+
+  // Continent colors (every country, from where its middle is; a few by name)
+  var CONT = { NA: { c: "var(--na)", n: "North America" }, SA: { c: "var(--sa)", n: "South America" }, EU: { c: "var(--eu)", n: "Europe" },
+    AF: { c: "var(--af)", n: "Africa" }, AS: { c: "var(--as)", n: "Asia" }, OC: { c: "var(--oc)", n: "Oceania" },
+    RU: { c: "var(--ru)", n: "Europe & Asia" }, AN: { c: "var(--an)", n: "Antarctica" } };
+  var BYNAME = { "Russia": "RU", "Turkey": "RU", "Kazakhstan": "AS", "Greenland": "NA", "Trinidad and Tobago": "NA", "Panama": "NA",
+    "Cyprus": "AS", "N. Cyprus": "AS", "Georgia": "AS", "Armenia": "AS", "Azerbaijan": "AS", "Egypt": "AF", "Libya": "AF", "Tunisia": "AF",
+    "Algeria": "AF", "Morocco": "AF", "W. Sahara": "AF", "Papua New Guinea": "OC", "Timor-Leste": "AS", "Indonesia": "AS", "Fr. S. Antarctic Lands": "AN",
+    "Antarctica": "AN", "Falkland Is.": "SA", "Iceland": "EU" };
+  function continent(f) {
+    var n = f.properties.name; if (BYNAME[n]) return BYNAME[n];
+    var c = d3.geoCentroid(f), lon = c[0], lat = c[1];
+    if (lon < -25) return (lat < 12.5 && lon > -80) || lat < 0 ? "SA" : "NA";
+    if (lat < -10 && lon > 110) return "OC";
+    if (lon > 160 || lon < -150) return "OC";
+    if (lon < 60 && lat > 35 && !(lon > 35 && lat < 42)) return "EU";
+    if (lon >= 34 && lat > 12 && lon < 64) return "AS";
+    if (lon < 52 && lat < 37) return "AF";
+    return "AS";
+  }
+  // Where a country's ♪ badge sits (a few countries' middles are far from where people live)
+  var CENTER = { "United States of America": [-98.5, 39.5], "Russia": [44, 56.5], "Canada": [-100, 56], "France": [2.4, 46.6],
+    "United Kingdom": [-2.2, 53.6], "Norway": [9, 61.5], "Chile": [-71, -33], "Netherlands": [5.3, 52.2], "Japan": [138.5, 36.4],
+    "China": [104, 34], "Italy": [12.6, 42.8], "Australia": [134, -25], "Brazil": [-51, -10], "Indonesia": [117, -2], "Denmark": [9.5, 56] };
+
+  // ---------------- data ----------------
+  var D = null, BYC = {}, SONGS = [], COMP = {}, COUNTRIES = {}, INST = [], HOME = null;
+
+  function loadData() {
+    return fetch("data.json", { cache: "no-cache" }).then(function (r) { return r.json(); }).then(function (base) {
+      D = base;
+      return sheetData().then(function (sheet) { if (sheet) merge(sheet); }, function () {});
+    });
+  }
+  // The "Map Songs" / "Map Composers" / "Map Countries" tabs (Content Pool sheet) win when they have rows.
+  function sheetData() {
+    var s = {}; try { s = JSON.parse(localStorage.getItem("agendaBoard.settings") || "{}"); } catch (e) {}
+    var url = s.closingUrl; if (!url) return Promise.resolve(null);
+    var u; try { u = new URL(url); } catch (e) { return Promise.resolve(null); }
+    u.searchParams.set("a", "map");
+    return Promise.race([
+      fetch(u.toString()).then(function (r) { return r.json(); }).then(function (j) { return j && j.ok ? j : null; }),
+      new Promise(function (res) { setTimeout(function () { res(null); }, 8000); })
+    ]);
+  }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : null; }
+  function merge(j) {
+    D.__sheet = true;
+    var oldAlso = {}; D.songs.forEach(function (s) { if (s.also) oldAlso[norm(s.title)] = s.also; });
+    if (j.songs && j.songs.length) {
+      D.songs = j.songs.filter(function (r) { return r["Title"] && !/^(no|hide|n)$/i.test(String(r["Show"] || "").trim()); }).map(function (r) {
+        var s = { n: String(r["Book #"] || ""), title: String(r["Title"]), label: String(r["Book says"] || ""), country: countryName(r["Country"]),
+          composer: String(r["Composer"] || ""), fact: String(r["Fun fact"] || ""), yt: String(r["YouTube link"] || "") };
+        var lat = num(r["Lat"]), lon = num(r["Lon"]);
+        if (r["Place"]) s.place = String(r["Place"]);
+        if (lat != null && lon != null) { s.lat = lat; s.lon = lon; }
+        if (oldAlso[norm(s.title)]) s.also = oldAlso[norm(s.title)];
+        return s;
+      });
+    }
+    (j.composers || []).forEach(function (r) {
+      var name = String(r["Composer"] || "").trim(); if (!name) return;
+      var c = D.composers[name] || {};
+      function place(p, la, lo) { var a = num(r[la]), b = num(r[lo]); return r[p] && a != null && b != null ? { place: String(r[p]), lat: a, lon: b } : null; }
+      c.years = String(r["Years"] || c.years || ""); c.born = num(r["Born year"]) || c.born; c.era = String(r["Era"] || c.era || "");
+      c.country = countryName(r["Country"] || c.country || ""); c.fact = String(r["Fun fact"] || c.fact || "");
+      var b = place("Born place", "Born lat", "Born lon"); if (b) c.birth = b;
+      var w = place("Worked place", "Worked lat", "Worked lon"); if (w) c.worked = w;
+      D.composers[name] = c;
+    });
+    (j.countries || []).forEach(function (r) {
+      var name = countryName(String(r["Country"] || "").trim()); if (!name) return;
+      var c = D.countries[name] || {};
+      ["flag:Flag", "cont:Continent", "hello:Hello", "known:Known for", "fact:Fun fact", "music:Music fact"].forEach(function (kv) {
+        var p = kv.split(":"); if (r[p[1]] !== undefined && String(r[p[1]]).trim() !== "") c[p[0]] = String(r[p[1]]);
+      });
+      D.countries[name] = c;
+    });
+  }
+
+  // ---------------- map ----------------
+  var svg = d3.select("#map"), W = 0, H = 0, projection, path, world, features = [], byName = {};
+  var gRoot = svg.append("g"), gWorld = gRoot.append("g"), gArcs = gRoot.append("g"), gMarks = svg.append("g");
+  var zoom = d3.zoom().scaleExtent([1, 14]).on("zoom", zoomed), T = d3.zoomIdentity;
+  var mode = "map", selCountry = null, selSong = null, selComp = null, selInst = null, mysteryC = null;
+
+  function size() {
+    var r = $("mapBox").getBoundingClientRect(); W = r.width; H = r.height;
+    projection = d3.geoNaturalEarth1().fitExtent([[12, 12], [W - 12, H - 12]], { type: "Sphere" });
+    path = d3.geoPath(projection);
+    zoom.translateExtent([[-W * 0.25, -H * 0.25], [W * 1.25, H * 1.25]]);
+  }
+  function draw() {
+    gWorld.selectAll("*").remove();
+    gWorld.append("path").attr("class", "sphere").attr("d", path({ type: "Sphere" }));
+    gWorld.append("path").attr("class", "grat").attr("d", path(d3.geoGraticule10()));
+    gWorld.selectAll("path.land").data(features).join("path")
+      .attr("class", function (f) { return "land" + (BYC[f.properties.name] ? " music" : ""); })
+      .attr("d", path)
+      .attr("fill", function (f) { return CONT[f.cont].c; })
+      .on("click", function (ev, f) { if (mode === "mystery") return; pickCountry(f.properties.name, false); })
+      .append("title").text(function (f) { return f.properties.name; });
+    restyle(); drawArcs(); drawMarks();
+  }
+  function restyle() {
+    gWorld.selectAll("path.land")
+      .classed("sel", function (f) { return f.properties.name === selCountry; })
+      .classed("dim", function (f) { return mode === "mystery" && mysteryC && mysteryC.revealed && f.properties.name !== mysteryC.name; });
+  }
+  function zoomed(ev) {
+    T = ev.transform; gRoot.attr("transform", T); drawMarks();
+  }
+  function xy(lon, lat) { var p = projection([lon, lat]); return [T.applyX(p[0]), T.applyY(p[1])]; }
+  function centerOf(name) {
+    if (CENTER[name]) return CENTER[name];
+    var f = byName[name]; return f ? d3.geoCentroid(f) : null;
+  }
+
+  // Markers: drawn in screen space so they stay the same size at every zoom.
+  function drawMarks() {
+    gMarks.selectAll("*").remove();
+    if (!projection) return;
+    // ♪ badges on countries with music from the book (Songs mode)
+    if (mode === "map" || mode === "timeline") {
+      Object.keys(BYC).forEach(function (name) {
+        var c = centerOf(name); if (!c) return;
+        var p = xy(c[0], c[1]), n = BYC[name].length;
+        var g = gMarks.append("g").attr("class", "mk badge").attr("transform", "translate(" + p + ")")
+          .style("opacity", (selSong || selComp) ? 0.45 : 1)
+          .on("click", function () { pickCountry(name, false); });
+        g.append("circle").attr("r", n > 9 ? 15 : 13);
+        g.append("text").text("♪" + n);
+        g.append("title").text(name + ": " + n + (n === 1 ? " piece" : " pieces"));
+      });
+    }
+    // pins for the picked song / composer
+    var pins = [];
+    if (selSong) {
+      if (selSong.lat != null) pins.push({ k: "song", g: "♪", lat: selSong.lat, lon: selSong.lon, t: selSong.place || selSong.country });
+      (selSong.also || []).forEach(function (a) { pins.push({ k: "also", g: "★", lat: a.lat, lon: a.lon, t: a.place }); });
+    }
+    var comp = selComp || (selSong && COMP[selSong.composer]);
+    if (comp) {
+      if (comp.birth) pins.push({ k: "born", g: "B", lat: comp.birth.lat, lon: comp.birth.lon, t: "Born: " + comp.birth.place });
+      if (comp.worked) pins.push({ k: "worked", g: "W", lat: comp.worked.lat, lon: comp.worked.lon, t: "Worked: " + comp.worked.place });
+    }
+    var placed = [];
+    pins.forEach(function (pn) {
+      if (miles(pn, HOME) < 30) return;                       // the Savannah star is already there
+      var p = xy(pn.lon, pn.lat), same = placed.filter(function (q) { return Math.hypot(q[0] - p[0], q[1] - p[1]) < 26; }).length;
+      placed.push(p);
+      var g = gMarks.append("g").attr("class", "mk pin " + pn.k).attr("transform", "translate(" + p + ")");
+      if (!same) { g.append("circle").attr("r", 12); g.append("text").attr("class", "g").text(pn.g); }
+      g.append("text").attr("class", "lbl").attr("x", 17).attr("y", 5 + same * 20).text(pn.t);
+    });
+    // instruments
+    if (mode === "instruments") {
+      var spots = [];
+      INST.forEach(function (it, i) {
+        var p = xy(it.lon, it.lat), a = 0, r = 0;
+        // nudge along a spiral until it doesn't sit on another marker
+        while (spots.some(function (q) { return Math.hypot(q[0] - p[0], q[1] - p[1]) < 46; }) && r < 400) {
+          a += 1.1; r = 16 + a * 7; var o = xy(it.lon, it.lat); p = [o[0] + Math.cos(a) * r, o[1] + Math.sin(a) * r];
+        }
+        spots.push(p);
+        var g = gMarks.append("g").attr("class", "mk inst" + (selInst === it ? " sel" : "")).attr("transform", "translate(" + p + ")")
+          .on("click", function () { pickInst(it); });
+        g.append("circle").attr("r", 22);
+        g.append("text").attr("class", "e").text(it.emoji);
+        if (T.k > 3 || selInst === it) g.append("text").attr("class", "lbl").attr("y", 40).attr("text-anchor", "middle").text(it.name);
+        (selInst === it ? (it.also || []) : []).forEach(function (a) {
+          var q = xy(a.lon, a.lat), h = gMarks.append("g").attr("class", "mk pin also").attr("transform", "translate(" + q + ")");
+          h.append("circle").attr("r", 10); h.append("text").attr("class", "g").text("★");
+          h.append("text").attr("class", "lbl").attr("x", 15).attr("y", 5).text(a.place);
+        });
+      });
+    }
+    // We are here
+    var hp = xy(HOME.lon, HOME.lat);
+    var h = gMarks.append("g").attr("class", "home").attr("transform", "translate(" + hp + ")");
+    h.append("path").attr("d", d3.symbol().type(d3.symbolStar).size(420)());
+    h.append("text").attr("x", 16).attr("y", 5).text("We are here: Savannah");
+  }
+  function drawArcs() {
+    gArcs.selectAll("*").remove();
+    var lines = [];
+    if (selSong && selSong.lat != null) lines.push({ c: "", a: [selSong.lon, selSong.lat], b: [HOME.lon, HOME.lat] });
+    var comp = selComp || (selSong && COMP[selSong.composer]);
+    if (comp && comp.birth && comp.worked) lines.push({ c: "cw", a: [comp.birth.lon, comp.birth.lat], b: [comp.worked.lon, comp.worked.lat] });
+    lines.forEach(function (l) {
+      if (l.a[0] === l.b[0] && l.a[1] === l.b[1]) return;
+      gArcs.append("path").attr("class", "arc " + l.c).attr("d", path({ type: "LineString", coordinates: [l.a, l.b] }));
+    });
+  }
+
+  // Zoom so a set of [lon,lat] points / a country fits beside the card
+  function fit(bounds, maxK) {
+    var cardW = $("card").classList.contains("open") && window.innerWidth > 900 ? $("card").offsetWidth + 24 : 0;
+    var leftW = window.innerWidth <= 900 ? 0 : mode === "mystery" ? $("mystery").offsetWidth + 24 : mode === "instruments" ? $("instPanel").offsetWidth + 24 : 0;
+    var x0 = bounds[0][0], y0 = bounds[0][1], x1 = bounds[1][0], y1 = bounds[1][1];
+    var availW = W - cardW - leftW - 60, availH = H - 80;
+    var k = Math.max(1, Math.min(maxK || 6, 0.85 / Math.max((x1 - x0) / availW, (y1 - y0) / availH)));
+    var cx = leftW + (W - cardW - leftW) / 2, cy = H / 2;
+    var t = d3.zoomIdentity.translate(cx, cy).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+    svg.transition().duration(900).call(zoom.transform, t);
+  }
+  function fitPoints(pts, maxK) {
+    var xs = pts.map(function (p) { return projection(p); });
+    var b = [[d3.min(xs, function (p) { return p[0]; }), d3.min(xs, function (p) { return p[1]; })],
+             [d3.max(xs, function (p) { return p[0]; }), d3.max(xs, function (p) { return p[1]; })]];
+    var pad = 40; b[0][0] -= pad; b[0][1] -= pad; b[1][0] += pad; b[1][1] += pad;
+    fit(b, maxK);
+  }
+  function fitCountry(name) {
+    var f = byName[name]; if (!f) return;
+    var c = centerOf(name), b = path.bounds(f);
+    // countries with far-away islands (USA, France, Norway…) zoom to their main part instead
+    if (CENTER[name] && (b[1][0] - b[0][0]) > W * 0.3) { fitPoints([[c[0] - 15, c[1] - 9], [c[0] + 15, c[1] + 9]], 5); return; }
+    fit(b, 7);
+  }
+  function home() { svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity); }
+
+  // ---------------- cards ----------------
+  function openCard(html) { $("cardBody").innerHTML = html; $("card").classList.add("open"); $("card").scrollTop = 0; }
+  function closeCard() {
+    $("card").classList.remove("open"); selCountry = selSong = selComp = selInst = null;
+    restyle(); drawArcs(); drawMarks();
+    document.querySelectorAll(".tl-c").forEach(function (e) { e.classList.remove("sel"); });
+  }
+  function milesHtml(p, what) {
+    if (!p || p.lat == null) return "";
+    var m = miles(p, HOME);
+    if (m < 30) return '<div class="c-miles">🏠 <b>Right here</b> in Savannah!</div>';
+    return '<div class="c-miles">✈️ ' + esc(what) + ' <b>' + fmt(m) + ' miles</b> from our band room</div>';
+  }
+  function songBtn(s) {
+    return '<button data-song="' + SONGS.indexOf(s) + '"><span class="n">' + esc(s.n) + '</span>' + esc(s.title) + '<small>' + esc(s.label) + '</small></button>';
+  }
+  function countryCard(name) {
+    var c = COUNTRIES[name] || {}, songs = BYC[name] || [];
+    var comps = Object.keys(COMP).filter(function (k) { return COMP[k].country === name; });
+    var ctr = centerOf(name);
+    var h = '<div class="c-kicker">' + esc(c.cont || (byName[name] ? CONT[byName[name].cont].n : "")) + '</div>' +
+      '<div class="c-title">' + (c.flag ? '<span class="c-flag">' + c.flag + '</span>' : "") + esc(name) + '</div>';
+    if (c.hello) h += '<div class="c-row"><span class="h">Say hello</span><span class="c-hello">' + esc(c.hello) + '</span></div>';
+    if (c.known) h += '<div class="c-row"><span class="h">Known for</span>' + esc(c.known) + '</div>';
+    if (c.fact) h += '<div class="c-row"><span class="h">Fun fact</span>' + esc(c.fact) + '</div>';
+    if (c.music) h += '<div class="c-row"><span class="h">🎵 Music</span>' + esc(c.music) + '</div>';
+    if (name === "United Kingdom" && songs.length) h += '<div class="c-row"><span class="h">Four countries in one</span>Our book has songs from England, Scotland and Wales. Look for the place on each song.</div>';
+    if (songs.length) h += '<div class="c-row"><span class="h">♪ From here in our book (' + songs.length + ')</span><div class="c-list">' + songs.map(songBtn).join("") + '</div></div>';
+    if (comps.length) h += '<div class="c-row"><span class="h">Composers</span>' + comps.map(function (k) { return '<span class="c-chip link" data-comp="' + esc(k) + '">' + esc(k) + '</span>'; }).join("") + '</div>';
+    if (!c.known && !songs.length) h += '<div class="c-row" style="color:var(--soft)">No songs from here in our book yet.</div>';
+    if (ctr) h += milesHtml({ lat: ctr[1], lon: ctr[0] }, name === "United States of America" ? "The middle of the U.S. is about" : "About");
+    return h;
+  }
+  function songCard(s) {
+    var comp = COMP[s.composer], c = COUNTRIES[s.country] || {};
+    var h = '<div class="c-kicker">' + (s.n ? (/^\d+$/.test(s.n) ? "No. " + esc(s.n) : esc(s.n === "Ens." ? "Ensemble" : s.n === "Band" ? "Band piece" : s.n)) + " · " : "") + 'Tradition of Excellence 1</div>' +
+      '<div class="c-title">' + esc(s.title) + '</div><div class="c-sub">' + esc(s.label) + '</div>' +
+      '<span class="c-chip link" data-country="' + esc(s.country) + '">' + (c.flag || "🌍") + " " + esc(s.place ? s.place + (s.place === s.country ? "" : " · " + shortName(s.country)) : s.country) + '</span>';
+    if (s.fact) h += '<div class="c-row"><span class="h">Did you know?</span>' + esc(s.fact) + '</div>';
+    if (comp) h += compBlock(s.composer, comp);
+    (s.also || []).forEach(function (a) { h += '<div class="c-row"><span class="h">★ ' + esc(a.place) + '</span>' + esc(a.why) + '</div>'; });
+    var where = s.lat != null ? s : (centerOf(s.country) ? { lat: centerOf(s.country)[1], lon: centerOf(s.country)[0] } : null);
+    h += milesHtml(where, "This music comes from");
+    h += '<div class="c-btns">' + (ytId(s.yt) ? '<button data-play="' + SONGS.indexOf(s) + '">▶ Listen</button>' : "") +
+      '<button class="ghost" data-yts="' + SONGS.indexOf(s) + '">🔎 Find on YouTube</button></div>';
+    return h;
+  }
+  function shortName(n) { return n === "United States of America" ? "USA" : n === "United Kingdom" ? "UK" : n; }
+  function compBlock(name, c) {
+    var h = '<div class="c-row"><span class="h">Composer</span><b style="font-size:20px">' + esc(name) + '</b> <span style="color:var(--soft)">' + esc(c.years || "") + (c.era ? " · " + esc(c.era) : "") + '</span>';
+    if (c.birth) h += '<div style="margin-top:6px"><span class="dot" style="background:var(--born)"></span>Born in ' + esc(c.birth.place) + '</div>';
+    if (c.worked) h += '<div><span class="dot" style="background:var(--work)"></span>Worked in ' + esc(c.worked.place) + '</div>';
+    if (c.fact) h += '<div style="margin-top:6px">' + esc(c.fact) + '</div>';
+    return h + '</div>';
+  }
+  function composerCard(name) {
+    var c = COMP[name] || {}, songs = SONGS.filter(function (s) { return s.composer === name; });
+    var h = '<div class="c-kicker">' + esc(c.era || "Composer") + '</div><div class="c-title">' + esc(name) + '</div><div class="c-sub">' + esc(c.years || "") + '</div>' + compBlock(name, c).replace('<span class="h">Composer</span><b style="font-size:20px">' + esc(name) + '</b>', '<span class="h">Life</span>');
+    if (songs.length) h += '<div class="c-row"><span class="h">♪ In our book</span><div class="c-list">' + songs.map(songBtn).join("") + '</div></div>';
+    if (c.birth && c.worked) { var m = miles(c.birth, c.worked); if (m > 30) h += '<div class="c-miles">🧳 Moved <b>' + fmt(m) + ' miles</b> from where they were born</div>'; }
+    return h;
+  }
+  function instCard(it) {
+    var h = '<div class="c-kicker">Where instruments come from</div><div class="c-title">' + it.emoji + " " + esc(it.name) + '</div>' +
+      '<div class="c-sub">' + esc(it.place) + " · " + esc(it.when) + '</div><div class="c-row">' + esc(it.fact) + '</div>';
+    (it.also || []).forEach(function (a) { h += '<div class="c-row"><span class="h">★ ' + esc(a.place) + '</span>' + esc(a.why) + '</div>'; });
+    return h + milesHtml(it, "Invented");
+  }
+
+  function pickCountry(name, fly) {
+    selCountry = name; selSong = selComp = null; selInst = null;
+    openCard(countryCard(name)); restyle(); drawArcs(); drawMarks();
+    if (fly !== false || window.innerWidth <= 900) fitCountry(name);
+  }
+  function pickSong(s) {
+    selSong = s; selComp = null; selCountry = s.country; selInst = null;
+    if (mode !== "map" && mode !== "timeline") setMode("map");
+    openCard(songCard(s)); restyle(); drawArcs(); drawMarks();
+    var pts = [[HOME.lon, HOME.lat]];
+    if (s.lat != null) pts.push([s.lon, s.lat]); else if (centerOf(s.country)) pts.push(centerOf(s.country));
+    var comp = COMP[s.composer];
+    if (comp && comp.birth) pts.push([comp.birth.lon, comp.birth.lat]);
+    if (comp && comp.worked) pts.push([comp.worked.lon, comp.worked.lat]);
+    (s.also || []).forEach(function (a) { pts.push([a.lon, a.lat]); });
+    fitPoints(pts, 5);
+  }
+  function pickComposer(name) {
+    var c = COMP[name]; if (!c) return;
+    selComp = c; selSong = null; selCountry = c.country; selInst = null;
+    openCard(composerCard(name)); restyle(); drawArcs(); drawMarks();
+    document.querySelectorAll(".tl-c").forEach(function (e) { e.classList.toggle("sel", e.getAttribute("data-c") === name); });
+    var pts = [];
+    if (c.birth) pts.push([c.birth.lon, c.birth.lat]);
+    if (c.worked) pts.push([c.worked.lon, c.worked.lat]);
+    if (pts.length) fitPoints(pts.length === 1 ? [[pts[0][0] - 8, pts[0][1] - 5], [pts[0][0] + 8, pts[0][1] + 5]] : pts, 6);
+    else if (centerOf(c.country)) fitCountry(c.country);
+  }
+  function pickInst(it) {
+    selInst = it; selSong = selComp = null; selCountry = null;
+    openCard(instCard(it)); restyle(); drawArcs(); drawMarks(); paintInstList();
+    var pts = [[it.lon, it.lat]]; (it.also || []).forEach(function (a) { pts.push([a.lon, a.lat]); });
+    fitPoints(pts.length === 1 ? [[it.lon - 10, it.lat - 6], [it.lon + 10, it.lat + 6]] : pts, 6);
+  }
+
+  $("cardBody").addEventListener("click", function (e) {
+    var t = e.target.closest("[data-song],[data-country],[data-comp],[data-play],[data-yts]"); if (!t) return;
+    if (t.hasAttribute("data-song")) pickSong(SONGS[+t.getAttribute("data-song")]);
+    else if (t.hasAttribute("data-country")) pickCountry(t.getAttribute("data-country"));
+    else if (t.hasAttribute("data-comp")) pickComposer(t.getAttribute("data-comp"));
+    else if (t.hasAttribute("data-play")) playVideo(SONGS[+t.getAttribute("data-play")]);
+    else if (t.hasAttribute("data-yts")) {
+      var s = SONGS[+t.getAttribute("data-yts")];
+      window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(s.title.replace(/[“”]/g, "") + " " + (s.composer || s.label)), "_blank");
+    }
+  });
+  $("cardX").onclick = closeCard;
+
+  // ---------------- video ----------------
+  function ytId(u) {
+    var m = String(u || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/); return m ? m[1] : "";
+  }
+  function playVideo(s) {
+    var id = ytId(s.yt); if (!id) return;
+    var start = (String(s.yt).match(/[?&]t=(\d+)/) || [])[1];
+    $("videoFrame").src = "https://www.youtube-nocookie.com/embed/" + id + "?autoplay=1&rel=0" + (start ? "&start=" + start : "");
+    $("video").classList.add("open");
+  }
+  $("videoX").onclick = function () { $("video").classList.remove("open"); $("videoFrame").src = "about:blank"; };
+
+  // ---------------- search ----------------
+  var resEl = $("results");
+  $("search").addEventListener("input", search);
+  $("search").addEventListener("focus", search);
+  function search() {
+    var q = norm($("search").value); resEl.innerHTML = "";
+    if (!q) { resEl.classList.remove("open"); return; }
+    var out = [];
+    SONGS.forEach(function (s, i) {
+      if (norm(s.n) === q || norm(s.title).indexOf(q) >= 0 || norm(s.label).indexOf(q) >= 0)
+        out.push({ k: s.n && /^\d+$/.test(s.n) ? "No. " + s.n : "Song", t: s.title, s: shortName(s.country), go: function () { pickSong(s); } });
+    });
+    Object.keys(COMP).forEach(function (n) { if (norm(n).indexOf(q) >= 0) out.push({ k: "Composer", t: n, s: COMP[n].years, go: function () { pickComposer(n); } }); });
+    features.forEach(function (f) { var n = f.properties.name; if (norm(n).indexOf(q) >= 0 || (ALIAS[q] === n))
+      out.push({ k: "Country", t: n, s: (COUNTRIES[n] && COUNTRIES[n].flag) || "", go: function () { setMode("map"); pickCountry(n); } }); });
+    INST.forEach(function (it) { if (norm(it.name).indexOf(q) >= 0) out.push({ k: "Instrument", t: it.name, s: it.emoji, go: function () { setMode("instruments"); pickInst(it); } }); });
+    out.slice(0, 12).forEach(function (r) {
+      var b = document.createElement("button");
+      b.innerHTML = '<span class="k">' + esc(r.k) + '</span><span>' + esc(r.t) + '</span><span class="s">' + esc(r.s) + '</span>';
+      b.onclick = function () { resEl.classList.remove("open"); $("search").value = ""; $("search").blur(); r.go(); };
+      resEl.appendChild(b);
+    });
+    if (!out.length) resEl.innerHTML = '<button disabled><span class="k">—</span><span>Nothing found</span></button>';
+    resEl.classList.add("open");
+  }
+  $("search").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { var b = resEl.querySelector("button:not([disabled])"); if (b) b.click(); }
+    if (e.key === "Escape") { $("search").value = ""; search(); $("search").blur(); }
+  });
+  document.addEventListener("pointerdown", function (e) { if (!e.target.closest("#searchWrap")) resEl.classList.remove("open"); });
+
+  // ---------------- modes ----------------
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll(".tab").forEach(function (t) { t.classList.toggle("on", t.getAttribute("data-mode") === m); });
+    document.body.classList.toggle("timeline", m === "timeline");
+    document.body.classList.toggle("mystery", m === "mystery");
+    document.body.classList.toggle("instruments", m === "instruments");
+    if (m === "instruments") { closeCard(); }
+    if (m === "mystery") { closeCard(); newMystery(); }
+    if (m !== "mystery") { mysteryC = null; }
+    size(); draw(); legend();
+    if (m === "timeline") drawTimeline();
+    if (m === "instruments") { home(); paintInstList(); }
+    else if (m === "map" || m === "timeline") { if (!selSong && !selComp && !selCountry) home(); }
+  }
+  document.querySelectorAll(".tab").forEach(function (t) { t.onclick = function () { setMode(t.getAttribute("data-mode")); }; });
+
+  function legend() {
+    var h = ["NA", "SA", "EU", "AF", "AS", "OC"].map(function (k) { return '<span><i style="background:' + CONT[k].c + '"></i>' + CONT[k].n + '</span>'; }).join("");
+    if (mode === "map" || mode === "timeline") h += '<span><b>♪</b> = pieces in our book</span><span><span class="dot" style="background:var(--born)"></span>born</span><span><span class="dot" style="background:var(--work)"></span>worked</span>';
+    if (mode === "instruments") h += '<span><b>Tap an instrument</b> to see where it was invented</span>';
+    $("legend").innerHTML = h;
+  }
+
+  function paintInstList() {
+    $("instList").innerHTML = INST.map(function (it, i) { return '<button data-i="' + i + '"' + (selInst === it ? ' class="on"' : "") + '>' + it.emoji + " " + esc(it.name) + '</button>'; }).join("");
+  }
+  $("instList").addEventListener("click", function (e) { var b = e.target.closest("[data-i]"); if (b) { pickInst(INST[+b.getAttribute("data-i")]); paintInstList(); } });
+
+  // ---------------- timeline ----------------
+  function drawTimeline() {
+    var el = $("tl"), r = el.getBoundingClientRect(), w = r.width, h = r.height;
+    var s = d3.select(el); s.selectAll("*").remove();
+    var x = d3.scaleLinear().domain([1450, 2030]).range([30, w - 30]);
+    var bandY = Math.round(h * 0.42), bandH = 30;
+    var col = { "Renaissance": "#c792ea", "Baroque": "#f4d35e", "Classical": "#6fa8ff", "Romantic": "#ef6c6c", "20th Century": "#5ed39b", "Today": "#f2a65a" };
+    var eg = s.append("g");
+    D.eras.forEach(function (e) {
+      var g = eg.append("g").attr("class", "era");
+      g.append("rect").attr("x", x(Math.max(1450, e.from))).attr("y", bandY).attr("width", x(e.to) - x(Math.max(1450, e.from))).attr("height", bandH).attr("fill", col[e.name] || "#888");
+      g.append("text").attr("x", (x(Math.max(1450, e.from)) + x(e.to)) / 2).attr("y", bandY + 21).text(e.name.toUpperCase());
+    });
+    var ax = s.append("g").attr("class", "tl-axis");
+    [1500, 1600, 1700, 1800, 1900, 2000].forEach(function (y) { ax.append("text").attr("x", x(y)).attr("y", bandY + bandH + 18).text(y); });
+    var names = Object.keys(COMP).filter(function (k) { return COMP[k].born; }).sort(function (a, b) { return COMP[a].born - COMP[b].born; });
+    // four rows (two above the eras, two below); each name goes in the first row where it fits
+    var ROWS = [{ dot: bandY - 16, lab: bandY - 28 }, { dot: bandY + bandH + 16, lab: bandY + bandH + 40 },
+                { dot: bandY - 54, lab: bandY - 66 }, { dot: bandY + bandH + 54, lab: bandY + bandH + 78 }];
+    var ends = [-1e9, -1e9, -1e9, -1e9];
+    names.forEach(function (n) {
+      var c = COMP[n], cx = x(Math.max(1450, c.born));
+      var short = n.replace(/^(Johann Sebastian|Wolfgang Amadeus|Ludwig van|George Frideric|Peter Ilyich|John Philip|Jean-Jacques|Johann|Jacques|Gustav|Percy|Stephen|Jeremiah|Tielman|Bruce|Anne|David|Ryan|Erin A\.|J\. S\.)\s+/, "");
+      var half = short.length * 4.4 + 8, row = 0;
+      while (row < 3 && ends[row] > cx - half) row++;
+      ends[row] = cx + half;
+      var R = ROWS[row], above = R.dot < bandY;
+      var g = s.append("g").attr("class", "tl-c").attr("data-c", n).on("click", function () { pickComposer(n); });
+      g.append("line").attr("x1", cx).attr("x2", cx).attr("y1", above ? R.dot : bandY + bandH).attr("y2", above ? bandY : R.dot);
+      g.append("circle").attr("cx", cx).attr("cy", R.dot).attr("r", 8);
+      g.append("text").attr("x", cx).attr("y", R.lab).text(short);
+      g.append("title").text(n + " (" + c.years + ")");
+    });
+    s.append("text").attr("x", 30).attr("y", 20).attr("fill", "#c9a227").attr("font-family", "Oswald, Arial").attr("font-size", 15).attr("letter-spacing", ".06em")
+      .text("COMPOSERS IN OUR BOOK · by the year they were born · tap one to see where they lived");
+  }
+
+  // ---------------- mystery country ----------------
+  var DEMONYM = { "United States of America": ["American", "America", "U.S.", "USA"], "United Kingdom": ["British", "English", "Scottish", "Welsh", "Britain", "England", "Scotland", "Wales"],
+    "Germany": ["German"], "Austria": ["Austrian"], "France": ["French"], "Italy": ["Italian"], "Spain": ["Spanish"], "Russia": ["Russian"], "Japan": ["Japanese"],
+    "China": ["Chinese"], "Mexico": ["Mexican"], "Puerto Rico": ["Puerto Rican"], "Jamaica": ["Jamaican"], "Trinidad and Tobago": ["Trinidadian", "Trinidad", "Tobago"],
+    "Canada": ["Canadian"], "Australia": ["Australian", "Aboriginal Australian"], "Sweden": ["Swedish"], "Brazil": ["Brazilian"], "South Africa": ["South African"],
+    "Belgium": ["Belgian"], "Finland": ["Finnish"], "Czechia": ["Czech"], "Switzerland": ["Swiss"], "Guatemala": ["Guatemalan"], "Turkey": ["Turkish"],
+    "Cuba": ["Cuban"], "Argentina": ["Argentine", "Argentinian"], "Indonesia": ["Indonesian"], "India": ["Indian"], "Egypt": ["Egyptian"], "Kenya": ["Kenyan"],
+    "Ghana": ["Ghanaian"], "Mali": ["Malian"], "New Zealand": ["Māori", "Maori", "Kiwi"], "Norway": ["Norwegian"], "Iceland": ["Icelandic", "Icelanders"], "Netherlands": ["Dutch"],
+    "Portugal": ["Portuguese"], "Greece": ["Greek"], "Poland": ["Polish"], "Hungary": ["Hungarian"], "South Korea": ["Korean", "Korea"], "Peru": ["Peruvian"],
+    "Mongolia": ["Mongolian"], "Nepal": ["Nepalese", "Nepali"], "Madagascar": ["Malagasy"], "Venezuela": ["Venezuelan"], "Colombia": ["Colombian"],
+    "Philippines": ["Filipino", "Filipinos"], "Thailand": ["Thai"], "Vietnam": ["Vietnamese"], "Nigeria": ["Nigerian"], "Morocco": ["Moroccan"],
+    "Ethiopia": ["Ethiopian"], "Chile": ["Chilean"], "Ukraine": ["Ukrainian"], "Tanzania": ["Tanzanian"], "Ireland": ["Irish"] };
+  function redact(text, name) {
+    var words = [name].concat(DEMONYM[name] || []).sort(function (a, b) { return b.length - a.length; });
+    var out = String(text || "");
+    words.forEach(function (w) {
+      var re = new RegExp("(^|[^\\w])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\\w])", "gi");
+      out = out.replace(re, "$1▢▢▢");
+    });
+    return out;
+  }
+  var mPool = [], mOrder = [];
+  function newMystery() {
+    if (!mPool.length) mPool = Object.keys(COUNTRIES).filter(function (n) { var c = COUNTRIES[n]; return byName[n] && c.known && c.fact && c.hello; });
+    if (!mOrder.length) mOrder = d3.shuffle(mPool.slice());
+    var name = mOrder.pop(), c = COUNTRIES[name];
+    var clues = [
+      { lab: "Continent", t: c.cont || CONT[byName[name].cont].n },
+      { lab: "People here say hello like this", t: c.hello },
+      { lab: "Known for", t: redact(c.known, name) },
+      { lab: c.music ? "Music" : "Fun fact", t: redact(c.music || c.fact, name) }
+    ];
+    mysteryC = { name: name, clues: clues, shown: 1, revealed: false };
+    selCountry = null; closeCard(); paintMystery(); home();
+  }
+  function paintMystery() {
+    var m = mysteryC; if (!m) return;
+    $("mClues").innerHTML = m.clues.slice(0, m.shown).map(function (c) { return '<li><span class="lab">' + esc(c.lab) + '</span>' + esc(c.t) + '</li>'; }).join("");
+    $("mNext").style.display = m.shown < m.clues.length && !m.revealed ? "" : "none";
+    $("mAnswer").classList.toggle("on", m.revealed);
+    $("mAnswer").innerHTML = m.revealed ? ((COUNTRIES[m.name] || {}).flag || "") + " " + esc(m.name) : "";
+    $("mReveal").style.display = m.revealed ? "none" : "";
+  }
+  $("mNext").onclick = function () { if (mysteryC) { mysteryC.shown++; paintMystery(); } };
+  $("mReveal").onclick = function () {
+    if (!mysteryC) return;
+    mysteryC.revealed = true; mysteryC.shown = mysteryC.clues.length; paintMystery();
+    selCountry = mysteryC.name; restyle(); fitCountry(mysteryC.name);
+  };
+  $("mNew").onclick = newMystery;
+
+  // ---------------- buttons, resize, close ----------------
+  $("zIn").onclick = function () { svg.transition().duration(300).call(zoom.scaleBy, 1.6); };
+  $("zOut").onclick = function () { svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.6); };
+  $("zHome").onclick = home;
+  $("close").onclick = function () { try { window.parent.postMessage({ agendaMap: "close" }, "*"); } catch (e) {} };
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && document.activeElement !== $("search")) {
+      if ($("video").classList.contains("open")) $("videoX").click();
+      else if ($("card").classList.contains("open")) closeCard();
+      else $("close").click();
+    }
+  });
+  var rt = 0;
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(function () { var t = T; size(); draw(); if (mode === "timeline") drawTimeline(); svg.call(zoom.transform, t); }, 150); });
+  // the board can ask the map to start fresh each time it opens
+  window.addEventListener("message", function (e) { if (e.data && e.data.agendaMap === "opened") { if ($("video").classList.contains("open")) $("videoX").click(); } });
+
+  // ---------------- start ----------------
+  Promise.all([fetch("countries-110m.json").then(function (r) { return r.json(); }), loadData()]).then(function (two) {
+    world = two[0];
+    features = topojson.feature(world, world.objects.countries).features;
+    features.forEach(function (f) { f.cont = continent(f); byName[f.properties.name] = f; });
+    HOME = D.home; COMP = D.composers; COUNTRIES = D.countries; INST = D.instruments;
+    SONGS = D.songs.filter(function (s) { return byName[s.country]; });
+    BYC = {}; SONGS.forEach(function (s) { (BYC[s.country] = BYC[s.country] || []).push(s); });
+    $("msg").style.display = "none";
+    size(); svg.call(zoom).on("dblclick.zoom", null); draw(); legend();
+    window.__map = { songs: SONGS, countries: COUNTRIES, composers: COMP, byName: byName, mode: function () { return mode; },
+      pickSong: pickSong, pickCountry: pickCountry, pickComposer: pickComposer, setMode: setMode, mystery: function () { return mysteryC; },
+      transform: function () { return T; }, sheet: D.__sheet || false };
+    var q = new URLSearchParams(location.search).get("q"); if (q) { $("search").value = q; search(); }
+  }).catch(function (e) { $("msg").textContent = "Couldn't load the map (" + (e && e.message || e) + ")."; });
+})();
+</script>
+</body>
+</html>

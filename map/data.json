@@ -1,0 +1,1707 @@
+{
+ "v": 1,
+ "home": {
+  "name": "Savannah, Georgia",
+  "lat": 32.08,
+  "lon": -81.09
+ },
+ "eras": [
+  {
+   "name": "Renaissance",
+   "from": 1400,
+   "to": 1600
+  },
+  {
+   "name": "Baroque",
+   "from": 1600,
+   "to": 1750
+  },
+  {
+   "name": "Classical",
+   "from": 1750,
+   "to": 1820
+  },
+  {
+   "name": "Romantic",
+   "from": 1820,
+   "to": 1900
+  },
+  {
+   "name": "20th Century",
+   "from": 1900,
+   "to": 2000
+  },
+  {
+   "name": "Today",
+   "from": 2000,
+   "to": 2030
+  }
+ ],
+ "composers": {
+  "Tielman Susato": {
+   "years": "c. 1500–c. 1562",
+   "born": 1500,
+   "era": "Renaissance",
+   "country": "Belgium",
+   "worked": {
+    "place": "Antwerp",
+    "lat": 51.22,
+    "lon": 4.4
+   },
+   "fact": "A trumpet player and music publisher in Antwerp. He printed lots of dance music, including the Ronde in our book."
+  },
+  "Johann Schop": {
+   "years": "c. 1590–1667",
+   "born": 1590,
+   "era": "Baroque",
+   "country": "Germany",
+   "worked": {
+    "place": "Hamburg",
+    "lat": 53.55,
+    "lon": 9.99
+   },
+   "fact": "A violinist who worked in Hamburg. Bach later used Schop's melody in “Jesu, Joy of Man's Desiring.”"
+  },
+  "Jeremiah Clarke": {
+   "years": "c. 1674–1707",
+   "born": 1674,
+   "era": "Baroque",
+   "country": "United Kingdom",
+   "worked": {
+    "place": "London",
+    "lat": 51.51,
+    "lon": -0.13
+   },
+   "fact": "For many years his Trumpet Voluntary was printed under another composer's name: Henry Purcell."
+  },
+  "Johann Sebastian Bach": {
+   "years": "1685–1750",
+   "born": 1685,
+   "era": "Baroque",
+   "country": "Germany",
+   "birth": {
+    "place": "Eisenach",
+    "lat": 50.98,
+    "lon": 10.32
+   },
+   "worked": {
+    "place": "Leipzig",
+    "lat": 51.34,
+    "lon": 12.37
+   },
+   "fact": "Bach's death in 1750 marks the end of the Baroque Period."
+  },
+  "George Frideric Handel": {
+   "years": "1685–1759",
+   "born": 1685,
+   "era": "Baroque",
+   "country": "United Kingdom",
+   "birth": {
+    "place": "Halle",
+    "lat": 51.48,
+    "lon": 11.97
+   },
+   "worked": {
+    "place": "London",
+    "lat": 51.51,
+    "lon": -0.13
+   },
+   "fact": "Born in Germany, famous in England. His Water Music was played on a barge on the Thames River for King George I (1717)."
+  },
+  "Jean-Jacques Rousseau": {
+   "years": "1712–1778",
+   "born": 1712,
+   "era": "Classical",
+   "country": "France",
+   "birth": {
+    "place": "Geneva",
+    "lat": 46.2,
+    "lon": 6.14
+   },
+   "worked": {
+    "place": "Paris",
+    "lat": 48.86,
+    "lon": 2.35
+   },
+   "fact": "Better known as a philosopher. A dance from his 1752 opera became the tune of “Go Tell Aunt Rhodie.”"
+  },
+  "Wolfgang Amadeus Mozart": {
+   "years": "1756–1791",
+   "born": 1756,
+   "era": "Classical",
+   "country": "Austria",
+   "birth": {
+    "place": "Salzburg",
+    "lat": 47.81,
+    "lon": 13.04
+   },
+   "worked": {
+    "place": "Vienna",
+    "lat": 48.21,
+    "lon": 16.37
+   },
+   "fact": "A child prodigy: he toured Europe with his father, wrote his first symphony at 8 and his first opera at 12."
+  },
+  "Ludwig van Beethoven": {
+   "years": "1770–1827",
+   "born": 1770,
+   "era": "Classical",
+   "country": "Germany",
+   "birth": {
+    "place": "Bonn",
+    "lat": 50.74,
+    "lon": 7.1
+   },
+   "worked": {
+    "place": "Vienna",
+    "lat": 48.21,
+    "lon": 16.37
+   },
+   "fact": "He was completely deaf when he wrote Symphony No. 9 (1824). His music bridges the Classical and Romantic Periods."
+  },
+  "Jacques Offenbach": {
+   "years": "1819–1880",
+   "born": 1819,
+   "era": "Romantic",
+   "country": "France",
+   "birth": {
+    "place": "Cologne",
+    "lat": 50.94,
+    "lon": 6.96
+   },
+   "worked": {
+    "place": "Paris",
+    "lat": 48.86,
+    "lon": 2.35
+   },
+   "fact": "Born in Germany, he became a star in Paris. He was also a fine cellist."
+  },
+  "J. S. Pierpont": {
+   "years": "1822–1893",
+   "born": 1822,
+   "era": "Romantic",
+   "country": "United States of America",
+   "birth": {
+    "place": "Boston",
+    "lat": 42.36,
+    "lon": -71.06
+   },
+   "worked": {
+    "place": "Savannah, Georgia",
+    "lat": 32.08,
+    "lon": -81.09
+   },
+   "fact": "He was music director at the Unitarian church right here in Savannah when “Jingle Bells” was published in 1857."
+  },
+  "Stephen Foster": {
+   "years": "1826–1864",
+   "born": 1826,
+   "era": "Romantic",
+   "country": "United States of America",
+   "birth": {
+    "place": "Pittsburgh",
+    "lat": 40.44,
+    "lon": -79.99
+   },
+   "fact": "America's first great popular songwriter, born on July 4, 1826: the 50th birthday of American independence."
+  },
+  "Peter Ilyich Tchaikovsky": {
+   "years": "1840–1893",
+   "born": 1840,
+   "era": "Romantic",
+   "country": "Russia",
+   "birth": {
+    "place": "Votkinsk",
+    "lat": 57.05,
+    "lon": 54.0
+   },
+   "worked": {
+    "place": "St. Petersburg",
+    "lat": 59.94,
+    "lon": 30.31
+   },
+   "fact": "He studied to be a lawyer first. In 1891 he traveled to New York City for the opening of Carnegie Hall."
+  },
+  "John Philip Sousa": {
+   "years": "1854–1932",
+   "born": 1854,
+   "era": "20th Century",
+   "country": "United States of America",
+   "birth": {
+    "place": "Washington, D.C.",
+    "lat": 38.9,
+    "lon": -77.04
+   },
+   "fact": "“The March King.” He led the U.S. Marine Band, and the sousaphone is named after him."
+  },
+  "Gustav Holst": {
+   "years": "1874–1934",
+   "born": 1874,
+   "era": "20th Century",
+   "country": "United Kingdom",
+   "birth": {
+    "place": "Cheltenham",
+    "lat": 51.9,
+    "lon": -2.08
+   },
+   "worked": {
+    "place": "London",
+    "lat": 51.51,
+    "lon": -0.13
+   },
+   "fact": "He was a professional trombonist. His most famous piece is The Planets."
+  },
+  "Percy Grainger": {
+   "years": "1882–1961",
+   "born": 1882,
+   "era": "20th Century",
+   "country": "Australia",
+   "birth": {
+    "place": "Melbourne",
+    "lat": -37.81,
+    "lon": 144.96
+   },
+   "worked": {
+    "place": "London",
+    "lat": 51.51,
+    "lon": -0.13
+   },
+   "fact": "Born in Australia, he collected English folk songs and later lived in the United States. His band pieces are band classics."
+  },
+  "Bruce Pearson": {
+   "years": "born 1942",
+   "born": 1942,
+   "era": "Today",
+   "country": "United States of America",
+   "fact": "Played clarinet and saxophone (and baseball and hockey!) in college before becoming a music teacher, author, composer and conductor."
+  },
+  "Anne McGinty": {
+   "years": "born 1945",
+   "born": 1945,
+   "era": "Today",
+   "country": "United States of America",
+   "fact": "One of the most prolific women composers of band music: more than 225 published pieces."
+  },
+  "David Bobrowitz": {
+   "years": "born 1945",
+   "born": 1945,
+   "era": "Today",
+   "country": "United States of America",
+   "fact": ""
+  },
+  "Erin A. Watson": {
+   "years": "born 1977",
+   "born": 1977,
+   "era": "Today",
+   "country": "United States of America",
+   "birth": {
+    "place": "Wichita Falls, Texas",
+    "lat": 33.91,
+    "lon": -98.49
+   },
+   "fact": "Plays violin, piano and accordion, and studied with American composer Joan Tower."
+  },
+  "Ryan Nowlin": {
+   "years": "born 1978",
+   "born": 1978,
+   "era": "Today",
+   "country": "United States of America",
+   "fact": "A composer, author and music teacher who also plays horn and sings. He co-wrote this book."
+  }
+ },
+ "songs": [
+  {
+   "n": "17",
+   "title": "Rain, Rain",
+   "label": "Traditional (English nursery rhyme)",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "England",
+   "lat": 52.6,
+   "lon": -1.5
+  },
+  {
+   "n": "19",
+   "title": "Hot Cross Buns",
+   "label": "English Folk Song",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "Once a street vendors' call for selling buns in England.",
+   "yt": "",
+   "place": "England",
+   "lat": 52.6,
+   "lon": -1.5
+  },
+  {
+   "n": "20",
+   "title": "Go Tell Aunt Rhodie",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "Jean-Jacques Rousseau",
+   "fact": "The tune is older than the song: it began as a dance in Rousseau's 1752 opera in France.",
+   "yt": "",
+   "also": [
+    {
+     "place": "Paris",
+     "lat": 48.86,
+     "lon": 2.35,
+     "why": "where the tune began (Rousseau's opera, 1752)"
+    }
+   ]
+  },
+  {
+   "n": "22",
+   "title": "Little Robin Redbreast",
+   "label": "Traditional (English nursery rhyme)",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "England",
+   "lat": 52.6,
+   "lon": -1.5
+  },
+  {
+   "n": "23",
+   "title": "Merrily We Roll Along",
+   "label": "Traditional (American)",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "Same tune as “Mary Had a Little Lamb.”",
+   "yt": ""
+  },
+  {
+   "n": "24",
+   "title": "Itsy Bitsy Spider",
+   "label": "Traditional (American)",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "25",
+   "title": "A La Rueda",
+   "label": "Spanish Folk Song",
+   "country": "Spain",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "26",
+   "title": "Love Somebody",
+   "label": "Traditional (American)",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "27",
+   "title": "Good King Wenceslas",
+   "label": "Traditional English Carol",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "English words (1853), a tune from a 1582 songbook printed for Finland, and a real duke of Bohemia (today's Czechia).",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13,
+   "also": [
+    {
+     "place": "Prague",
+     "lat": 50.08,
+     "lon": 14.44,
+     "why": "Wenceslas was a real duke of Bohemia (today's Czechia) in the 900s"
+    }
+   ]
+  },
+  {
+   "n": "31",
+   "title": "Camptown Races",
+   "label": "Stephen Foster",
+   "country": "United States of America",
+   "composer": "Stephen Foster",
+   "fact": "",
+   "yt": "",
+   "place": "Pittsburgh",
+   "lat": 40.44,
+   "lon": -79.99
+  },
+  {
+   "n": "33",
+   "title": "London Bridge",
+   "label": "English Folk Song",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "34",
+   "title": "The Frog's Song",
+   "label": "Japanese Folk Song",
+   "country": "Japan",
+   "composer": "",
+   "fact": "In Japan it's called “Kaeru no Uta” and is sung as a round.",
+   "yt": ""
+  },
+  {
+   "n": "38",
+   "title": "Shoo Fly",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "39",
+   "title": "Russian Folk Song",
+   "label": "Ludwig van Beethoven (a Russian folk tune)",
+   "country": "Russia",
+   "composer": "Ludwig van Beethoven",
+   "fact": "",
+   "yt": "",
+   "place": "Moscow region",
+   "lat": 55.76,
+   "lon": 37.62
+  },
+  {
+   "n": "40",
+   "title": "San Serení",
+   "label": "Puerto Rican Folk Song",
+   "country": "Puerto Rico",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "Ens.",
+   "title": "Jingle Bells",
+   "label": "J. S. Pierpont",
+   "country": "United States of America",
+   "composer": "J. S. Pierpont",
+   "fact": "Savannah has a historical marker for it! The sleigh rides in the song are from Massachusetts, where Pierpont grew up. It was also the first song ever played in space (Gemini 6, 1965).",
+   "yt": "",
+   "place": "Savannah, Georgia",
+   "lat": 32.08,
+   "lon": -81.09,
+   "also": [
+    {
+     "place": "Boston",
+     "lat": 42.36,
+     "lon": -71.06,
+     "why": "Pierpont grew up here; the song was published in Boston in 1857"
+    }
+   ]
+  },
+  {
+   "n": "Ens.",
+   "title": "Jolly Old St. Nicholas",
+   "label": "Traditional (American)",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "Ens.",
+   "title": "The Dreidel Song",
+   "label": "Jewish Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "The English song “I Have a Little Dreidel” was written by Samuel Goldfarb in New York in the 1920s. A dreidel is a spinning top for Hanukkah.",
+   "yt": "",
+   "place": "New York City",
+   "lat": 40.71,
+   "lon": -74.01
+  },
+  {
+   "n": "Ens.",
+   "title": "Kwanzaa Celebration",
+   "label": "David Bobrowitz",
+   "country": "United States of America",
+   "composer": "David Bobrowitz",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "44",
+   "title": "Michael Finnegan",
+   "label": "Irish Folk Song",
+   "country": "Ireland",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "52",
+   "title": "Now Let Me Fly",
+   "label": "American Spiritual",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "Spirituals are religious folk songs created by enslaved African Americans in the 1700s and 1800s.",
+   "yt": ""
+  },
+  {
+   "n": "58",
+   "title": "Boil the Cabbage Down",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "59",
+   "title": "Bingo",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "64",
+   "title": "Theme from “Cambridge Overture”",
+   "label": "Anne McGinty",
+   "country": "United States of America",
+   "composer": "Anne McGinty",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "65",
+   "title": "I've Just Come From Sydney",
+   "label": "Australian Folk Song",
+   "country": "Australia",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "Sydney",
+   "lat": -33.87,
+   "lon": 151.21
+  },
+  {
+   "n": "66",
+   "title": "Carnival of Venice",
+   "label": "Italian Folk Song",
+   "country": "Italy",
+   "composer": "",
+   "fact": "Venice's Carnival is famous for its masks. Many virtuosos have written show-off variations on this tune.",
+   "yt": "",
+   "place": "Venice",
+   "lat": 45.44,
+   "lon": 12.33
+  },
+  {
+   "n": "67",
+   "title": "Lullaby",
+   "label": "Welsh Folk Song",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "Wales",
+   "lat": 52.35,
+   "lon": -3.75
+  },
+  {
+   "n": "68",
+   "title": "Ezekiel Saw the Wheel",
+   "label": "American Spiritual",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "70",
+   "title": "Streets of Laredo",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "Laredo is a city in Texas on the Mexican border. It's a cowboy song.",
+   "yt": "",
+   "place": "Laredo, Texas",
+   "lat": 27.51,
+   "lon": -99.51
+  },
+  {
+   "n": "71",
+   "title": "Donkey Riding",
+   "label": "Canadian Folk Song",
+   "country": "Canada",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "72",
+   "title": "Theme from “The Nutcracker”",
+   "label": "Peter Ilyich Tchaikovsky",
+   "country": "Russia",
+   "composer": "Peter Ilyich Tchaikovsky",
+   "fact": "The Nutcracker ballet first played in St. Petersburg in 1892. Now theaters everywhere perform it every December.",
+   "yt": "",
+   "place": "St. Petersburg",
+   "lat": 59.94,
+   "lon": 30.31
+  },
+  {
+   "n": "Solo",
+   "title": "The Good Life",
+   "label": "Ryan Nowlin",
+   "country": "United States of America",
+   "composer": "Ryan Nowlin",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "Band",
+   "title": "March Across the Seas",
+   "label": "Bruce Pearson & Ryan Nowlin",
+   "country": "United States of America",
+   "composer": "Bruce Pearson",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "Band",
+   "title": "Procession from “Water Music”",
+   "label": "George Frideric Handel",
+   "country": "United Kingdom",
+   "composer": "George Frideric Handel",
+   "fact": "Written for a royal boat party on the Thames River. The orchestra played on one barge while King George I listened from another.",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "Band",
+   "title": "Banana Boat Song",
+   "label": "Jamaican Folk Song",
+   "country": "Jamaica",
+   "composer": "",
+   "fact": "A work song sung by dock workers loading bananas onto ships at night, made world-famous by Harry Belafonte in 1956.",
+   "yt": "",
+   "place": "Kingston, Jamaica",
+   "lat": 18.0,
+   "lon": -76.79
+  },
+  {
+   "n": "Band",
+   "title": "Indigo Rock",
+   "label": "Bruce Pearson & Ryan Nowlin",
+   "country": "United States of America",
+   "composer": "Ryan Nowlin",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "74",
+   "title": "“Werde munter”",
+   "label": "Johann Schop",
+   "country": "Germany",
+   "composer": "Johann Schop",
+   "fact": "",
+   "yt": "",
+   "place": "Hamburg",
+   "lat": 53.55,
+   "lon": 9.99
+  },
+  {
+   "n": "75",
+   "title": "Fais Dodo",
+   "label": "French Folk Song",
+   "country": "France",
+   "composer": "",
+   "fact": "“Fais dodo” is how French parents say “go to sleep” to little kids.",
+   "yt": ""
+  },
+  {
+   "n": "76",
+   "title": "Baroque March",
+   "label": "George Frideric Handel",
+   "country": "United Kingdom",
+   "composer": "George Frideric Handel",
+   "fact": "",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "77",
+   "title": "La Bamba",
+   "label": "Mexican Folk Song",
+   "country": "Mexico",
+   "composer": "",
+   "fact": "A wedding song from Veracruz, Mexico. Ritchie Valens made a rock-and-roll version a hit in 1958.",
+   "yt": "",
+   "place": "Veracruz",
+   "lat": 19.17,
+   "lon": -96.13
+  },
+  {
+   "n": "82",
+   "title": "Theme from “Orpheus in the Underworld”",
+   "label": "Jacques Offenbach",
+   "country": "France",
+   "composer": "Jacques Offenbach",
+   "fact": "Its fastest section is the famous “can-can” dance music.",
+   "yt": "",
+   "place": "Paris",
+   "lat": 48.86,
+   "lon": 2.35
+  },
+  {
+   "n": "84",
+   "title": "Crescent Moon Rising",
+   "label": "Chinese Folk Song",
+   "country": "China",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "90",
+   "title": "Santa Lucia",
+   "label": "Italian Folk Song",
+   "country": "Italy",
+   "composer": "",
+   "fact": "A boat song about a harbor in Naples. In Sweden, it's sung on St. Lucia's Day every December 13.",
+   "yt": "",
+   "place": "Naples",
+   "lat": 40.85,
+   "lon": 14.27
+  },
+  {
+   "n": "96",
+   "title": "When the Saints Go Marching In",
+   "label": "American Spiritual",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "Often played in Dixieland jazz style, which began in New Orleans in the early 1900s.",
+   "yt": "",
+   "place": "New Orleans",
+   "lat": 29.95,
+   "lon": -90.07
+  },
+  {
+   "n": "97",
+   "title": "Musette",
+   "label": "Johann Sebastian Bach",
+   "country": "Germany",
+   "composer": "Johann Sebastian Bach",
+   "fact": "",
+   "yt": "",
+   "place": "Leipzig",
+   "lat": 51.34,
+   "lon": 12.37
+  },
+  {
+   "n": "98",
+   "title": "Bella Bimba",
+   "label": "Italian Folk Song",
+   "country": "Italy",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "104",
+   "title": "Alouette",
+   "label": "French Canadian Folk Song",
+   "country": "Canada",
+   "composer": "",
+   "fact": "“Alouette” means “lark,” a kind of songbird.",
+   "yt": "",
+   "place": "Quebec",
+   "lat": 46.81,
+   "lon": -71.21
+  },
+  {
+   "n": "105",
+   "title": "Ronde",
+   "label": "Tielman Susato",
+   "country": "Belgium",
+   "composer": "Tielman Susato",
+   "fact": "",
+   "yt": "",
+   "place": "Antwerp",
+   "lat": 51.22,
+   "lon": 4.4
+  },
+  {
+   "n": "109",
+   "title": "Theme from “The Red Balloon”",
+   "label": "Anne McGinty",
+   "country": "United States of America",
+   "composer": "Anne McGinty",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "110",
+   "title": "Trumpet Voluntary",
+   "label": "Jeremiah Clarke",
+   "country": "United Kingdom",
+   "composer": "Jeremiah Clarke",
+   "fact": "Also called “Prince of Denmark's March.” It was first written for harpsichord, and it's a favorite at weddings.",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "115",
+   "title": "In the Bleak Midwinter",
+   "label": "Gustav Holst",
+   "country": "United Kingdom",
+   "composer": "Gustav Holst",
+   "fact": "",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "116",
+   "title": "Theme from “Symphony No. 9”",
+   "label": "Ludwig van Beethoven",
+   "country": "Austria",
+   "composer": "Ludwig van Beethoven",
+   "fact": "Called “Ode to Joy.” Beethoven was completely deaf when he wrote it, and it first played in Vienna in 1824.",
+   "yt": "",
+   "place": "Vienna",
+   "lat": 48.21,
+   "lon": 16.37
+  },
+  {
+   "n": "118",
+   "title": "Lone Star Waltz",
+   "label": "Erin A. Watson",
+   "country": "United States of America",
+   "composer": "Erin A. Watson",
+   "fact": "Texas is called the Lone Star State.",
+   "yt": "",
+   "place": "Wichita Falls, Texas",
+   "lat": 33.91,
+   "lon": -98.49
+  },
+  {
+   "n": "119",
+   "title": "Yangtze Boatman Chantey",
+   "label": "Chinese Folk Song",
+   "country": "China",
+   "composer": "",
+   "fact": "The Yangtze is the longest river in Asia.",
+   "yt": "",
+   "place": "Yangtze River",
+   "lat": 30.6,
+   "lon": 114.3
+  },
+  {
+   "n": "121",
+   "title": "Mary Ann",
+   "label": "Calypso Song",
+   "country": "Trinidad and Tobago",
+   "composer": "",
+   "fact": "Calypso began in Trinidad and Tobago in the early 1900s. It often features guitar, steel drums and other percussion.",
+   "yt": "",
+   "place": "Trinidad",
+   "lat": 10.66,
+   "lon": -61.51
+  },
+  {
+   "n": "122",
+   "title": "Happy Little Donkey",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "127",
+   "title": "Theme from “The Sleeping Beauty”",
+   "label": "Peter Ilyich Tchaikovsky",
+   "country": "Russia",
+   "composer": "Peter Ilyich Tchaikovsky",
+   "fact": "",
+   "yt": "",
+   "place": "St. Petersburg",
+   "lat": 59.94,
+   "lon": 30.31
+  },
+  {
+   "n": "128",
+   "title": "Amazing Grace",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "The words were written by John Newton, an English minister, in the 1770s. The tune we sing (“New Britain”) is American.",
+   "yt": "",
+   "also": [
+    {
+     "place": "Olney, England",
+     "lat": 52.15,
+     "lon": -0.7,
+     "why": "John Newton wrote the words here"
+    }
+   ]
+  },
+  {
+   "n": "130",
+   "title": "A Little Blue",
+   "label": "In the style of the blues",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "The blues grew out of African American spirituals and work songs in the early 1900s. Blues melodies are usually 12 measures long.",
+   "yt": ""
+  },
+  {
+   "n": "131",
+   "title": "Classical Dance",
+   "label": "Wolfgang Amadeus Mozart",
+   "country": "Austria",
+   "composer": "Wolfgang Amadeus Mozart",
+   "fact": "",
+   "yt": "",
+   "place": "Vienna",
+   "lat": 48.21,
+   "lon": 16.37
+  },
+  {
+   "n": "133",
+   "title": "Sleeping Princess",
+   "label": "Swedish Folk Song",
+   "country": "Sweden",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "134",
+   "title": "Samba-lêlê",
+   "label": "Brazilian Folk Song",
+   "country": "Brazil",
+   "composer": "",
+   "fact": "A children's song from Brazil, where samba is the sound of Carnival.",
+   "yt": ""
+  },
+  {
+   "n": "136",
+   "title": "Ye Banks and Braes o' Bonnie Doon",
+   "label": "Scottish Folk Song",
+   "country": "United Kingdom",
+   "composer": "",
+   "fact": "The words are by Robert Burns, Scotland's national poet. The Doon is a river in Ayrshire.",
+   "yt": "",
+   "place": "Ayrshire, Scotland",
+   "lat": 55.45,
+   "lon": -4.6
+  },
+  {
+   "n": "137",
+   "title": "Open the Door for Me!",
+   "label": "South African Folk Song",
+   "country": "South Africa",
+   "composer": "",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "138",
+   "title": "Shepherd's Hey",
+   "label": "English Folk Song",
+   "country": "United Kingdom",
+   "composer": "Percy Grainger",
+   "fact": "Percy Grainger's 1918 version for concert band is part of the band world's standard music.",
+   "yt": "",
+   "place": "England",
+   "lat": 52.6,
+   "lon": -1.5
+  },
+  {
+   "n": "139",
+   "title": "The Yellow Rose of Texas",
+   "label": "American Folk Song",
+   "country": "United States of America",
+   "composer": "",
+   "fact": "",
+   "yt": "",
+   "place": "Texas",
+   "lat": 31.0,
+   "lon": -99.3
+  },
+  {
+   "n": "140",
+   "title": "Manhattan Beach March",
+   "label": "John Philip Sousa",
+   "country": "United States of America",
+   "composer": "John Philip Sousa",
+   "fact": "Named for a seaside resort in Brooklyn, New York, where Sousa's band played summer concerts.",
+   "yt": "",
+   "place": "Brooklyn, New York",
+   "lat": 40.58,
+   "lon": -73.95
+  },
+  {
+   "n": "Ens.",
+   "title": "Ecossaise for Military Band",
+   "label": "Ludwig van Beethoven",
+   "country": "Austria",
+   "composer": "Ludwig van Beethoven",
+   "fact": "Written in 1810. An écossaise is a lively dance; “military band” was an old name for a band like ours.",
+   "yt": "",
+   "place": "Vienna",
+   "lat": 48.21,
+   "lon": 16.37
+  },
+  {
+   "n": "Band",
+   "title": "See, the Conquering Hero Comes",
+   "label": "George Frideric Handel",
+   "country": "United Kingdom",
+   "composer": "George Frideric Handel",
+   "fact": "From Judas Maccabaeus (1746), one of Handel's most famous oratorios.",
+   "yt": "",
+   "place": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "n": "Band",
+   "title": "Riverside March",
+   "label": "Ryan Nowlin",
+   "country": "United States of America",
+   "composer": "Ryan Nowlin",
+   "fact": "",
+   "yt": ""
+  },
+  {
+   "n": "Solo",
+   "title": "German Dance",
+   "label": "Ludwig van Beethoven",
+   "country": "Austria",
+   "composer": "Ludwig van Beethoven",
+   "fact": "Written around 1795, when Beethoven was becoming famous in Vienna as a composer and pianist.",
+   "yt": "",
+   "place": "Vienna",
+   "lat": 48.21,
+   "lon": 16.37
+  }
+ ],
+ "countries": {
+  "United States of America": {
+   "cont": "North America",
+   "flag": "🇺🇸",
+   "hello": "Hello",
+   "known": "Jazz, rock and roll, national parks and marching bands",
+   "fact": "The tune of “The Star-Spangled Banner” was a British song before Francis Scott Key wrote new words in 1814.",
+   "music": "Jazz was born in New Orleans in the early 1900s, and the blues grew up in the South."
+  },
+  "United Kingdom": {
+   "cont": "Europe",
+   "flag": "🇬🇧",
+   "hello": "Hello",
+   "known": "Big Ben, castles, the Beatles and tea",
+   "fact": "The UK is four countries in one: England, Scotland, Wales and Northern Ireland.",
+   "music": "The Beatles came from Liverpool, England. Scotland is famous for bagpipes."
+  },
+  "Ireland": {
+   "cont": "Europe",
+   "flag": "🇮🇪",
+   "hello": "Dia duit",
+   "known": "Green hills, St. Patrick's Day and Irish dance",
+   "fact": "The harp is Ireland's national symbol. It's even on Irish coins.",
+   "music": "Irish folk bands use the fiddle, tin whistle and a frame drum called the bodhrán."
+  },
+  "Germany": {
+   "cont": "Europe",
+   "flag": "🇩🇪",
+   "hello": "Hallo",
+   "known": "Castles, pretzels, the Black Forest and fast cars",
+   "fact": "Johannes Gutenberg's printing press, made in Mainz around 1450, changed how the world shared books and music.",
+   "music": "Bach, Handel and Beethoven were all born in Germany. So were the clarinet and the tuba."
+  },
+  "Austria": {
+   "cont": "Europe",
+   "flag": "🇦🇹",
+   "hello": "Hallo",
+   "known": "The Alps, skiing and Vienna's music",
+   "fact": "Vienna is called the “City of Music”: Mozart, Haydn and Beethoven all worked there.",
+   "music": "The waltz became the dance craze of Vienna. Johann Strauss II wrote “The Blue Danube.”"
+  },
+  "France": {
+   "cont": "Europe",
+   "flag": "🇫🇷",
+   "hello": "Bonjour",
+   "known": "The Eiffel Tower, art museums and croissants",
+   "fact": "The Eiffel Tower was built for a world's fair in 1889 and was supposed to be temporary.",
+   "music": "The oboe was developed at the French royal court in the 1600s."
+  },
+  "Italy": {
+   "cont": "Europe",
+   "flag": "🇮🇹",
+   "hello": "Ciao",
+   "known": "Pizza, pasta, Rome and the Leaning Tower of Pisa",
+   "fact": "Most of our music words are Italian: piano, forte, allegro, crescendo, tempo…",
+   "music": "The piano was invented in Florence, Italy, around 1700."
+  },
+  "Spain": {
+   "cont": "Europe",
+   "flag": "🇪🇸",
+   "hello": "Hola",
+   "known": "Flamenco, soccer and paella",
+   "fact": "Flamenco dancers and singers clap tricky rhythms called palmas.",
+   "music": "The modern classical guitar was developed in Spain in the 1800s."
+  },
+  "Russia": {
+   "cont": "Europe & Asia",
+   "flag": "🇷🇺",
+   "hello": "Privet",
+   "known": "The world's biggest country, ballet and snowy winters",
+   "fact": "Russia stretches across 11 time zones.",
+   "music": "Tchaikovsky's ballets, like The Nutcracker, are performed all over the world."
+  },
+  "Japan": {
+   "cont": "Asia",
+   "flag": "🇯🇵",
+   "hello": "Konnichiwa",
+   "known": "Sushi, anime, video games and bullet trains",
+   "fact": "Japan's bullet trains (Shinkansen) travel close to 200 miles per hour.",
+   "music": "Taiko drummers play huge drums using their whole bodies."
+  },
+  "China": {
+   "cont": "Asia",
+   "flag": "🇨🇳",
+   "hello": "Nǐ hǎo",
+   "known": "The Great Wall, giant pandas and Lunar New Year",
+   "fact": "Paper and the compass were first invented in China.",
+   "music": "The erhu is a two-string Chinese fiddle played with a bow."
+  },
+  "Mexico": {
+   "cont": "North America",
+   "flag": "🇲🇽",
+   "hello": "Hola",
+   "known": "Tacos, ancient pyramids and Day of the Dead",
+   "fact": "The Aztecs and Maya were drinking chocolate long before Europeans arrived.",
+   "music": "Mariachi bands play trumpets, violins and several sizes of guitar."
+  },
+  "Puerto Rico": {
+   "cont": "North America (Caribbean)",
+   "flag": "🇵🇷",
+   "hello": "Hola",
+   "known": "Beaches, the El Morro fortress and the coquí frog",
+   "fact": "Puerto Rico is a U.S. territory, so people born there are U.S. citizens.",
+   "music": "Bomba and plena are Puerto Rican music styles built on drums and call-and-response singing."
+  },
+  "Jamaica": {
+   "cont": "North America (Caribbean)",
+   "flag": "🇯🇲",
+   "hello": "Wah gwaan",
+   "known": "Reggae, beaches and world-record sprinters",
+   "fact": "Usain Bolt, the fastest sprinter ever timed, is from Jamaica.",
+   "music": "Reggae music, made famous by Bob Marley, comes from Jamaica."
+  },
+  "Trinidad and Tobago": {
+   "cont": "North America (Caribbean)",
+   "flag": "🇹🇹",
+   "hello": "Hello",
+   "known": "Carnival and the steel pan",
+   "fact": "The first steel pans were made from old oil drums.",
+   "music": "Calypso and soca music both come from Trinidad and Tobago."
+  },
+  "Canada": {
+   "cont": "North America",
+   "flag": "🇨🇦",
+   "hello": "Hello / Bonjour",
+   "known": "Hockey, maple syrup and moose",
+   "fact": "Canada has the longest coastline of any country in the world.",
+   "music": "In Quebec most people speak French. Songs like “Alouette” come from there."
+  },
+  "Australia": {
+   "cont": "Oceania",
+   "flag": "🇦🇺",
+   "hello": "G'day",
+   "known": "Kangaroos, koalas and the Sydney Opera House",
+   "fact": "Australia is a country and a whole continent.",
+   "music": "The didgeridoo is an ancient wind instrument of Aboriginal Australians."
+  },
+  "Sweden": {
+   "cont": "Europe",
+   "flag": "🇸🇪",
+   "hello": "Hej",
+   "known": "ABBA, IKEA and the Northern Lights",
+   "fact": "Sweden has an Ice Hotel that is rebuilt from river ice every winter.",
+   "music": "ABBA, one of the best-selling bands of all time, is from Sweden."
+  },
+  "Brazil": {
+   "cont": "South America",
+   "flag": "🇧🇷",
+   "hello": "Olá",
+   "known": "Soccer, the Amazon rainforest and Carnival",
+   "fact": "Most of the Amazon rainforest is in Brazil.",
+   "music": "Samba drums power Brazil's giant Carnival parades."
+  },
+  "South Africa": {
+   "cont": "Africa",
+   "flag": "🇿🇦",
+   "hello": "Sawubona",
+   "known": "Safaris, Table Mountain and Nelson Mandela",
+   "fact": "South Africa has 12 official languages.",
+   "music": "South African choirs are famous for rich harmony singing."
+  },
+  "Belgium": {
+   "cont": "Europe",
+   "flag": "🇧🇪",
+   "hello": "Hallo / Bonjour",
+   "known": "Chocolate, waffles and comic books",
+   "fact": "Adolphe Sax, the inventor of the saxophone, was born in Dinant, Belgium.",
+   "music": "In the 1500s, Antwerp was a center for printing music."
+  },
+  "Finland": {
+   "cont": "Europe",
+   "flag": "🇫🇮",
+   "hello": "Hei",
+   "known": "Saunas, forests and about 188,000 lakes",
+   "fact": "Finland is sometimes called the “Land of a Thousand Lakes,” but it really has far more.",
+   "music": "The tune of “Good King Wenceslas” was printed in Piae Cantiones, a 1582 songbook for Finland."
+  },
+  "Czechia": {
+   "cont": "Europe",
+   "flag": "🇨🇿",
+   "hello": "Ahoj",
+   "known": "Prague's castles and old bridges",
+   "fact": "Good King Wenceslas was a real duke of Bohemia (today's Czechia) more than 1,000 years ago.",
+   "music": "Antonín Dvořák was Czech. He wrote his “New World” Symphony while living in America."
+  },
+  "Switzerland": {
+   "cont": "Europe",
+   "flag": "🇨🇭",
+   "hello": "Grüezi / Bonjour",
+   "known": "The Alps, chocolate and watches",
+   "fact": "Switzerland has four official languages: German, French, Italian and Romansh.",
+   "music": "The alphorn is a long wooden horn once used to call across mountain valleys."
+  },
+  "Guatemala": {
+   "cont": "North America (Central)",
+   "flag": "🇬🇹",
+   "hello": "Hola",
+   "known": "Mayan pyramids and volcanoes",
+   "fact": "Tikal, an ancient Maya city, rises out of Guatemala's rainforest.",
+   "music": "The marimba is Guatemala's national instrument."
+  },
+  "Turkey": {
+   "cont": "Europe & Asia",
+   "flag": "🇹🇷",
+   "hello": "Merhaba",
+   "known": "Istanbul, bazaars and Turkish delight",
+   "fact": "Istanbul is a city on two continents, Europe and Asia.",
+   "music": "The Zildjian cymbal company started in Istanbul in 1623 and still makes cymbals today."
+  },
+  "Cuba": {
+   "cont": "North America (Caribbean)",
+   "flag": "🇨🇺",
+   "hello": "Hola",
+   "known": "Old classic cars and Caribbean beaches",
+   "fact": "Cuba is the largest island in the Caribbean.",
+   "music": "Cuban son music, a mix of Spanish and African sounds, helped give the world salsa."
+  },
+  "Argentina": {
+   "cont": "South America",
+   "flag": "🇦🇷",
+   "hello": "Hola",
+   "known": "Tango, soccer and the Andes mountains",
+   "fact": "Aconcagua in Argentina is the tallest mountain in the world outside Asia.",
+   "music": "The tango was born in Buenos Aires."
+  },
+  "Indonesia": {
+   "cont": "Asia",
+   "flag": "🇮🇩",
+   "hello": "Halo",
+   "known": "Thousands of islands and Komodo dragons",
+   "fact": "Indonesia has more than 17,000 islands.",
+   "music": "Gamelan orchestras play gongs and metal xylophones together."
+  },
+  "India": {
+   "cont": "Asia",
+   "flag": "🇮🇳",
+   "hello": "Namaste",
+   "known": "The Taj Mahal, cricket and spicy food",
+   "fact": "India has more people than any other country.",
+   "music": "The sitar has many extra strings that ring along on their own when other strings are played."
+  },
+  "Egypt": {
+   "cont": "Africa",
+   "flag": "🇪🇬",
+   "hello": "Ahlan",
+   "known": "The pyramids and the Nile River",
+   "fact": "The Great Pyramid was the tallest building on Earth for about 3,800 years.",
+   "music": "Ancient Egyptians played harps, flutes and a rattle called a sistrum."
+  },
+  "Kenya": {
+   "cont": "Africa",
+   "flag": "🇰🇪",
+   "hello": "Jambo",
+   "known": "Safaris and world-class distance runners",
+   "fact": "Kenyan runners have won many Olympic medals in long-distance races.",
+   "music": ""
+  },
+  "Ghana": {
+   "cont": "Africa",
+   "flag": "🇬🇭",
+   "hello": "Akwaaba (welcome)",
+   "known": "Kente cloth and gold",
+   "fact": "In 1957 Ghana became the first country south of the Sahara to win independence from colonial rule.",
+   "music": "Talking drums can copy the rise and fall of spoken words."
+  },
+  "Mali": {
+   "cont": "Africa",
+   "flag": "🇲🇱",
+   "hello": "I ni ce",
+   "known": "The ancient city of Timbuktu",
+   "fact": "Timbuktu was once a great center of learning with huge libraries of handwritten books.",
+   "music": "Griots are storytelling musicians. Many play the kora, a 21-string harp."
+  },
+  "New Zealand": {
+   "cont": "Oceania",
+   "flag": "🇳🇿",
+   "hello": "Kia ora",
+   "known": "Mountains, kiwi birds and the Māori haka",
+   "fact": "There are more sheep than people in New Zealand.",
+   "music": "The haka is a Māori dance with chanting, stamping and strong voices."
+  },
+  "Norway": {
+   "cont": "Europe",
+   "flag": "🇳🇴",
+   "hello": "Hei",
+   "known": "Fjords, Vikings and the midnight sun",
+   "fact": "In northern Norway the sun doesn't set at all for weeks in summer.",
+   "music": "Edvard Grieg, from Norway, wrote “In the Hall of the Mountain King.”"
+  },
+  "Iceland": {
+   "cont": "Europe",
+   "flag": "🇮🇸",
+   "hello": "Halló",
+   "known": "Volcanoes, glaciers and hot springs",
+   "fact": "Iceland has no mosquitoes.",
+   "music": ""
+  },
+  "Netherlands": {
+   "cont": "Europe",
+   "flag": "🇳🇱",
+   "hello": "Hallo",
+   "known": "Tulips, windmills and bicycles",
+   "fact": "About a quarter of the Netherlands is below sea level.",
+   "music": ""
+  },
+  "Portugal": {
+   "cont": "Europe",
+   "flag": "🇵🇹",
+   "hello": "Olá",
+   "known": "Explorers, beaches and blue tiles",
+   "fact": "Ferdinand Magellan, a Portuguese explorer, led the first voyage around the world (his crew finished it).",
+   "music": "Fado is a soulful song style from Lisbon."
+  },
+  "Greece": {
+   "cont": "Europe",
+   "flag": "🇬🇷",
+   "hello": "Yia sou",
+   "known": "Ancient temples, myths and islands",
+   "fact": "The Olympic Games began in ancient Greece about 2,800 years ago.",
+   "music": "The word “music” comes from the Muses, the Greek goddesses of the arts."
+  },
+  "Poland": {
+   "cont": "Europe",
+   "flag": "🇵🇱",
+   "hello": "Cześć",
+   "known": "Pierogi and the old city of Kraków",
+   "fact": "Marie Curie, the first person to win two Nobel Prizes, was born in Warsaw.",
+   "music": "Composer and pianist Frédéric Chopin was born in Poland."
+  },
+  "Hungary": {
+   "cont": "Europe",
+   "flag": "🇭🇺",
+   "hello": "Szia",
+   "known": "Budapest and the Danube River",
+   "fact": "The Rubik's Cube was invented in Hungary in 1974.",
+   "music": "Composer Béla Bartók traveled to villages to record Hungarian folk songs."
+  },
+  "South Korea": {
+   "cont": "Asia",
+   "flag": "🇰🇷",
+   "hello": "Annyeonghaseyo",
+   "known": "K-pop, kimchi and taekwondo",
+   "fact": "Korea's alphabet, Hangul, was created in the 1440s.",
+   "music": "K-pop groups are known for their tightly practiced dance routines."
+  },
+  "Peru": {
+   "cont": "South America",
+   "flag": "🇵🇪",
+   "hello": "Hola",
+   "known": "Machu Picchu and llamas",
+   "fact": "Machu Picchu is an Inca city built high in the Andes mountains in the 1400s.",
+   "music": "Andean bands play panpipes and the charango, a small guitar."
+  },
+  "Mongolia": {
+   "cont": "Asia",
+   "flag": "🇲🇳",
+   "hello": "Sain baina uu",
+   "known": "Horses, yurts and the Gobi Desert",
+   "fact": "Mongolia has more horses than people.",
+   "music": "Mongolian throat singers can sing two notes at the same time."
+  },
+  "Nepal": {
+   "cont": "Asia",
+   "flag": "🇳🇵",
+   "hello": "Namaste",
+   "known": "Mount Everest, the world's tallest mountain",
+   "fact": "Nepal's flag is the only national flag that isn't a rectangle.",
+   "music": ""
+  },
+  "Madagascar": {
+   "cont": "Africa",
+   "flag": "🇲🇬",
+   "hello": "Salama",
+   "known": "Lemurs and baobab trees",
+   "fact": "Lemurs live in the wild only on Madagascar.",
+   "music": "The valiha is a tube-shaped string instrument made from bamboo."
+  },
+  "Venezuela": {
+   "cont": "South America",
+   "flag": "🇻🇪",
+   "hello": "Hola",
+   "known": "Angel Falls and the Andes",
+   "fact": "Angel Falls is the world's tallest waterfall.",
+   "music": "El Sistema, a free youth orchestra program that inspired programs around the world, started in Venezuela in 1975."
+  },
+  "Colombia": {
+   "cont": "South America",
+   "flag": "🇨🇴",
+   "hello": "Hola",
+   "known": "Coffee, emeralds and colorful towns",
+   "fact": "Colombia has coasts on both the Pacific Ocean and the Caribbean Sea.",
+   "music": "Cumbia music began on Colombia's Caribbean coast."
+  },
+  "Philippines": {
+   "cont": "Asia",
+   "flag": "🇵🇭",
+   "hello": "Kumusta",
+   "known": "Islands, beaches and jeepneys",
+   "fact": "The Philippines has more than 7,000 islands.",
+   "music": ""
+  },
+  "Thailand": {
+   "cont": "Asia",
+   "flag": "🇹🇭",
+   "hello": "Sawasdee",
+   "known": "Temples, elephants and street food",
+   "fact": "Thailand is the only country in Southeast Asia that was never ruled by a European power.",
+   "music": ""
+  },
+  "Vietnam": {
+   "cont": "Asia",
+   "flag": "🇻🇳",
+   "hello": "Xin chào",
+   "known": "Ha Long Bay and rice paddies",
+   "fact": "Ha Long Bay has about 1,600 limestone islands.",
+   "music": "The đàn bầu has just one string. Players bend its pitch with a flexible rod."
+  },
+  "Nigeria": {
+   "cont": "Africa",
+   "flag": "🇳🇬",
+   "hello": "Hello",
+   "known": "Nollywood movies and big cities",
+   "fact": "Nigeria has the most people of any country in Africa.",
+   "music": "Afrobeat music was created by Nigerian musician Fela Kuti."
+  },
+  "Morocco": {
+   "cont": "Africa",
+   "flag": "🇲🇦",
+   "hello": "Salam",
+   "known": "Markets, deserts and the Atlas Mountains",
+   "fact": "The University of al-Qarawiyyin in Fez, founded in 859, is often called the oldest university still open.",
+   "music": "Gnawa musicians play the guembri, a three-string bass lute."
+  },
+  "Ethiopia": {
+   "cont": "Africa",
+   "flag": "🇪🇹",
+   "hello": "Selam",
+   "known": "Coffee and ancient churches carved from rock",
+   "fact": "Coffee plants first grew wild in Ethiopia.",
+   "music": ""
+  },
+  "Chile": {
+   "cont": "South America",
+   "flag": "🇨🇱",
+   "hello": "Hola",
+   "known": "The Andes and Easter Island's giant statues",
+   "fact": "The Atacama Desert in Chile is one of the driest places on Earth.",
+   "music": ""
+  },
+  "Ukraine": {
+   "cont": "Europe",
+   "flag": "🇺🇦",
+   "hello": "Pryvit",
+   "known": "Sunflower fields and painted eggs",
+   "fact": "Ukraine is the largest country entirely in Europe.",
+   "music": "The melody of “Carol of the Bells” comes from a Ukrainian folk chant called “Shchedryk.”"
+  },
+  "Tanzania": {
+   "cont": "Africa",
+   "flag": "🇹🇿",
+   "hello": "Jambo",
+   "known": "Mount Kilimanjaro and the Serengeti",
+   "fact": "Mount Kilimanjaro is the tallest mountain in Africa.",
+   "music": ""
+  }
+ },
+ "instruments": [
+  {
+   "name": "Flute",
+   "emoji": "🎶",
+   "place": "Munich",
+   "lat": 48.14,
+   "lon": 11.58,
+   "when": "1847 (modern flute)",
+   "fact": "Theobald Böhm designed the modern metal flute in Munich. Flutes carved from bird and mammoth bones, found in German caves, are more than 35,000 years old."
+  },
+  {
+   "name": "Oboe",
+   "emoji": "🎵",
+   "place": "Versailles",
+   "lat": 48.8,
+   "lon": 2.13,
+   "when": "mid-1600s",
+   "fact": "The oboe was developed by musicians at the French royal court. Its name comes from the French “hautbois”: high wood."
+  },
+  {
+   "name": "Clarinet",
+   "emoji": "🎵",
+   "place": "Nuremberg",
+   "lat": 49.45,
+   "lon": 11.08,
+   "when": "about 1700",
+   "fact": "Johann Christoph Denner of Nuremberg improved an older instrument called the chalumeau and created the clarinet."
+  },
+  {
+   "name": "Bassoon",
+   "emoji": "🎵",
+   "place": "Biebrich, Germany",
+   "lat": 50.04,
+   "lon": 8.23,
+   "when": "1800s (modern bassoon)",
+   "fact": "The bassoon grew out of the dulcian of the 1500s. The Heckel family workshop in Biebrich, Germany, shaped the bassoon most players use today."
+  },
+  {
+   "name": "Saxophone",
+   "emoji": "🎷",
+   "place": "Paris",
+   "lat": 48.86,
+   "lon": 2.35,
+   "when": "1846",
+   "fact": "Adolphe Sax was born in Dinant, Belgium, and patented the saxophone in Paris in 1846. He wanted an instrument with the power of brass and the agility of woodwinds.",
+   "also": [
+    {
+     "place": "Dinant",
+     "lat": 50.26,
+     "lon": 4.91,
+     "why": "Adolphe Sax was born here"
+    }
+   ]
+  },
+  {
+   "name": "Trumpet (valves)",
+   "emoji": "🎺",
+   "place": "Berlin",
+   "lat": 52.52,
+   "lon": 13.4,
+   "when": "1818",
+   "fact": "Valves were patented in 1818 by Heinrich Stölzel and Friedrich Blühmel in Prussia (Germany). Before valves, trumpets could play only a few notes."
+  },
+  {
+   "name": "French Horn",
+   "emoji": "📯",
+   "place": "Germany",
+   "lat": 51.1,
+   "lon": 10.4,
+   "when": "1800s (valve horn)",
+   "fact": "Hunting horns were popular in France, but the valve horn we play was developed in Germany. In many countries it's just called “horn.”"
+  },
+  {
+   "name": "Trombone",
+   "emoji": "🎵",
+   "place": "Nuremberg",
+   "lat": 49.45,
+   "lon": 11.08,
+   "when": "1400s–1500s",
+   "fact": "The trombone began as the sackbut. Nuremberg's brass makers were famous for them in the 1500s, and the slide works the same way today."
+  },
+  {
+   "name": "Euphonium & Tuba",
+   "emoji": "🎵",
+   "place": "Berlin",
+   "lat": 52.52,
+   "lon": 13.4,
+   "when": "1835 (tuba)",
+   "fact": "Wilhelm Wieprecht and Johann Moritz patented the bass tuba in Berlin in 1835. The euphonium followed in Germany in the 1840s."
+  },
+  {
+   "name": "Cymbals",
+   "emoji": "🥁",
+   "place": "Istanbul",
+   "lat": 41.01,
+   "lon": 28.98,
+   "when": "1623 (Zildjian)",
+   "fact": "The Zildjian family began making cymbals in Istanbul in 1623 using a secret metal recipe. The company still makes cymbals today, now in Massachusetts."
+  },
+  {
+   "name": "Timpani",
+   "emoji": "🥁",
+   "place": "Middle East",
+   "lat": 33.3,
+   "lon": 44.4,
+   "when": "1200s–1400s",
+   "fact": "Kettledrums came to Europe from the Middle East, often played on horseback with trumpets."
+  },
+  {
+   "name": "Marimba",
+   "emoji": "🎼",
+   "place": "Guatemala",
+   "lat": 15.5,
+   "lon": -90.4,
+   "when": "centuries old",
+   "fact": "The marimba has African roots and became Guatemala's national instrument."
+  },
+  {
+   "name": "Piano",
+   "emoji": "🎹",
+   "place": "Florence",
+   "lat": 43.77,
+   "lon": 11.26,
+   "when": "about 1700",
+   "fact": "Bartolomeo Cristofori invented the piano in Florence. Its full name, pianoforte, means it can play soft and loud."
+  },
+  {
+   "name": "Steel Pan",
+   "emoji": "🥁",
+   "place": "Trinidad",
+   "lat": 10.66,
+   "lon": -61.51,
+   "when": "1930s–1940s",
+   "fact": "Invented in Trinidad and Tobago from oil drums. Pan players tune each note by hammering the metal."
+  }
+ ]
+}

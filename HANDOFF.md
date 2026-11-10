@@ -114,6 +114,19 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - Daily Slides Apps Script project = "Class Agenda – Daily Slide Updater" 1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG (files Code.js v2.4, ClosingScores.js, NinjaGoals.js — added + setupNinjaGoalsTrigger run 11/10 6:39 AM: daily ~5 AM trigger). Web app deployment AKfycbw9ThMFeLqxlurKz10_5gzwpOrfmoh2BhsYYksPOsESJ_htNiobf-u4xcMO1zuqbek-CA (always update this one: clasp deploy -i … -V n). Two other projects with the same name are older copies.
 - Tests: tests/rhythm_counts_test.js (counting rules, the 780-entry file, a=rhythm, rhythmPut), 2 smoke cases (alignment screenshot with the real picture when tools/rhythm/out exists).
 
+## World map (2.2.0, Mat 11/10)
+- #btnMap → #mapView (z 34, like the book) with an iframe of map/ (loaded once, kept; mapSync closes it at class change; the map's ✕ posts {agendaMap:'close'}).
+- map/index.html: d3 7.9.0 + topojson-client 3.1.0 + world-atlas 2.0.2 countries-110m.json, all vendored in map/ (npm pack; CDNs are blocked from the build box).
+  Natural Earth projection, d3.zoom (1–14×); markers drawn in screen space. Continent colors from each country's centroid (BYNAME exceptions);
+  badge spots for far-flung countries in CENTER. Modes: map (songs), instruments, timeline, mystery. window.__map = test hook.
+- Content: map/data.json (built-in, from tools/map/make_data.py: songs = book titles + the book's own origin label only, never music/lyrics;
+  facts checked 11/10). The Content Pool sheet (1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E) tabs **Map Songs** (Book # | Title | Book says | Country |
+  Place | Lat | Lon | Composer | Fun fact | YouTube link | Show), **Map Composers** (Composer | Years | Born year | Era | Country | Born place/lat/lon |
+  Worked place/lat/lon | Fun fact), **Map Countries** (Country | Flag | Continent | Hello | Known for | Fun fact | Music fact) win when they have rows
+  (ClosingScores.gs v1.5 a=map, cached 60 s; songs replace the list, composers/countries merge by name; Show = No hides; country names like USA/England
+  are mapped to the map's names). Needs the closing link in the board settings (localStorage, same origin) to read the sheet.
+- Tests: 2 smoke cases (board button/close/class change, map content, mystery redaction; sheet override), tests/map_gs_test.js.
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
@@ -123,6 +136,7 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 `python3 tests/smoke.py [--shots DIR]` — serves locally, freezes the clock at 21 times (plus 7 Band Ninja Day checks) across regular/IF/weekend days, stubs Google requests, checks what's shown, and checks a manual override expires at the block change. Must be 28/28 before committing.
 
 ## Open items
+- 2.2.0 waits for Mat's OK: push the board (GitHub Pages) + deploy ClosingScores.gs v1.5 (clasp, deployment AKfycbw9…, version 6).
 - Semester 2 start date for the IF Tuesday→Thursday switch.
 - Pass-Off Targets: Q2 changed to 10/30/50 on 11/6, so 8th Q3 (47) is now below Q2 and 7th Q2 = Q3 (30). Mat to review Q3/Q4.
 - Confirm on the real board: full-screen button works in the ViewSonic browser, and the board's clock/time zone is correct.

@@ -538,6 +538,64 @@ def main():
         failures += 0 if ok else 1
         ctx.close()
 
+        # 🌍 World map: button opens map/ full screen; songs, search, country cards; ✕ inside the map closes it; class change closes it
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page()
+        page.goto(f"http://127.0.0.1:{PORT}/index.html?test=2026-11-06T08:10:00&speed=1"); page.wait_for_timeout(400)
+        vis = page.is_visible("#btnMap")
+        page.click("#btnMap"); page.wait_for_timeout(200)
+        fr = page.frame_locator("#mapFrame")
+        mf = None
+        for _ in range(40):
+            mf = next((f for f in page.frames if f.url.endswith("/map/")), None)
+            if mf and mf.evaluate("!!window.__map"): break
+            page.wait_for_timeout(150)
+        n = mf.evaluate("window.__map.songs.length")
+        mf.evaluate("window.__map.pickSong(window.__map.songs.find(s => s.n === '116'))"); page.wait_for_timeout(300)
+        card = mf.inner_text("#cardBody")
+        mf.fill("#search", "dreidel"); page.wait_for_timeout(100); res = mf.inner_text("#results")
+        mf.evaluate("window.__map.pickCountry('Japan')"); page.wait_for_timeout(200); jp = mf.inner_text("#cardBody")
+        mf.evaluate("window.__map.setMode('mystery')"); page.wait_for_timeout(200)
+        my = mf.evaluate("window.__map.mystery()"); clues = mf.inner_text("#mClues")
+        hidden = all(w.lower() not in c["t"].lower() for c in my["clues"] for w in [my["name"]])
+        if shots_dir: page.screenshot(path=str(shots_dir / "map_mystery.png"))
+        mf.evaluate("window.__map.setMode('map')")
+        open1 = page.evaluate("document.getElementById('mapView').classList.contains('open')")
+        mf.click("#close"); page.wait_for_timeout(200)
+        open2 = page.evaluate("document.getElementById('mapView').classList.contains('open')")
+        page.click("#btnMap"); page.wait_for_timeout(200)
+        page.close(); page = ctx.new_page(); page.clock.install(time="2026-11-06T10:10:00")         # 3rd block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        page.click("#btnMap"); page.wait_for_timeout(200)
+        o3a = page.evaluate("document.getElementById('mapView').classList.contains('open')")
+        page.clock.fast_forward("00:15:00"); page.wait_for_timeout(300)                              # 10:25 -> 4th block
+        open3 = page.evaluate("document.getElementById('mapView').classList.contains('open')")
+        ok = (vis and n >= 60 and "Vienna" in card and "Beethoven" in card and "miles" in card and "The Dreidel Song" in res
+              and "Konnichiwa" in jp and "The Frog's Song" in jp and len(my["clues"]) == 4 and hidden and open1 and not open2 and o3a and not open3)
+        print(("PASS" if ok else "FAIL"), f"{'world map':34s}" + ("" if ok else f" {vis} {n} {card[:80]!r} {res[:60]!r} {jp[:60]!r} {my} {open1} {open2} {o3a} {open3} {page.evaluate('window.__agendaBoard.shown()')}"))
+        failures += 0 if ok else 1
+        ctx.close()
+        # the Content Pool sheet's map tabs win over the built-in list (a=map)
+        def map_script(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            body = {"ok": True, "songs": [{"Book #": "999", "Title": "Test Tune", "Book says": "Made-up Folk Song", "Country": "Peru", "Place": "", "Lat": "", "Lon": "",
+                      "Composer": "", "Fun fact": "Only in the test.", "YouTube link": "https://youtu.be/abcdefghijk", "Show": ""},
+                     {"Book #": "1000", "Title": "Hidden Tune", "Country": "Peru", "Show": "No"}],
+                    "composers": [], "countries": [{"Country": "Peru", "Known for": "Test llamas", "Fun fact": "", "Music fact": ""}]} if q.get("a") == "map" else {"ok": True, "config": {}}
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.add_init_script("localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))")
+        ctx.route("https://script.google.com/**", map_script)
+        page = ctx.new_page(); page.goto(f"http://127.0.0.1:{PORT}/map/"); page.wait_for_function("!!window.__map", timeout=8000)
+        songs = page.evaluate("window.__map.songs.map(s => s.title)")
+        page.evaluate("window.__map.pickCountry('Peru')"); peru = page.inner_text("#cardBody")
+        page.evaluate("window.__map.pickSong(window.__map.songs[0])"); listen = page.is_visible("[data-play]")
+        ok = songs == ["Test Tune"] and "Test llamas" in peru and "Machu Picchu" in peru and listen
+        print(("PASS" if ok else "FAIL"), f"{'world map from the sheet':34s}" + ("" if ok else f" {songs} {peru[:120]!r} {listen}"))
+        failures += 0 if ok else 1
+        ctx.close()
+
         # Welcome screen pass-offs this week, and the pass-off line count on Band Ninja days (counts only)
         def stats_script(route):
             q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
@@ -573,7 +631,7 @@ def main():
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

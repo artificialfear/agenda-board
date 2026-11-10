@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.0 — 2026-11-10
+- 🌍 Map button (bottom-left, next to Book): full-screen "Music Around the World" (map/index.html, also works on its own at /map/).
+  Songs: every Tradition of Excellence Book 1 piece with a named origin (71), ♪ count per country, tap a country for its card
+  (flag, hello, known for, fun fact, music fact, its songs), tap a song for its pins (song place, composer born/worked, extra places)
+  and the miles from Savannah. Search by title, book number, composer, country or instrument. Instruments: where 14 band
+  instruments were invented. Timeline: composers by birth year across the eras. Mystery Country: up to 4 clues, Reveal.
+  Listen: a YouTube link in the sheet plays inside the map; otherwise "Find on YouTube".
+- Content lives in the Content Pool sheet tabs Map Songs / Map Composers / Map Countries (prefilled 11/10); the map falls back to
+  map/data.json (tools/map/make_data.py). Needs ClosingScores.gs v1.5 (a=map).
+- Closes by itself at class change, like the book.
+
 ## 2.1.0 — 2026-11-09
 - ♪ Rhythm view: **Show counts** button (next to Count off). Counts start hidden every time the view opens, so students clap/count first, then tap to check. Style (Mat): 1 e + a; 6/8 = 1 2 3 4 5 6 (sixteenths between = +); rests in (parentheses); beats held through by a long note dimmed. Each count sits under its note.
 - Daily Rhythms library remade (tools/rhythm, v2): measures sized by what they hold, so busy sixteenth measures never spill over a barline (some v1 7th/8th images did); lines too busy to print cleanly are skipped. Same 780 file names (60 per set + time signature), new rhythms. rhythm-counts.json (site root) has the counts + each image's size; the board shows counts only when the picture in Drive is the same size (so old pictures never get new counts).

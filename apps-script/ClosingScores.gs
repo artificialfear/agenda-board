@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.4  (Raven Band, 11/9/2026)
+ * ClosingScores.gs  v1.5  (Raven Band, 11/10/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -22,6 +22,9 @@
  *   - v1.4: POST {k, a:'rhythmPut', files:[{name, b64}]} puts new rhythm pictures in the Daily Rhythms folder
  *       (used when the picture library is remade; key required, rhythm file names only). A picture it replaces
  *       is moved into the subfolder "Old rhythm pictures", never deleted, so it can be put back.
+ *   - v1.5: a=map   the board's World Map content from the Content Pool sheet tabs "Map Songs",
+ *       "Map Composers" and "Map Countries" (row 1 = headers; every row as {header: value}).
+ *       A missing or empty tab sends [] and the map uses its built-in list. Same sheet as before.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -43,6 +46,7 @@ var CLOSING = {
   LOG_SHEET_ID: '1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E',   // Daily Slides content sheet
   LOG_TAB: 'Closing Scores',
   BOARD_TAB: 'Board Settings',
+  MAP_TABS: { songs: 'Map Songs', composers: 'Map Composers', countries: 'Map Countries' },
   ADMIN_ID: '1FZRxwbaoUscTIzidpVT1f7xzz1j1XaJgG6fn67y-yyI',     // Admin - Band Ninja (Pass-Off Log)
   TRACKER_ID: '1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw',   // Band Ninja Tracker (Pass-Off Line, Pass-Off Targets)
   BLOCKS: ['1st', '3rd', '4th', '6th', '7th'],
@@ -58,8 +62,9 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
-    if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm') {
+    if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm' || p.a === 'map') {
       out = p.a === 'config' ? { config: boardSettings_() } :
+            p.a === 'map' ? boardCached_('boardMap', 60, boardMap_) :
             p.a === 'stats' ? boardStats_(new Date()) :
             p.a === 'rhythm' ? boardRhythm_(String(p.block || '')) : boardLine_(String(p.block || ''), new Date());
       out.ok = true;
@@ -146,6 +151,26 @@ function boardSettings_() {
   sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues().forEach(function (r) {
     var k = String(r[0]).trim(), v = String(r[1]).trim();
     if (k && v) out[k] = v;
+  });
+  return out;
+}
+
+/** World Map tabs: { songs: [...], composers: [...], countries: [...] }, each row {header: shown value}; blank rows skipped. */
+function boardMap_() {
+  var ss = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID), out = {};
+  Object.keys(CLOSING.MAP_TABS).forEach(function (k) {
+    var sh = ss.getSheetByName(CLOSING.MAP_TABS[k]), rows = [];
+    if (sh && sh.getLastRow() >= 2 && sh.getLastColumn() >= 1) {
+      var v = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getDisplayValues();
+      var head = v[0].map(function (h) { return String(h).trim(); });
+      for (var r = 1; r < v.length; r++) {
+        if (!v[r].some(function (x) { return String(x).trim() !== ''; })) continue;
+        var o = {};
+        head.forEach(function (h, c) { if (h) o[h] = String(v[r][c]).trim(); });
+        rows.push(o);
+      }
+    }
+    out[k] = rows;
   });
   return out;
 }
