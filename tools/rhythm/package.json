@@ -1,0 +1,7 @@
+{
+  "name": "daily-rhythms",
+  "private": true,
+  "description": "Makes the Daily Rhythms images (and rhythm-counts.json) for the Daily Slides script",
+  "scripts": { "gen": "node gen.js out" },
+  "dependencies": { "vexflow": "4.2.5", "jsdom": "31.0.0", "@resvg/resvg-js": "2.6.2" }
+}

@@ -205,6 +205,21 @@
   #rhythm .m-go.stop { background: #141c30; color: #fff; border: 1px solid #c9d0de; }
   #rhythm .r-title { height: 13vh; display: flex; align-items: center; }      /* count-off numbers don't move the rhythm */
   #rhythm .r-title.count { font-size: 12vh; line-height: 1; color: #fff; }
+  /* counts under the rhythm (hidden until "Show counts": students try it first) */
+  #rhythm .r-counts { position: relative; display: none; height: 8vh; margin-top: -1.5vh; cursor: default;
+    font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600; color: #fff; }
+  #rhythm.has-counts .r-counts { display: block; }
+  #rhythm .r-counts span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; line-height: 1.2;
+    visibility: hidden; }
+  #rhythm .r-counts.show span { visibility: visible; }
+  #rhythm .r-counts span.h { color: #6f7a93; }
+  #rhythm .r-counts .c-msg { left: 50%; font: 2.4vh "Segoe UI", Arial, sans-serif; color: #c9d0de; }
+  #rhythm .m-cnt { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30;
+    color: #c9a227; cursor: pointer; font: 600 2.8vh "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; }
+  #rhythm.has-counts .m-cnt, #rhythm.has-counts .m-sep.c { display: block; }
+  #rhythm .m-cnt.on { background: #c9a227; color: #141c30; }
+  #rhythm .m-cnt:disabled { opacity: .55; cursor: default; }
+  #rhythm .m-sep.c { display: none; }
   #scores { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center;
     background: rgba(10,14,26,.55); }
   #scores.open { display: flex; }
@@ -402,6 +417,7 @@
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
   <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
   <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe></div>
+  <div class="r-counts" id="rCounts" aria-live="polite"></div>
   <div class="r-metro" id="metro">
     <div class="m-dots" id="mDots"></div>
     <div class="m-row">
@@ -414,6 +430,8 @@
       </div>
       <div class="m-sep"></div>
       <button class="m-go" id="mGo">▶ Count off</button>
+      <div class="m-sep c"></div>
+      <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
   </div>
   <div class="r-hint">Tap anywhere else to go back to the agenda</div>
@@ -1163,8 +1181,78 @@
     rView.style.width = Math.round(w * s) + "px"; rView.style.height = Math.round(h * s) + "px";
     rFrame.style.width = Math.round(SLIDE_EMU.w * s) + "px"; rFrame.style.height = Math.round(SLIDE_EMU.h * s) + "px";
     rFrame.style.left = Math.round(-x0 * s) + "px"; rFrame.style.top = Math.round(-y0 * s) + "px";
+    rGeo = { s: s, x0: x0, w: Math.round(w * s) };
+    countsPaint();
     return s;
   }
+
+  // ---------- Counts for the rhythm ("Show counts"), lined up under the notes ----------
+  // The Daily Slides script says which image is on the slide (a=rhythm); rhythm-counts.json (next to this page,
+  // made by tools/rhythm with the images) has the counts for every image.
+  // The rhythm image sits at this spot on every agenda slide (Code.gs daily:rhythm); x in the counts = fraction of its width.
+  var RHYTHM_IMG_EMU = { x: 603940, w: 4690000 };
+  var rGeo = null, rCountsEl = document.getElementById("rCounts"), rCntBtn = document.getElementById("mCounts");
+  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0 };
+  var countsBook = null;
+  function countsBookGet() {
+    if (!countsBook) countsBook = fetch("rhythm-counts.json").then(function (r) {
+      if (!r.ok) throw new Error("counts file missing"); return r.json();
+    }).catch(function (e) { countsBook = null; throw e; });
+    return countsBook;
+  }
+  function countsFetch(blk) {
+    var my = ++rc.seq;
+    rc.block = blk; rc.loading = true; rc.err = ""; countsPaint();
+    Promise.all([scoresCall({ a: "rhythm", block: blk }), countsBookGet()]).then(function (two) {
+      if (my !== rc.seq) return;
+      var j = two[0], line = (two[1].lines || {})[j.name];
+      j.counts = line ? line.c : null;
+      // the picture in Drive must be the one these counts were made with (same size); else say so instead of wrong counts
+      j.stale = !!(line && line.b && j.bytes && line.b !== j.bytes);
+      if (j.stale) j.counts = null;
+      rc.data = j; rc.loading = false; countsPaint();
+    }).catch(function (e) {
+      if (my !== rc.seq) return;
+      rc.loading = false; rc.err = String(e && e.message || e); countsPaint();
+    });
+  }
+  function countsPaint() {
+    var has = !!settings.closingUrl;
+    rhythmEl.classList.toggle("has-counts", has);
+    if (!has) return;
+    var d = rc.data && rc.data.block === rc.block ? rc.data : null;
+    rCntBtn.disabled = !d && rc.loading;
+    rCntBtn.textContent = rc.shown ? "Hide counts" : (!d && rc.loading ? "Getting counts…" : "Show counts");
+    rCntBtn.classList.toggle("on", rc.shown);
+    rCountsEl.classList.toggle("show", rc.shown);
+    rCountsEl.innerHTML = "";
+    if (!rGeo) return;
+    rCountsEl.style.width = rGeo.w + "px";
+    var msg = function (t) { var m = document.createElement("span"); m.className = "c-msg"; m.textContent = t; rCountsEl.appendChild(m); };
+    if (!d || !d.counts) {
+      if (rc.shown) msg(!d ? (rc.loading ? "Getting the counts…" : "Couldn't get the counts" + (rc.err ? ": " + rc.err : ""))
+                          : d.stale ? "These counts are for the new rhythm pictures, which aren't in the Daily Rhythms folder yet"
+                          : "No counts for this rhythm (" + (d.name || "?") + ")");
+      return;
+    }
+    var xs = d.counts.map(function (c) { return (RHYTHM_IMG_EMU.x + c[0] * RHYTHM_IMG_EMU.w - rGeo.x0) * rGeo.s; });
+    var gap = Infinity;
+    for (var i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] > 1) gap = Math.min(gap, xs[i] - xs[i - 1]);
+    var vh = window.innerHeight / 100, font = Math.max(2.6 * vh, Math.min(6 * vh, gap * 0.95));
+    rCountsEl.style.fontSize = Math.round(font) + "px";
+    d.counts.forEach(function (c, k) {
+      var e = document.createElement("span");
+      e.textContent = c[1]; e.className = c[2].charAt(0) === "h" ? "h" : c[2];
+      e.style.left = Math.round(xs[k]) + "px";
+      rCountsEl.appendChild(e);
+    });
+  }
+  rCntBtn.onclick = function () {
+    rc.shown = !rc.shown;
+    if (rc.shown && !rc.loading && !(rc.data && rc.data.block === rc.block && rc.data.counts)) countsFetch(rc.block);
+    countsPaint();
+  };
+  rCountsEl.addEventListener("click", function (e) { e.stopPropagation(); });
   function rhythmOpen() {
     if (!shownKey || shownKey === "welcome" || shownNinja) return;
     rhythmLayout();
@@ -1173,6 +1261,8 @@
       rFrame.src = slideUrl(shownKey, false);
     }
     document.getElementById("rTitle").textContent = "RHYTHM OF THE DAY · " + shownKey.toUpperCase() + " BLOCK";
+    rc.shown = false;                                     // counts start hidden: students clap/count it first
+    if (settings.closingUrl) countsFetch(shownKey);       // fresh every time (a new rhythm may have been picked)
     rhythmEl.classList.add("open");
   }
   function rhythmClose() { metroStop(); rhythmEl.classList.remove("open"); }
@@ -1685,7 +1775,12 @@
       dot: Array.prototype.map.call(document.getElementById("mDots").children, function (e) { return e.classList.contains("on") ? 1 : 0; }).join("") }; },
     rhythm: function () { return { can: document.body.classList.contains("can-rhythm"), open: rhythmEl.classList.contains("open"),
       src: rFrame.getAttribute("src") || "", view: [rView.offsetWidth, rView.offsetHeight], frame: [rFrame.offsetWidth, rFrame.offsetHeight,
-      parseInt(rFrame.style.left, 10), parseInt(rFrame.style.top, 10)] }; },
+      parseInt(rFrame.style.left, 10), parseInt(rFrame.style.top, 10)],
+      counts: { can: rhythmEl.classList.contains("has-counts"), shown: rc.shown, btn: rCntBtn.textContent,
+        text: Array.prototype.map.call(rCountsEl.children, function (e) { return e.textContent; }).join(" "),
+        dim: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.className === "h"; }).length,
+        lefts: Array.prototype.map.call(rCountsEl.children, function (e) { return parseInt(e.style.left, 10); }),
+        font: parseInt(rCountsEl.style.fontSize, 10) || 0 } }; },
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
       big: scoresEl.classList.contains("big"), change: sChangeEl.textContent,
       msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },

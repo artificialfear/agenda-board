@@ -106,6 +106,12 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 - **Line pill** (#linePill, top-right of the slide, Band Ninja slides only): a=line&block= every 30 s → waiting = today's "Pass-Off Line" rows (Progress Charts, newest 400) for "<block> Block" with blank Status; passedToday = today's Pass-Off Log rows for that block. Script caches stats 60 s, line 20 s.
 - ClosingScores.gs v1.2 needs Mat to replace the file + Deploy → Manage deployments → New version. Tests: tests/board_counts_test.js, closing_gs_test.js (node), 5 new smoke cases.
 
+## Rhythm counts (2.1.0, Mat 11/9)
+- "Show counts" (#mCounts in the metronome row, only with a closing link) toggles #rCounts under the zoomed rhythm; hidden again on every open (students try first). rhythmOpen → countsFetch: a=rhythm&block= (ClosingScores.gs v1.3: Script Property rhythm_<set> from Code.gs CONFIG.RHYTHM.BLOCKS → {name, meter, date, bytes = Drive file size, cached 10 min}) + ./rhythm-counts.json (fetched once). Counts shown only when lines[name].b === bytes, else "new rhythm pictures aren't in the folder yet".
+- rhythm-counts.json: { v: 2, img: {w:1400,h:160}, lines: { name: { m: meter, b: bytes, c: [[x, label, kind]] } } }; x = fraction of image width (note head centre; held beats spread evenly between notes); kind n/r/h/hr. Board places x at RHYTHM_IMG_EMU (x 603940, w 4690000: Code.gs daily:rhythm image on every agenda slide) using rhythmLayout's px/EMU; font = min gap between labels (2.6–6vh).
+- Generator: tools/rhythm (render.js, gen.js, counts.js; vexflow 4.2.5, jsdom 31.0.0, @resvg/resvg-js 2.6.2; `npm install && node gen.js out`). Seeded (20261104) so it is reproducible; v1 (11/4) was reproduced byte for byte before changing. v2: measure widths = VexFlow min width ×1.25 (≥ 6 units per sixteenth), leftover shared equally, justify 17 units short of the barline (v1 look); fitsLine rejects lines needing <1.12× min. **Images and rhythm-counts.json must always come from the same run** — copy out/rhythm-counts.json to the site root.
+- Tests: tests/rhythm_counts_test.js (counting rules, the 780-entry file, a=rhythm), 2 smoke cases (alignment screenshot with the real picture when tools/rhythm/out exists).
+
 ## Controls on the board (bottom-right, faded until touched)
 - ⟳ refresh now · ⛶ full screen · ☰ menu
 - Menu: force any block or the welcome screen (lasts until the next block change, shown by a gold badge bottom-left; tap badge to return to auto), IF Day and Band Ninja Day switches (today only, role=switch, menu stays open), Settings.
@@ -115,6 +121,7 @@ If Mat deletes and recreates a block's slide, its ID changes. Fix in Settings �
 `python3 tests/smoke.py [--shots DIR]` — serves locally, freezes the clock at 21 times (plus 7 Band Ninja Day checks) across regular/IF/weekend days, stubs Google requests, checks what's shown, and checks a manual override expires at the block change. Must be 28/28 before committing.
 
 ## Open items
+- 2.1.0: Mat to replace ClosingScores.gs with v1.3 (+ New version) and put the 780 new rhythm pictures in the Daily Rhythms folder ("Replace existing files" so file IDs/decks stay). Until then the counts button says the pictures aren't there yet.
 - Semester 2 start date for the IF Tuesday→Thursday switch.
 - Pass-Off Targets: Q2 changed to 10/30/50 on 11/6, so 8th Q3 (47) is now below Q2 and 7th Q2 = Q3 (30). Mat to review Q3/Q4.
 - Confirm on the real board: full-screen button works in the ViewSonic browser, and the board's clock/time zone is correct.

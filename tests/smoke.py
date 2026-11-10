@@ -480,6 +480,64 @@ def main():
         failures += 0 if ok else 1
         ctx.close()
 
+        # Show counts in the rhythm view: hidden at first, then lined up under the real image (a=rhythm)
+        import base64 as _b64, os as _os
+        rpng = _os.path.join(_os.path.dirname(__file__), "..", "tools", "rhythm", "out", "8th_4-4_004.png")
+        # the board's own counts file (site root); the real picture too when tools/rhythm/out is here
+        rbytes = _json.load(open(_os.path.join(_os.path.dirname(__file__), "..", "rhythm-counts.json")))["lines"]["8th_4-4_004.png"]["b"]
+        rstate = {"bytes": rbytes}
+        img = ("data:image/png;base64," + _b64.b64encode(open(rpng, "rb").read()).decode()) if _os.path.exists(rpng) else ""
+        slide_html = ('<body style="margin:0;background:#1f2a44"><div style="position:absolute;left:4.494%;top:24.711%;width:55.501%;'
+                      'height:11.022%;background:#fff;border-radius:6px"></div>'
+                      + (f'<img src="{img}" style="position:absolute;left:6.6048%;top:25.0117%;width:51.2905%;height:10.4209%">' if img else "")
+                      + '</body>')
+        rcalls = []
+        def rhythm_script(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            rcalls.append(q.get("a"))
+            body = ({"ok": True, "block": q.get("block"), "set": "8th", "name": "8th_4-4_004.png", "meter": "4/4", "bytes": rstate["bytes"]}
+                    if q.get("a") == "rhythm" else {"ok": True, "config": {}})
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.add_init_script(init)
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body=slide_html))
+        ctx.route("https://script.google.com/**", rhythm_script)
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T08:10:00")      # Friday 1st Block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300)
+        page.click("#btnRhythm"); page.wait_for_timeout(600)
+        c0 = page.evaluate("window.__agendaBoard.rhythm().counts")
+        vis0 = page.evaluate("getComputedStyle(document.querySelector('#rCounts span')).visibility")
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_counts_hidden.png"))
+        page.click("#mCounts"); page.wait_for_timeout(200)
+        c1 = page.evaluate("window.__agendaBoard.rhythm()")
+        vis1 = page.evaluate("getComputedStyle(document.querySelector('#rCounts span')).visibility")
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_counts.png"))
+        page.mouse.click(960, 1060); page.wait_for_timeout(200)                     # tap outside closes; reopening hides the counts again
+        page.click("#btnRhythm"); page.wait_for_timeout(400)
+        c2 = page.evaluate("window.__agendaBoard.rhythm().counts")
+        rstate["bytes"] = 12345                                                      # old picture still in Drive: no counts, a note instead
+        page.mouse.click(960, 1060); page.wait_for_timeout(200); page.click("#btnRhythm"); page.wait_for_timeout(400)
+        page.click("#mCounts"); page.wait_for_timeout(200)
+        c3 = page.evaluate("window.__agendaBoard.rhythm().counts")
+        L = c1["counts"]["lefts"]
+        ok = (c0["can"] and not c0["shown"] and c0["btn"] == "Show counts" and vis0 == "hidden"
+              and c1["open"] and c1["counts"]["shown"] and vis1 == "visible" and c1["counts"]["btn"] == "Hide counts"
+              and c1["counts"]["text"].startswith("1 ") and "(3)" in c1["counts"]["text"] and c1["counts"]["dim"] >= 1
+              and L == sorted(L) and 0 < L[0] and L[-1] < c1["view"][0] and c1["counts"]["font"] >= 28
+              and not c2["shown"] and "new rhythm pictures" in c3["text"] and c3["dim"] == 0 and rcalls.count("rhythm") >= 3)
+        print(("PASS" if ok else "FAIL"), f"{'rhythm show counts':34s}" + ("" if ok else f" {c0} {vis0} {c1} {vis1} {c2} {c3} {rcalls}"))
+        failures += 0 if ok else 1
+        ctx.close()
+        # without a closing link there is no counts button
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T08:10:00")
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(300); page.click("#btnRhythm"); page.wait_for_timeout(200)
+        ok = (not page.evaluate("window.__agendaBoard.rhythm().counts.can") and not page.is_visible("#mCounts"))
+        print(("PASS" if ok else "FAIL"), "rhythm counts need the closing link")
+        failures += 0 if ok else 1
+        ctx.close()
+
         # Welcome screen pass-offs this week, and the pass-off line count on Band Ninja days (counts only)
         def stats_script(route):
             q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
@@ -515,7 +573,7 @@ def main():
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 

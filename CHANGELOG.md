@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0 — 2026-11-09
+- ♪ Rhythm view: **Show counts** button (next to Count off). Counts start hidden every time the view opens, so students clap/count first, then tap to check. Style (Mat): 1 e + a; 6/8 = 1 2 3 4 5 6 (sixteenths between = +); rests in (parentheses); beats held through by a long note dimmed. Each count sits under its note.
+- Daily Rhythms library remade (tools/rhythm, v2): measures sized by what they hold, so busy sixteenth measures never spill over a barline (some v1 7th/8th images did); lines too busy to print cleanly are skipped. Same 780 file names (60 per set + time signature), new rhythms. rhythm-counts.json (site root) has the counts + each image's size; the board shows counts only when the picture in Drive is the same size (so old pictures never get new counts).
+- Needs ClosingScores.gs v1.3 (a=rhythm: which image Code.gs put on the block's slide + its size) and the new pictures in the Daily Rhythms folder.
+
 ## 2.0.1 — 2026-11-09
 - Setup codes removed (Mat chose not to put even an encrypted copy of the closing link on the public site). The welcome-screen warning now says where to paste the link: ☰ → Settings → Closing scores link.
 

@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.2  (Raven Band, 11/9/2026)
+ * ClosingScores.gs  v1.3  (Raven Band, 11/9/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -15,6 +15,10 @@
  *       a=stats         pass-offs per block this week / this quarter / today (Admin "Pass-Off Log")
  *       a=line&block=   how many are waiting in the Dojo pass-off line today + passed today
  *     Same spreadsheet access as before, so no new permissions.
+ *   - v1.3: a=rhythm&block=   which rhythm image is on that block's slide right now (the name
+ *       Code.gs picked, Script Property rhythm_<set>), for the board's "Show counts" button.
+ *       The board has the counts for every image itself; the image's size (bytes) lets it check the
+ *       picture in Drive is the one those counts belong to. Drive is already used by Code.gs: no new permissions.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -51,9 +55,10 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
-    if (p.a === 'config' || p.a === 'stats' || p.a === 'line') {
+    if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm') {
       out = p.a === 'config' ? { config: boardSettings_() } :
-            p.a === 'stats' ? boardStats_(new Date()) : boardLine_(String(p.block || ''), new Date());
+            p.a === 'stats' ? boardStats_(new Date()) :
+            p.a === 'rhythm' ? boardRhythm_(String(p.block || '')) : boardLine_(String(p.block || ''), new Date());
       out.ok = true;
       return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
     }
@@ -165,6 +170,25 @@ function boardLine_(block, now) {
     var st = boardStats_(now), row = st.blocks.filter(function (x) { return x.block === block; })[0] || {};
     return { block: block, waiting: waiting, passedToday: row.today || 0 };
   });
+}
+
+// ---------------------------------------------------------------- rhythm counts for the board
+
+/** The rhythm now on a block's slide: { block, set, name, meter, date, bytes } (from Code.gs's daily pick). */
+function boardRhythm_(block) {
+  if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
+  var rc = (typeof CONFIG !== 'undefined' && CONFIG.RHYTHM) || null;
+  if (!rc || !rc.FOLDER_ID) throw new Error('Daily Rhythm is off (Code.gs CONFIG.RHYTHM.FOLDER_ID is blank).');
+  var set = rc.BLOCKS[parseInt(block, 10)];
+  if (!set) throw new Error('No rhythm set for ' + block + ' Block in Code.gs CONFIG.RHYTHM.BLOCKS.');
+  var saved = {};
+  try { saved = JSON.parse(PropertiesService.getScriptProperties().getProperty('rhythm_' + set) || '{}'); } catch (e) {}
+  if (!saved.name) throw new Error('No rhythm has been picked for ' + set + ' yet.');
+  var bytes = boardCached_('boardRhythmBytes:' + saved.name, 600, function () {
+    var it = DriveApp.getFolderById(rc.FOLDER_ID).getFilesByName(saved.name);
+    return { b: it.hasNext() ? it.next().getSize() : 0 };
+  }).b;
+  return { block: block, set: set, name: saved.name, meter: saved.meter || '', date: saved.date || '', bytes: bytes };
 }
 
 // ---------------------------------------------------------------- table on the slide
