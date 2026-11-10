@@ -1,5 +1,24 @@
 # Agenda Board — handoff
 
+## Latest session (11/10/2026, evening) — read this first
+- All live (CHANGELOG 2.1.0 / 2.2.0 / 2.2.1). Apps Script "Class Agenda – Daily Slide Updater"
+  (1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG: Code.js v2.4, ClosingScores.js v1.5, NinjaGoals.js), web app
+  deployment AKfycbw9ThMFeLqxlurKz10_5gzwpOrfmoh2BhsYYksPOsESJ_htNiobf-u4xcMO1zuqbek-CA @6. Content Pool sheet
+  1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E.
+- Rhythm "Show counts": 780 v2 pictures in Drive "Daily Rhythms" (181GxPLTX7enqYu9zmF_XSYkOefgAcBjx; old ones in its
+  "Old rhythm pictures" subfolder); rhythm-counts.json at the site root; counts show only when the picture's Drive size
+  matches the file's `b`. Generator tools/rhythm (seeded 20261104). Style (Mat): 1 e + a; 6/8 = 1–6; rests in (); held beats dim.
+- World map (map/index.html, #btnMap): TOE Book 1 — 71 songs, 20 composers, 58 countries, 14 instruments; modes songs /
+  instruments / composer timeline / Mystery Country. Mat edits content in Content Pool tabs Map Songs / Map Composers /
+  Map Countries (a=map, cached 60 s); built-in fallback map/data.json from tools/map/make_data.py. Mat's choices: TOE Book 1
+  only; music countries + ~40 more; all extras; editable sheet tabs.
+- Pack-up step 4 on Band Ninja days: "Have a seat and be ready for class change" (no rehearsal scores).
+- NinjaGoals.gs installed in the Daily Slides project.
+- Constraints: never publish the closing link/key in this public repo; CDNs are blocked in the container, so d3 / topojson /
+  world-atlas are vendored in map/; Apps Script uploads go through Mat's Chrome (the container can't reach script.google.com).
+- Known issues: remote branch "world-map" failed to delete (harmless).
+- Next: nothing pending; wait for Mat's feedback from class use.
+
 Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it open full-screen in the board's built-in browser; it shows the right block's slide from the **Daily Rehearsal (All Band Classes)** Google Slides deck and a Raven Band welcome screen with a clock the rest of the day.
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
