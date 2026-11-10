@@ -599,6 +599,41 @@ def main():
         failures += 0 if ok else 1
         ctx.close()
 
+        # country-name check (11/10): friendly names / odd spacing land on the map; names it can't place are listed in
+        # window.__map.unmatched (never on screen); every name in tools/map/names.js (the sheet's "Map Names" list) lands
+        import subprocess
+        all_names = _json.loads(subprocess.run(["node", str(ROOT / "tools" / "map" / "names.js"), "--json"], capture_output=True, text=True, check=True).stdout)
+        def names_ctx(songs_rows, composers=(), countries=()):
+            def h(route):
+                q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+                body = {"ok": True, "songs": list(songs_rows), "composers": list(composers), "countries": list(countries)} if q.get("a") == "map" else {"ok": True, "config": {}}
+                route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+            c = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+            c.add_init_script("localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))")
+            c.route("https://script.google.com/**", h)
+            pg = c.new_page(); pg.goto(f"http://127.0.0.1:{PORT}/map/"); pg.wait_for_function("!!window.__map", timeout=8000)
+            return c, pg
+        rows = [{"Book #": str(i), "Title": t, "Country": c} for i, (t, c) in enumerate([("Merengue", "Dominican Republic"), ("Spacey", " japan "),
+                ("Coast", "Ivory Coast"), ("Yankee", "USA"), ("Wardrobe", "Narnia"), ("Lion City", "Singapore")])]
+        ctx, page = names_ctx(rows, composers=[{"Composer": "Nobody", "Country": "Atlantis"}],
+                              countries=[{"Country": "ivory coast", "Known for": "Test cocoa"}])
+        got = page.evaluate("window.__map.songs.map(s => s.title + '=' + s.country)")
+        un = page.evaluate("window.__map.unmatched")
+        page.evaluate("window.__map.pickCountry(\"Côte d'Ivoire\")"); civ = page.inner_text("#cardBody")
+        body = page.inner_text("body")
+        ok = (got == ["Merengue=Dominican Rep.", "Spacey=Japan", "Coast=Côte d'Ivoire", "Yankee=United States of America"]
+              and un == ["Map Songs: Narnia", "Map Songs: Singapore", "Map Composers: Atlantis"]
+              and "Test cocoa" in civ and "Narnia" not in body and "Atlantis" not in body)
+        print(("PASS" if ok else "FAIL"), f"{'map country names':34s}" + ("" if ok else f" {got} {un} {civ[:80]!r}"))
+        failures += 0 if ok else 1
+        ctx.close()
+        ctx, page = names_ctx([{"Book #": str(i), "Title": "T" + str(i), "Country": n} for i, n in enumerate(all_names)])
+        n_in = page.evaluate("window.__map.songs.length"); un = page.evaluate("window.__map.unmatched")
+        ok = len(all_names) > 200 and n_in == len(all_names) and un == []
+        print(("PASS" if ok else "FAIL"), f"{'map: every Map Names name lands':34s}" + ("" if ok else f" {len(all_names)} {n_in} {un[:5]}"))
+        failures += 0 if ok else 1
+        ctx.close()
+
         # Welcome screen pass-offs this week, and the pass-off line count on Band Ninja days (counts only)
         def stats_script(route):
             q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}

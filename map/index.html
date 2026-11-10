@@ -210,12 +210,27 @@
   function miles(a, b) { return Math.round(d3.geoDistance([a.lon, a.lat], [b.lon, b.lat]) * MILES); }
   function fmt(n) { return n.toLocaleString("en-US"); }
 
-  // Country names people type → the map's names
-  var ALIAS = { "usa": "United States of America", "us": "United States of America", "united states": "United States of America", "america": "United States of America",
-    "uk": "United Kingdom", "england": "United Kingdom", "scotland": "United Kingdom", "wales": "United Kingdom", "great britain": "United Kingdom",
-    "britain": "United Kingdom", "northern ireland": "United Kingdom", "czech republic": "Czechia", "holland": "Netherlands", "korea": "South Korea",
-    "trinidad": "Trinidad and Tobago", "the netherlands": "Netherlands" };
-  function countryName(s) { var k = norm(s); return ALIAS[k] || s; }
+  // Country names people type → the map's names. Also the source of the Content Pool sheet's hidden "Map Names" list
+  // (tools/map/names.js), which flags a Country cell the map won't find: keep the keys spelled the way a person types them.
+  var ALIAS_LIST = { "USA": "United States of America", "US": "United States of America", "U.S.": "United States of America",
+    "United States": "United States of America", "America": "United States of America",
+    "UK": "United Kingdom", "England": "United Kingdom", "Scotland": "United Kingdom", "Wales": "United Kingdom",
+    "Northern Ireland": "United Kingdom", "Great Britain": "United Kingdom", "Britain": "United Kingdom",
+    "Czech Republic": "Czechia", "Holland": "Netherlands", "The Netherlands": "Netherlands", "Korea": "South Korea",
+    "Republic of Korea": "South Korea", "Trinidad": "Trinidad and Tobago", "Tobago": "Trinidad and Tobago",
+    "Dominican Republic": "Dominican Rep.", "Bosnia and Herzegovina": "Bosnia and Herz.", "Bosnia": "Bosnia and Herz.",
+    "Ivory Coast": "Côte d'Ivoire", "North Macedonia": "Macedonia", "South Sudan": "S. Sudan",
+    "Democratic Republic of the Congo": "Dem. Rep. Congo", "DR Congo": "Dem. Rep. Congo", "DRC": "Dem. Rep. Congo",
+    "Republic of the Congo": "Congo", "Central African Republic": "Central African Rep.", "Equatorial Guinea": "Eq. Guinea",
+    "Solomon Islands": "Solomon Is.", "Falkland Islands": "Falkland Is.", "Western Sahara": "W. Sahara", "Burma": "Myanmar",
+    "Türkiye": "Turkey", "Russian Federation": "Russia", "Viet Nam": "Vietnam", "Eswatini": "eSwatini", "Swaziland": "eSwatini",
+    "East Timor": "Timor-Leste", "The Gambia": "Gambia", "The Bahamas": "Bahamas", "UAE": "United Arab Emirates",
+    "The Philippines": "Philippines", "Persia": "Iran", "Northern Cyprus": "N. Cyprus" };
+  var ALIAS = {}; Object.keys(ALIAS_LIST).forEach(function (k) { ALIAS[norm(k)] = ALIAS_LIST[k]; });
+  function countryName(s) { s = String(s == null ? "" : s).trim(); var k = norm(s); return ALIAS[k] || s; }
+  // After the map loads: any spelling/spacing/capitals of a map name → that name (e.g. " japan" → "Japan")
+  var NORMNAME = {};
+  function fixCountry(n) { n = countryName(n); return byName[n] ? n : (NORMNAME[norm(n)] || n); }
 
   // Continent colors (every country, from where its middle is; a few by name)
   var CONT = { NA: { c: "var(--na)", n: "North America" }, SA: { c: "var(--sa)", n: "South America" }, EU: { c: "var(--eu)", n: "Europe" },
@@ -736,7 +751,16 @@
   Promise.all([fetch("countries-110m.json").then(function (r) { return r.json(); }), loadData()]).then(function (two) {
     world = two[0];
     features = topojson.feature(world, world.objects.countries).features;
-    features.forEach(function (f) { f.cont = continent(f); byName[f.properties.name] = f; });
+    features.forEach(function (f) { f.cont = continent(f); byName[f.properties.name] = f; NORMNAME[norm(f.properties.name)] = f.properties.name; });
+    // Names the map can't place: songs/composers/countries with them are left off. Never shown on screen (Mat 11/10: the
+    // sheet flags them instead, see tools/map/names.js); kept in window.__map.unmatched + the console for checking.
+    var unmatched = [];
+    function miss(where, n) { if (n && unmatched.indexOf(where + ": " + n) < 0) unmatched.push(where + ": " + n); }
+    D.songs.forEach(function (s) { s.country = fixCountry(s.country); if (!byName[s.country]) miss("Map Songs", s.country || "(blank)"); });
+    Object.keys(D.composers).forEach(function (k) { var c = D.composers[k]; if (!c.country) return; c.country = fixCountry(c.country); if (!byName[c.country]) miss("Map Composers", c.country); });
+    var fixedC = {}; Object.keys(D.countries).forEach(function (k) { var n = fixCountry(k); if (!byName[n]) miss("Map Countries", k); fixedC[n] = Object.assign(fixedC[n] || {}, D.countries[k]); });
+    D.countries = fixedC;
+    if (unmatched.length) try { console.warn("Map: names not on the map: " + unmatched.join("; ")); } catch (e) {}
     HOME = D.home; COMP = D.composers; COUNTRIES = D.countries; INST = D.instruments;
     SONGS = D.songs.filter(function (s) { return byName[s.country]; });
     BYC = {}; SONGS.forEach(function (s) { (BYC[s.country] = BYC[s.country] || []).push(s); });
@@ -744,7 +768,7 @@
     size(); svg.call(zoom).on("dblclick.zoom", null); draw(); legend();
     window.__map = { songs: SONGS, countries: COUNTRIES, composers: COMP, byName: byName, mode: function () { return mode; },
       pickSong: pickSong, pickCountry: pickCountry, pickComposer: pickComposer, setMode: setMode, mystery: function () { return mysteryC; },
-      transform: function () { return T; }, sheet: D.__sheet || false };
+      transform: function () { return T; }, sheet: D.__sheet || false, unmatched: unmatched };
     var q = new URLSearchParams(location.search).get("q"); if (q) { $("search").value = q; search(); }
   }).catch(function (e) { $("msg").textContent = "Couldn't load the map (" + (e && e.message || e) + ")."; });
 })();
