@@ -16,7 +16,16 @@
 - NinjaGoals.gs installed in the Daily Slides project.
 - Constraints: never publish the closing link/key in this public repo; CDNs are blocked in the container, so d3 / topojson /
   world-atlas are vendored in map/; Apps Script uploads go through Mat's Chrome (the container can't reach script.google.com).
-- Known issues: remote branch "world-map" failed to delete (harmless).
+- **2.2.2 map name check (11/10 evening, Mat chose "flag it in the sheet, not on the map"):** map/index.html ALIAS_LIST
+  (display spellings → map names, e.g. "Dominican Republic" → "Dominican Rep."), countryName trims, fixCountry also matches
+  any case/spacing/accents of a map name (NORMNAME) after the map loads; songs/composers/countries re-resolved at start;
+  names still unplaced → window.__map.unmatched + console.warn only (no UI). tools/map/names.js = map names + ALIAS_LIST
+  keys (224) → Content Pool hidden tab **Map Names** (sheetId 812345605, A2:A225, written via connector 11/10). Data
+  validation ONE_OF_RANGE 'Map Names'!$A$2:$A$300, strict false (warning only), no dropdown, on Map Songs D2:D200,
+  Map Composers E2:E100, Map Countries A2:A250, with a help note. **If ALIAS_LIST changes: rerun names.js and re-paste.**
+  Tests: smoke 'map country names' + 'map: every Map Names name lands' (48/48).
+- Known issues: remote branch "world-map" failed to delete (harmless). Sheet validation may be case-sensitive: a
+  lower-case "japan" could get a red corner even though the map accepts it (harmless; retype with capitals).
 - Next: nothing pending; wait for Mat's feedback from class use.
 
 Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it open full-screen in the board's built-in browser; it shows the right block's slide from the **Daily Rehearsal (All Band Classes)** Google Slides deck and a Raven Band welcome screen with a clock the rest of the day.

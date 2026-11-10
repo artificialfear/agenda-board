@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2 — 2026-11-10
+- World map: a song, composer or country whose name the map can't place is no longer a silent surprise. The Content Pool
+  sheet's Country columns (Map Songs D, Map Composers E, Map Countries A) now get a red corner + note when a name won't be
+  found (warning only, never blocks typing), checked against a hidden **Map Names** tab (224 names). Nothing shows on the map.
+- The map understands everyday spellings and odd spacing: Dominican Republic, Ivory Coast, Türkiye, Burma, DRC, Eswatini,
+  " japan " … (its own map names are things like "Dominican Rep." and "Côte d'Ivoire").
+- Some small countries (Singapore, Malta, Barbados…) aren't on this map at all, so they get the red corner too.
+
 ## 2.2.1 — 2026-11-10
 - Pack-up screen on Band Ninja days: step 4 says "Have a seat and be ready for class change" (no rehearsal scores those days). The scoreboard already stayed off on Band Ninja days.
 
