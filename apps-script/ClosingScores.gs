@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.3  (Raven Band, 11/9/2026)
+ * ClosingScores.gs  v1.4  (Raven Band, 11/9/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -19,6 +19,9 @@
  *       Code.gs picked, Script Property rhythm_<set>), for the board's "Show counts" button.
  *       The board has the counts for every image itself; the image's size (bytes) lets it check the
  *       picture in Drive is the one those counts belong to. Drive is already used by Code.gs: no new permissions.
+ *   - v1.4: POST {k, a:'rhythmPut', files:[{name, b64}]} puts new rhythm pictures in the Daily Rhythms folder
+ *       (used when the picture library is remade; key required, rhythm file names only). A picture it replaces
+ *       is moved into the subfolder "Old rhythm pictures", never deleted, so it can be put back.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -79,6 +82,52 @@ function doGet(e) {
     out = { ok: false, error: String(err && err.message || err) };
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** v1.4: uploads of remade rhythm pictures (see the header). */
+function doPost(e) {
+  var out;
+  try {
+    var p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    var key = PropertiesService.getScriptProperties().getProperty('closingKey');
+    if (!key || p.k !== key) throw new Error('Wrong or missing key.');
+    if (p.a !== 'rhythmPut') throw new Error('Unknown action: ' + p.a);
+    var lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try { out = { results: rhythmPut_(p.files || []) }; } finally { lock.releaseLock(); }
+    out.ok = true;
+  } catch (err) {
+    out = { ok: false, error: String(err && err.message || err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+var RHYTHM_NAME_ = /^(8th|7th|6int|6beg)_\d-\d_\d{3}\.png$/;
+var RHYTHM_OLD_FOLDER_ = 'Old rhythm pictures';
+
+/** Puts each picture in the Daily Rhythms folder. Same size already there = left alone; else the old one moves to the subfolder. */
+function rhythmPut_(files) {
+  var rc = (typeof CONFIG !== 'undefined' && CONFIG.RHYTHM) || null;
+  if (!rc || !rc.FOLDER_ID) throw new Error('Daily Rhythm is off (Code.gs CONFIG.RHYTHM.FOLDER_ID is blank).');
+  if (files.length > 40) throw new Error('At most 40 pictures per upload.');
+  var folder = DriveApp.getFolderById(rc.FOLDER_ID), old = null, cache = CacheService.getScriptCache();
+  return files.map(function (f) {
+    var name = String(f.name || '');
+    if (!RHYTHM_NAME_.test(name)) return { name: name, error: 'not a rhythm picture name' };
+    var bytes = Utilities.base64Decode(String(f.b64 || ''));
+    if (bytes.length < 100 || bytes.length > 300000 || bytes[0] !== -119 || bytes[1] !== 80 || bytes[2] !== 78 || bytes[3] !== 71)
+      return { name: name, error: 'not a PNG picture' };
+    var have = [], it = folder.getFilesByName(name);
+    while (it.hasNext()) { var x = it.next(); if (!x.isTrashed()) have.push(x); }
+    if (have.length === 1 && have[0].getSize() === bytes.length) return { name: name, done: 'same', bytes: bytes.length };
+    if (have.length) {
+      if (!old) { var fi = folder.getFoldersByName(RHYTHM_OLD_FOLDER_); old = fi.hasNext() ? fi.next() : folder.createFolder(RHYTHM_OLD_FOLDER_); }
+      have.forEach(function (x) { x.moveTo(old); });
+    }
+    folder.createFile(Utilities.newBlob(bytes, 'image/png', name));
+    try { cache.remove('boardRhythmBytes:' + name); } catch (e) {}
+    return { name: name, done: have.length ? 'replaced' : 'added', bytes: bytes.length };
+  });
 }
 
 // ---------------------------------------------------------------- board settings
