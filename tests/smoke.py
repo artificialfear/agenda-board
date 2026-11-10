@@ -217,6 +217,7 @@ def main():
         ctx, page = packctx("2026-11-06T08:29:50")            # regular 1st ends 8:36
         P = lambda: page.evaluate("window.__agendaBoard.pack()")
         a = P(); page.clock.fast_forward("00:15"); b = P()
+        step4 = page.inner_text("#packStep4")
         if shots_dir: page.screenshot(path=str(shots_dir / "packup.png"))
         page.clock.fast_forward("00:12"); c = P()
         page.clock.fast_forward("00:40"); d = P()
@@ -224,13 +225,15 @@ def main():
         page.reload(); page.wait_for_timeout(300); e = P()    # no repeat after a reload
         page.clock.fast_forward("06:00"); f = P()              # past 8:36, bell rang
         ok = (not a["open"] and b["open"] and b["flash"] and c["open"] and not c["flash"] and not d["open"]
-              and d["pill"].startswith("🎒 Pack up · class change in 5:") and not e["open"] and e["pill"] and not f["pill"] and not f["open"])
+              and d["pill"].startswith("🎒 Pack up · class change in 5:") and not e["open"] and e["pill"] and not f["pill"] and not f["open"]
+              and step4 == "Have a seat and be ready for rehearsal scores")
         print(("PASS" if ok else "FAIL"), f"{'pack-up alert (regular 1st)':34s} {[a, b, c, d, e, f]}" if not ok else "pack-up alert (regular 1st)")
         failures += 0 if ok else 1
         ctx.close()
         ctx, page = packctx("2026-11-10T08:19:30")            # IF 1st ends 8:25
-        ok = page.evaluate("window.__agendaBoard.pack()")["open"]
-        print(("PASS" if ok else "FAIL"), "pack-up alert (IF day schedule)")
+        ok = page.evaluate("window.__agendaBoard.pack()")["open"] and page.inner_text("#packStep4") == "Have a seat and be ready for class change"
+        if shots_dir: page.screenshot(path=str(shots_dir / "packup_ninja.png"))
+        print(("PASS" if ok else "FAIL"), "pack-up alert (IF day schedule, Band Ninja: no scores)")
         failures += 0 if ok else 1
         ctx.close()
         ctx, page = packctx("2026-11-06T08:31:00", "localStorage.setItem('agendaBoard.settings', JSON.stringify({packMinutes: 0}))")

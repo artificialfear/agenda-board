@@ -404,7 +404,7 @@
     <li><b>1</b>Pack up your instrument</li>
     <li><b>2</b>Straighten your chair</li>
     <li><b>3</b>Push your music stand away from your feet</li>
-    <li><b>4</b>Have a seat and be ready for rehearsal scores</li>
+    <li><b>4</b><span id="packStep4">Have a seat and be ready for rehearsal scores</span></li>
   </ol>
   <div class="p-tap">Tap anywhere to close</div>
 </div>
@@ -1731,6 +1731,8 @@
         }
         var line = planned ? "Closing scores in " + bellText(left - scoreAt) : "Class change in " + bellText(left);
         packBell.textContent = line;
+        // Band Ninja days have no rehearsal scores (Mat 11/10)
+        packStep4.textContent = isNinja(d) ? "Have a seat and be ready for class change" : "Have a seat and be ready for rehearsal scores";
         packPill.textContent = "🎒 Pack up · " + line.charAt(0).toLowerCase() + line.slice(1);
         if (packEl.classList.contains("open")) {
           if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
@@ -1749,6 +1751,7 @@
       packPill.classList.remove("show");
     }
   }
+  var packStep4 = document.getElementById("packStep4");
   packEl.addEventListener("click", function () { packClose(); packCheck(); });
   packPill.addEventListener("click", function () {
     if (packPill.textContent.indexOf("★") === 0) { scoresOpen(true, pack.name); packPill.classList.remove("show"); return; }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.1 — 2026-11-10
+- Pack-up screen on Band Ninja days: step 4 says "Have a seat and be ready for class change" (no rehearsal scores those days). The scoreboard already stayed off on Band Ninja days.
+
 ## 2.2.0 — 2026-11-10
 - 🌍 Map button (bottom-left, next to Book): full-screen "Music Around the World" (map/index.html, also works on its own at /map/).
   Songs: every Tradition of Excellence Book 1 piece with a named origin (71), ♪ count per country, tap a country for its card
