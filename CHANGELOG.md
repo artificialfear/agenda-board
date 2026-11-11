@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1 — 2026-11-11
+- **U.S. state lines** on the map (Mat): thin lines between the states, from us-atlas states-10m (vendored as
+  map/us-states-10m.json, loaded after the world map so the first draw isn't slower). They never catch taps (the U.S. is
+  still one country to tap) and stay through redraws, mode changes and resizing.
+
 ## 2.4.0 — 2026-11-11
 - **Tradition of Excellence Book 2** on the map: 72 pieces (rows 83–154 of Map Songs, new column N "Book" = 2) and 14 new composers.
   "♪ Book 2" switch next to Book 1 / Concert; Book 2 songs show "B2·72" and "Tradition of Excellence 2"; country cards list

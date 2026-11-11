@@ -52,6 +52,8 @@
   .land.music { stroke: var(--gold); stroke-width: 1.6px; }
   .land.sel { filter: brightness(1.3) saturate(1.2); stroke: #fff; stroke-width: 2.6px; }
   .land.dim { opacity: .45; }
+  /* 2.4.1: U.S. state lines (Mat 11/11); drawn over the land, never catch clicks */
+  .states { fill: none; stroke: rgba(13,59,102,.75); stroke-width: .6px; vector-effect: non-scaling-stroke; pointer-events: none; }
   .arc { fill: none; stroke: var(--gold); stroke-width: 2.5px; stroke-dasharray: 7 6; vector-effect: non-scaling-stroke;
     animation: dash 1.2s linear infinite; }
   .arc.cw { stroke: var(--born); }
@@ -367,6 +369,7 @@
   var svg = d3.select("#map"), W = 0, H = 0, projection, path, world, features = [], byName = {};
   var gRoot = svg.append("g"), gWorld = gRoot.append("g"), gArcs = gRoot.append("g"), gMarks = svg.append("g");
   var zoom = d3.zoom().scaleExtent([1, 14]).on("zoom", zoomed), T = d3.zoomIdentity;
+  var STATES = null;   // 2.4.1: interior U.S. state borders (us-atlas states-10m), loaded after the world map
   var mode = "map", selCountry = null, selSong = null, selComp = null, selInst = null, mysteryC = null;
 
   function size() {
@@ -385,6 +388,7 @@
       .attr("fill", function (f) { return CONT[f.cont].c; })
       .on("click", function (ev, f) { if (mode === "mystery") return; if (mode === "passport") { passCountry(f.properties.name); return; } pickCountry(f.properties.name, false); })
       .append("title").text(function (f) { return f.properties.name; });
+    if (STATES) gWorld.append("path").attr("class", "states").attr("d", path(STATES));
     restyle(); drawArcs(); drawMarks();
   }
   function restyle() {
@@ -982,6 +986,10 @@
     rebuildBYC();
     $("msg").style.display = "none";
     size(); svg.call(zoom).on("dblclick.zoom", null); draw(); legend();
+    fetch("us-states-10m.json").then(function (r) { return r.json(); }).then(function (us) {
+      STATES = topojson.mesh(us, us.objects.states, function (a, b) { return a !== b; });
+      if (!gWorld.select("path.states").size()) gWorld.append("path").attr("class", "states").attr("d", path(STATES));
+    }).catch(function () {});
     window.__map = { songs: SONGS, countries: COUNTRIES, composers: COMP, byName: byName, mode: function () { return mode; },
       pickSong: pickSong, pickCountry: pickCountry, pickComposer: pickComposer, setMode: setMode, mystery: function () { return mysteryC; },
       transform: function () { return T; }, sheet: D.__sheet || false, unmatched: unmatched,

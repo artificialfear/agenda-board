@@ -711,6 +711,16 @@ def main():
               and "Made-up Grand March" in f143 and "Nutcracker" in f143 and "B2·143" in f143)
         print(("PASS" if ok else "FAIL"), f"{'map: Book 2':34s}" + ("" if ok else f" {b2card[:80]!r} {only2} {egInB1} {jp} {f143[:120]!r}"))
         failures += 0 if ok else 1
+        # 2.4.1 U.S. state lines: one path over the land, no clicks, survives a redraw (resize)
+        try: page.wait_for_function("document.querySelectorAll('path.states').length >= 1", timeout=8000)
+        except Exception: pass
+        st = {"n": 0}
+        if page.evaluate("!!document.querySelector('path.states')"): st = page.evaluate("(() => { const p = document.querySelector('path.states'); return { n: document.querySelectorAll('path.states').length, d: (p.getAttribute('d') || '').length, pe: getComputedStyle(p).pointerEvents, last: p === p.parentNode.lastElementChild }; })()")
+        page.set_viewport_size({"width": 1600, "height": 900}); page.wait_for_timeout(500)
+        st2 = page.evaluate("document.querySelectorAll('path.states').length"); page.set_viewport_size({"width": 1920, "height": 1080}); page.wait_for_timeout(400)
+        ok = st["n"] == 1 and st["d"] > 2000 and st["pe"] == "none" and st["last"] and st2 == 1
+        print(("PASS" if ok else "FAIL"), f"{'map: U.S. state lines':34s}" + ("" if ok else f" {st} {st2}"))
+        failures += 0 if ok else 1
         # passport
         page.goto(f"http://127.0.0.1:{PORT}/map/?mode=passport&block=3rd"); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(600)
         pp = page.evaluate("window.__map.passport()"); cnt = page.inner_text("#passCount"); lst = page.inner_text("#passList")
