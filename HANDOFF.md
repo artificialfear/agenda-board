@@ -32,6 +32,30 @@ Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it 
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
+## 2.3.0 map: today's music, concert music, passport, team game (11/10 night, Mat: "implement all")
+- **Server = ClosingScores.gs v1.6, deployed @7 via Chrome** (clasp sign-in is blocked from the session; Monaco model swap after
+  checking live = main by SHA-256). setupMapPassport was run: weekday trigger boardPlayedDaily (~3 PM) + 187 "start" rows.
+  boardPlayedDaily was run once 11/10 11:33 PM and logged exactly the slides' music (1st Cartoon Christmas + Joy, 3rd/4th Abundant Joy,
+  6th Snowstorm + Synergy March, 7th The Dreidel Song; Technique Builder / Foundations ignored).
+- Matching rules (boardMatchSongs_): Book 1 numbers (#72, #70-71, #72, 73) and titles only on lines saying ToE / Tradition / Book 1, only
+  for CLOSING.BOOK1_BLOCKS (3rd, 4th, 6th, 7th; 8th grade is in Book 2). Concert pieces = Map Songs rows Book # "Concert", filtered by
+  Ensemble = CLOSING.BLOCK_BANDS[block]; whole-line match, or contained for titles of 8+ letters ("Joy" never matches "Abundant Joy").
+  Mat types "book, pg., song #" (11/10). Page-only lines are NOT matched: the book PDF's text has no reliable page breaks.
+- Passport start (Mat 11/10): 1st all of Book 1; 3rd/4th through #80; 6th/7th through The Dreidel Song (CLOSING.PASSPORT_START).
+- Content Pool sheet: Map Songs has 10 "Concert" rows (Winter Concert 12/9/26, researched) + new columns L Ensemble, M Check;
+  Map Composers 10 new composers + M Check; tab "Map Played" (Date | Block | Song | Book # | Country | How). **Mat to review the
+  Check notes**: "A Cartoon Christmas" is arranged by Michael Story (his Program/Song Ideas say Sweeney); composers missing in his
+  sheets for Abundant Joy (Adrian B. Sims), Star Taker (Laura Estes), Turbo Rock (Michael Sweeney).
+- Board: mapTodayFetch (a=today on each class's agenda, again every 10 min) → #btnMap gold "🌍 Today's music (n)"; mapOpen sends
+  {mapShow: {block, today}} (first load: map/?block=&today=a|b). Not on Band Ninja days (no agenda extras then).
+- Map: showSet all/book/concert (#setBar in the legend), concert badges green; mode "passport" (#passPanel, a=passport, 60 s, block
+  remembered in agendaMap.passBlock, stamped = .land.stamp, others grey); Mystery teams (#mTeams, 2-4 teams, 4/3/2/1 points, scores per day in
+  agendaMap.teams); badges spiral apart (≥34 px) with a lead line + 24 px hit circle; timeline x = 40% years + 60% composer order,
+  last names (initial if two share one). __map.show / passport / teams / set / badges = test hooks.
+- Tests: tests/passport_gs_test.js (node); smoke 'map: concert, links, today', 'map: class passport', 'map: mystery teams',
+  "board: today's music button"; smoke now counts its own checks (54).
+- Later, if wanted: Book 2 songs for 8th grade (Mat offered the PDF); a timer for team rounds.
+
 ## How it works
 - Single `index.html`, no build step, no external libraries.
 - Deck: `1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY` (owned by Mat's personal Gmail, published to web with auto-republish).
