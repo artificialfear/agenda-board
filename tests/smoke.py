@@ -657,7 +657,9 @@ def main():
                           "Lat": "47.61", "Lon": "-122.33", "Composer": "Adrian B. Sims", "Ensemble": "7th Grade Band"},
                          {"Book #": "Concert", "Title": "March of the Frost Giants", "Book says": "Randall D. Standridge", "Country": "Norway", "Place": "Jotunheimen, Norway",
                           "Lat": "61.6", "Lon": "8.3", "Ensemble": "8th Grade Band"},
-                         {"Book #": "901", "Title": "Made-up Haiti Tune", "Country": "Haiti"}, {"Book #": "902", "Title": "Made-up Merengue", "Country": "Dominican Republic"}]
+                         {"Book #": "901", "Title": "Made-up Haiti Tune", "Country": "Haiti"}, {"Book #": "902", "Title": "Made-up Merengue", "Country": "Dominican Republic"},
+                         {"Book #": "72", "Title": "Made-up Book Two Tune", "Country": "Japan", "Book": "2"},
+                         {"Book #": "143", "Title": "Made-up Grand March", "Country": "Egypt", "Book": "2"}]
                 body = {"ok": True, "songs": rows, "composers": [{"Composer": "Adrian B. Sims", "Years": "born 2000", "Born year": "2000", "Era": "Today", "Country": "USA"}], "countries": []}
             elif q.get("a") == "passport":
                 body = {"ok": True, "blocks": PASS}
@@ -693,6 +695,21 @@ def main():
               and onlyC == ["Norway", "United States of America"] and not hasNo and bookN >= 20 and apart
               and "today in 3rd block" in today and "abundant joy" in today and "nutcracker" in today and "2 countries" in today)
         print(("PASS" if ok else "FAIL"), f"{'map: concert, links, today':34s}" + ("" if ok else f" {deep[:60]!r} {conc[:80]!r} {onlyC} {hasNo} {bookN} {car} {today[:120]!r}"))
+        failures += 0 if ok else 1
+        # 2.4.0 Book 2: "2-72" finds Book 2 No. 72 (plain 72 stays Book 1), its own filter button, its own list on the country card
+        page.evaluate("window.__map.show({song: '2-72'})"); page.wait_for_timeout(300); b2card = page.inner_text("#cardBody").lower()
+        page.evaluate("window.__map.setMode('map')"); page.click("#setBar [data-set=book2]"); page.wait_for_timeout(200)
+        only2 = sorted(b["name"].split(":")[0] for b in page.evaluate("window.__map.badges()"))
+        page.click("#setBar [data-set=book]"); page.wait_for_timeout(200)
+        egInB1 = any(b["name"].startswith("Egypt") for b in page.evaluate("window.__map.badges()"))
+        page.click("#setBar [data-set=all]"); page.wait_for_timeout(200)
+        page.evaluate("window.__map.pickCountry ? window.__map.pickCountry('Japan') : null"); page.wait_for_timeout(200)
+        jp = page.evaluate("(() => { const s = window.__map.songs.filter(x => x.country === 'Japan'); return s.map(x => x.book + ':' + x.n); })()")
+        f143 = page.evaluate("(() => { window.__map.show({today: ['2-143', '72']}); return document.getElementById('cardBody').innerText; })()")
+        ok = ("made-up book two tune" in b2card and "no. 72 · tradition of excellence 2" in b2card and only2 == ["Egypt", "Japan"] and not egInB1
+              and "2:72" in jp and "1:" + next(x for x in jp if x.startswith("1:")).split(":")[1] in jp
+              and "Made-up Grand March" in f143 and "Nutcracker" in f143 and "B2·143" in f143)
+        print(("PASS" if ok else "FAIL"), f"{'map: Book 2':34s}" + ("" if ok else f" {b2card[:80]!r} {only2} {egInB1} {jp} {f143[:120]!r}"))
         failures += 0 if ok else 1
         # passport
         page.goto(f"http://127.0.0.1:{PORT}/map/?mode=passport&block=3rd"); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(600)

@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.6  (Raven Band, 11/10/2026)
+ * ClosingScores.gs  v1.7  (Raven Band, 11/11/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -34,6 +34,9 @@
  *                        one row per date + block + song.
  *       a=passport       every class's played songs (the Map Played tab), for the map's 🛂 Passport.
  *       boardPlayedDaily runs on weekdays ~3 PM and logs all five slides, so days the board is off still count.
+ *   - v1.7 (Mat 11/11): Tradition of Excellence Book 2 rows (Map Songs column "Book" = 2). A ToE line counts as the book it
+ *       names ("Book 2", "ToE 2", "Book 1"); otherwise the class's usual book (CLOSING.BOOK_DEFAULT: 8th grade = Book 2).
+ *       Book 2 songs are keyed and logged as "2-72" so they never mix with Book 1's #72.
  *       setupMapPassport (run once) makes that trigger and adds each class's starting songs (How = "start",
  *       CLOSING.PASSPORT_START). Same spreadsheet + deck as before: no new permissions.
  *
@@ -59,7 +62,7 @@ var CLOSING = {
   BOARD_TAB: 'Board Settings',
   MAP_TABS: { songs: 'Map Songs', composers: 'Map Composers', countries: 'Map Countries' },
   PLAYED_TAB: 'Map Played',
-  BOOK1_BLOCKS: ['3rd', '4th', '6th', '7th'],        // their slides' ToE numbers are Book 1 (8th grade is in Book 2)
+  BOOK_DEFAULT: { '1st': '2', '3rd': '1', '4th': '1', '6th': '1', '7th': '1' },   // which ToE book a class's plain "ToE #n" means
   BLOCK_BANDS: { '1st': '8th Grade Band', '3rd': '7th Grade Band', '4th': '7th Grade Band',
                  '6th': '6th Grade Intermediate Band', '7th': '6th Grade Beginning Band' },
   // Passport start (Mat 11/10): 8th grade finished Book 1; 7th grade through #80; both 6th grade classes through The Dreidel Song
@@ -202,7 +205,11 @@ function boardNorm_(s) {
     .replace(/[“”"'’.,!?()&:;#\-–]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 function boardIsConcert_(s) { return /^concert$/i.test(String(s['Book #'] || '').trim()); }
-function boardSongKey_(s) { var n = String(s['Book #'] || '').trim(); return /^\d+$/.test(n) ? n : String(s['Title'] || '').trim(); }
+function boardBookOf_(s) { return String(s['Book'] || '').trim() === '2' ? '2' : '1'; }
+function boardSongKey_(s) {
+  var n = String(s['Book #'] || '').trim(), b2 = boardBookOf_(s) === '2';
+  return /^\d+$/.test(n) ? (b2 ? '2-' + n : n) : String(s['Title'] || '').trim();
+}
 
 /** The text of the WORK SESSION box on a block's agenda slide (without the heading). '' if there isn't one. */
 function boardWorkText_(block) {
@@ -221,28 +228,32 @@ function boardWorkText_(block) {
   return '';
 }
 
-/** Map songs named in an agenda's text. Book 1 songs only on lines that say ToE / Tradition / Book 1, and only for Book 1 classes. */
+/** Map songs named in an agenda's text. Book songs only on lines that say ToE / Tradition / Book 1 / Book 2; the book is the one
+ *  the line names, else the class's usual book (CLOSING.BOOK_DEFAULT). */
 function boardMatchSongs_(text, block, songs) {
-  var book1 = CLOSING.BOOK1_BLOCKS.indexOf(block) >= 0, band = boardNorm_(CLOSING.BLOCK_BANDS[block] || '');
+  var band = boardNorm_(CLOSING.BLOCK_BANDS[block] || ''), defBook = (CLOSING.BOOK_DEFAULT || {})[block] || '1';
   var bookRows = songs.filter(function (s) { return !boardIsConcert_(s) && s['Title']; });
   var conc = songs.filter(function (s) { return boardIsConcert_(s) && s['Title']; });
   var out = [], seen = {};
   function add(s, how) {
     var k = boardSongKey_(s); if (seen[k]) return; seen[k] = 1;
-    out.push({ key: k, n: String(s['Book #'] || ''), title: String(s['Title']), country: String(s['Country'] || ''), how: how });
+    var n = String(s['Book #'] || '').trim();
+    out.push({ key: k, n: /^\d+$/.test(n) && boardBookOf_(s) === '2' ? '2-' + n : n, title: String(s['Title']), country: String(s['Country'] || ''), how: how });
   }
   String(text || '').split(/\n+/).forEach(function (line) {
     var l = line.trim(); if (!l) return;
     var nl = ' ' + boardNorm_(l) + ' ';
-    if (book1 && /\b(toe|t\.o\.e|tradition|book\s*1)\b/i.test(l)) {
+    if (/\b(toe|t\.o\.e|tradition|book\s*[12])\b/i.test(l)) {
+      var bk = /\b(book|toe|tradition)\s*(?:of\s+excellence\s*)?(?:book\s*)?2\b|\bbook\s*2\b/i.test(l) ? '2' : /\bbook\s*1\b/i.test(l) ? '1' : defBook;
+      var rows = bookRows.filter(function (s) { return boardBookOf_(s) === bk; });
       var nums = [], m, re = /(?:#|\bnos?\.?\s)\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?((?:\s*(?:,|&|and)\s*#?\s*\d{1,3})*)/gi;
       while ((m = re.exec(l))) {
         var a = +m[1], b = m[2] ? +m[2] : a;
         if (b >= a && b - a <= 15) for (var i = a; i <= b; i++) nums.push(i);
         String(m[3] || '').replace(/\d{1,3}/g, function (x) { nums.push(+x); return x; });
       }
-      nums.forEach(function (n) { bookRows.forEach(function (s) { if (String(s['Book #']).trim() === String(n)) add(s, '#'); }); });
-      bookRows.forEach(function (s) {
+      nums.forEach(function (n) { rows.forEach(function (s) { if (String(s['Book #']).trim() === String(n)) add(s, '#'); }); });
+      rows.forEach(function (s) {
         var t = boardNorm_(s['Title']).replace(/^the /, '');
         if (t.length >= 4 && nl.indexOf(' ' + t + ' ') >= 0) add(s, 'title');
       });
@@ -317,7 +328,7 @@ function boardPlayedDaily() {
 
 /** Book 1 songs (Map Songs order) up to a rule: 'all', '#80' (through the last row numbered 80 or lower) or a title. */
 function boardStartSongs_(rule, songs) {
-  var rows = songs.filter(function (s) { return !boardIsConcert_(s) && s['Title']; });
+  var rows = songs.filter(function (s) { return !boardIsConcert_(s) && s['Title'] && boardBookOf_(s) === '1'; });
   rule = String(rule || '').trim(); if (!rule) return [];
   if (/^all$/i.test(rule)) return rows;
   var end = -1, m = rule.match(/^#\s*(\d+)$/);

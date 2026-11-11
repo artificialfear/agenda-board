@@ -292,10 +292,17 @@
 
   // ---------------- data ----------------
   var D = null, BYC = {}, SONGS = [], COMP = {}, COUNTRIES = {}, INST = [], HOME = null;
-  // 2.3.0: which music the Songs mode shows ("all", "book" = Tradition of Excellence 1, "concert" = our concert pieces)
+  // 2.3.0: which music the Songs mode shows ("all", "book" = Tradition of Excellence 1, "book2" = Book 2 (2.4.0), "concert" = our concert pieces)
   var showSet = "all";
   function isConcert(s) { return /^concert$/i.test(s.n); }
-  function inSet(s) { return showSet === "all" || (showSet === "concert") === isConcert(s); }
+  function isBook2(s) { return !isConcert(s) && s.book === "2"; }
+  function songNo(s) { return isBook2(s) && /^\d+$/.test(s.n) ? "B2·" + s.n : s.n; }
+  function inSet(s) {
+    if (showSet === "concert") return isConcert(s);
+    if (showSet === "book") return !isConcert(s) && !isBook2(s);
+    if (showSet === "book2") return isBook2(s);
+    return true;
+  }
   function rebuildBYC() { BYC = {}; SONGS.forEach(function (s) { if (inSet(s)) (BYC[s.country] = BYC[s.country] || []).push(s); }); }
   function closingLink(a, extra) {
     var st = {}; try { st = JSON.parse(localStorage.getItem("agendaBoard.settings") || "{}"); } catch (e) {}
@@ -327,7 +334,8 @@
     if (j.songs && j.songs.length) {
       D.songs = j.songs.filter(function (r) { return r["Title"] && !/^(no|hide|n)$/i.test(String(r["Show"] || "").trim()); }).map(function (r) {
         var s = { n: String(r["Book #"] || ""), title: String(r["Title"]), label: String(r["Book says"] || ""), country: countryName(r["Country"]),
-          composer: String(r["Composer"] || ""), fact: String(r["Fun fact"] || ""), yt: String(r["YouTube link"] || ""), ens: String(r["Ensemble"] || "") };
+          composer: String(r["Composer"] || ""), fact: String(r["Fun fact"] || ""), yt: String(r["YouTube link"] || ""), ens: String(r["Ensemble"] || ""),
+          book: String(r["Book"] || "").trim() === "2" ? "2" : "1" };
         var lat = num(r["Lat"]), lon = num(r["Lon"]);
         if (r["Place"]) s.place = String(r["Place"]);
         if (lat != null && lon != null) { s.lat = lat; s.lon = lon; }
@@ -522,7 +530,7 @@
     return '<div class="c-miles">✈️ ' + esc(what) + ' <b>' + fmt(m) + ' miles</b> from our band room</div>';
   }
   function songBtn(s) {
-    return '<button data-song="' + SONGS.indexOf(s) + '"><span class="n">' + (isConcert(s) ? "🎺" : esc(s.n)) + '</span>' + esc(s.title) + '<small>' + esc(s.label) + '</small></button>';
+    return '<button data-song="' + SONGS.indexOf(s) + '"><span class="n">' + (isConcert(s) ? "🎺" : esc(songNo(s))) + '</span>' + esc(s.title) + '<small>' + esc(s.label) + '</small></button>';
   }
   function countryCard(name) {
     var c = COUNTRIES[name] || {}, songs = BYC[name] || [];
@@ -535,8 +543,9 @@
     if (c.fact) h += '<div class="c-row"><span class="h">Fun fact</span>' + esc(c.fact) + '</div>';
     if (c.music) h += '<div class="c-row"><span class="h">🎵 Music</span>' + esc(c.music) + '</div>';
     if (name === "United Kingdom" && songs.length) h += '<div class="c-row"><span class="h">Four countries in one</span>Our book has songs from England, Scotland and Wales. Look for the place on each song.</div>';
-    var bk = songs.filter(function (x) { return !isConcert(x); }), cn = songs.filter(isConcert);
-    if (bk.length) h += '<div class="c-row"><span class="h">♪ From here in our book (' + bk.length + ')</span><div class="c-list">' + bk.map(songBtn).join("") + '</div></div>';
+    var bk = songs.filter(function (x) { return !isConcert(x) && !isBook2(x); }), b2 = songs.filter(isBook2), cn = songs.filter(isConcert);
+    if (bk.length) h += '<div class="c-row"><span class="h">♪ From here in ' + (b2.length ? "Book 1" : "our book") + ' (' + bk.length + ')</span><div class="c-list">' + bk.map(songBtn).join("") + '</div></div>';
+    if (b2.length) h += '<div class="c-row"><span class="h">♪ From here in Book 2 (' + b2.length + ')</span><div class="c-list">' + b2.map(songBtn).join("") + '</div></div>';
     if (cn.length) h += '<div class="c-row"><span class="h">🎺 Our concert music (' + cn.length + ')</span><div class="c-list">' + cn.map(songBtn).join("") + '</div></div>';
     if (comps.length) h += '<div class="c-row"><span class="h">Composers</span>' + comps.map(function (k) { return '<span class="c-chip link" data-comp="' + esc(k) + '">' + esc(k) + '</span>'; }).join("") + '</div>';
     if (!c.known && !songs.length) h += '<div class="c-row" style="color:var(--soft)">No songs from here in our book yet.</div>';
@@ -546,7 +555,7 @@
   function songCard(s) {
     var comp = COMP[s.composer], c = COUNTRIES[s.country] || {};
     var h = '<div class="c-kicker">' + (isConcert(s) ? "🎺 Our concert music" + (s.ens ? " · " + esc(s.ens) : "") :
-      (s.n ? (/^\d+$/.test(s.n) ? "No. " + esc(s.n) : esc(s.n === "Ens." ? "Ensemble" : s.n === "Band" ? "Band piece" : s.n)) + " · " : "") + 'Tradition of Excellence 1') + '</div>' +
+      (s.n ? (/^\d+$/.test(s.n) ? "No. " + esc(s.n) : esc(s.n === "Ens." ? "Ensemble" : s.n === "Band" ? "Band piece" : s.n)) + " · " : "") + 'Tradition of Excellence ' + (isBook2(s) ? "2" : "1")) + '</div>' +
       '<div class="c-title">' + esc(s.title) + '</div><div class="c-sub">' + esc(s.label) + '</div>' +
       '<span class="c-chip link" data-country="' + esc(s.country) + '">' + (c.flag || "🌍") + " " + esc(s.place ? s.place + (s.place === s.country ? "" : " · " + shortName(s.country)) : s.country) + '</span>';
     if (s.fact) h += '<div class="c-row"><span class="h">Did you know?</span>' + esc(s.fact) + '</div>';
@@ -650,7 +659,7 @@
     var out = [];
     SONGS.forEach(function (s, i) {
       if (norm(s.n) === q || norm(s.title).indexOf(q) >= 0 || norm(s.label).indexOf(q) >= 0)
-        out.push({ k: isConcert(s) ? "Concert" : s.n && /^\d+$/.test(s.n) ? "No. " + s.n : "Song", t: s.title, s: shortName(s.country), go: function () { pickSong(s); } });
+        out.push({ k: isConcert(s) ? "Concert" : s.n && /^\d+$/.test(s.n) ? (isBook2(s) ? "Book 2 No. " : "No. ") + s.n : "Song", t: s.title, s: shortName(s.country), go: function () { pickSong(s); } });
     });
     Object.keys(COMP).forEach(function (n) { if (norm(n).indexOf(q) >= 0) out.push({ k: "Composer", t: n, s: COMP[n].years, go: function () { pickComposer(n); } }); });
     features.forEach(function (f) { var n = f.properties.name; if (norm(n).indexOf(q) >= 0 || (ALIAS[q] === n))
@@ -693,7 +702,7 @@
 
   function legend() {
     var h = ["NA", "SA", "EU", "AF", "AS", "OC"].map(function (k) { return '<span><i style="background:' + CONT[k].c + '"></i>' + CONT[k].n + '</span>'; }).join("");
-    if (mode === "map") h = '<span id="setBar"><button data-set="all"' + (showSet === "all" ? ' class="on"' : "") + '>All our music</button><button data-set="book"' + (showSet === "book" ? ' class="on"' : "") + '>♪ Book 1</button><button data-set="concert"' + (showSet === "concert" ? ' class="on"' : "") + '>🎺 Concert</button></span>' + h;
+    if (mode === "map") h = '<span id="setBar"><button data-set="all"' + (showSet === "all" ? ' class="on"' : "") + '>All our music</button><button data-set="book"' + (showSet === "book" ? ' class="on"' : "") + '>♪ Book 1</button><button data-set="book2"' + (showSet === "book2" ? ' class="on"' : "") + '>♪ Book 2</button><button data-set="concert"' + (showSet === "concert" ? ' class="on"' : "") + '>🎺 Concert</button></span>' + h;
     if (mode === "map" || mode === "timeline") h += '<span><b>♪</b> = pieces we play</span><span><span class="dot" style="background:#5ed39b"></span>concert music</span><span><span class="dot" style="background:var(--born)"></span>born</span><span><span class="dot" style="background:var(--work)"></span>worked</span>';
     if (mode === "passport") h += '<span><b>Bright</b> = countries this class has played music from</span>';
     if (mode === "instruments") h += '<span><b>Tap an instrument</b> to see where it was invented</span>';
@@ -891,7 +900,7 @@
     selCountry = name; restyle();
     var h = countryCard(name);
     if (st) h = '<div class="c-row" style="margin-top:0"><span class="h">🛂 ' + esc(passBlock) + ' Block played (' + st.songs.length + ')</span><div class="c-list">' +
-      st.songs.map(function (r) { var s = findSong(r.n && /^\d+$/.test(r.n) ? r.n : r.title); return s ? songBtn(s) : '<button disabled>' + esc(r.title) + '</button>'; }).join("") + '</div></div>' + h;
+      st.songs.map(function (r) { var s = findSong(r.n && /^(2-)?\d+$/.test(r.n) ? r.n : r.title); return s ? songBtn(s) : '<button disabled>' + esc(r.title) + '</button>'; }).join("") + '</div></div>' + h;
     openCard(h); fitCountry(name);
   }
   $("passBlocks").addEventListener("click", function (e) { var b = e.target.closest("[data-pb]"); if (b) passPick(b.getAttribute("data-pb")); });
@@ -902,7 +911,9 @@
   // ?mode=passport&block=3rd opens that class's passport. The board also sends {mapShow: {...}} when it opens the map.
   function findSong(key) {
     key = String(key || "").trim(); if (!key) return null;
-    return SONGS.filter(function (s) { return s.n === key; })[0] || SONGS.filter(function (s) { return norm(s.title) === norm(key); })[0] ||
+    var b2 = /^(?:2-|b2\W*)(\d+)$/i.exec(key);   // 2.4.0: "2-72" = Book 2 No. 72; a plain number = Book 1
+    if (b2) return SONGS.filter(function (s) { return isBook2(s) && s.n === b2[1]; })[0] || null;
+    return SONGS.filter(function (s) { return s.n === key && !isBook2(s); })[0] || SONGS.filter(function (s) { return s.n === key; })[0] || SONGS.filter(function (s) { return norm(s.title) === norm(key); })[0] ||
       SONGS.filter(function (s) { return norm(s.title).replace(/^the /, "") === norm(key).replace(/^the /, ""); })[0] || null;
   }
   function todayCard(list, block) {

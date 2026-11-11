@@ -24,15 +24,16 @@ function mkTab(vals) {
     getRange: (r, c, nr, nc) => ({ getDisplayValues: () => vals.slice(r - 1, r - 1 + nr).map(x => x.slice(c - 1, c - 1 + nc).map(v => v == null ? '' : String(v))),
       setValues(v) { v.forEach((line, i) => { vals[r - 1 + i] = line.slice(); }); return this; }, setFontWeight() { return this; } }), setFrozenRows() {} };
 }
-const H = ['Book #', 'Title', 'Book says', 'Country', 'Place', 'Lat', 'Lon', 'Composer', 'Fun fact', 'YouTube link', 'Show', 'Ensemble'];
-const song = (n, t, c, ens) => [n, t, '', c, '', '', '', '', '', '', '', ens || ''];
+const H = ['Book #', 'Title', 'Book says', 'Country', 'Place', 'Lat', 'Lon', 'Composer', 'Fun fact', 'YouTube link', 'Show', 'Ensemble', 'Check', 'Book'];
+const song = (n, t, c, ens, book) => [n, t, '', c, '', '', '', '', '', '', '', ens || '', '', book || ''];
 const tabs = { 'Map Songs': mkTab([H, song('12', 'Cuckoo Tune', 'Austria'), song('40', 'San Serení', 'Puerto Rico'), song('Ens.', 'The Dreidel Song', 'United States of America'),
   song('44', 'Michael Finnegan', 'Ireland'), song('70', 'Streets of Laredo', 'United States of America'), song('71', 'Donkey Riding', 'Canada'),
   song('72', 'Theme from “The Nutcracker”', 'Russia'), song('73', 'Made-up Seventy-Three', 'Japan'), song('80', 'Made-up Eighty', 'Spain'),
   song('Band', 'Made-up Band Piece', 'Mexico'), song('82', 'Made-up Eighty-Two', 'France'),
   song('Concert', 'Joy', 'United States of America', '8th Grade Band'), song('Concert', 'A Cartoon Christmas', 'United States of America', '8th Grade Band'),
   song('Concert', 'Abundant Joy', 'United States of America', '7th Grade Band'), song('Concert', 'Snowstorm', 'United States of America', '6th Grade Intermediate Band'),
-  song('Concert', 'Synergy March', 'United States of America', '6th Grade Intermediate Band')]) };
+  song('Concert', 'Synergy March', 'United States of America', '6th Grade Intermediate Band'),
+  song('70', 'The Thunderer', 'United States of America', '', '2'), song('72', 'Skill Builder Two', 'Germany', '', '2'), song('143', 'Triumphal March from “Aida”', 'Egypt', '', '2')]) };
 global.SpreadsheetApp = { openById: () => ({ getSheetByName: n => tabs[n] || null, insertSheet: n => (tabs[n] = mkTab([[]])) }) };
 eval(fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'ClosingScores.gs'), 'utf8'));
 
@@ -49,6 +50,15 @@ a.throws(() => boardToday_('2nd', TUE));
 work['3rd'] += '\nSnowstorm'; a.equal(titles(boardToday_('3rd', TUE)).includes('Snowstorm'), false, "another band's concert piece doesn't count"); work['3rd'] = work['3rd'].replace('\nSnowstorm', '');
 // not a Book 1 class: a ToE number on 1st Block's slide doesn't count
 work['1st'] += '\nToE #12'; a.equal(titles(boardToday_('1st', TUE)).includes('Cuckoo Tune'), false); work['1st'] = work['1st'].replace('\nToE #12', '');
+// v1.7 Book 2: 8th grade's plain ToE numbers are Book 2; "Book 2" on any class's line means Book 2; "Book 1" means Book 1
+const FRI = new Date(2026, 10, 13, 10, 0), keep = Object.assign({}, work);
+work['1st'] = 'ToE pg. 15 #70, 72'; r = boardToday_('1st', FRI);
+a.deepEqual(r.songs.map(s => s.key), ['2-70', '2-72'], '1st Block: ToE numbers are Book 2');
+work['1st'] = 'ToE Book 1 #72'; a.deepEqual(boardToday_('1st', FRI).songs.map(s => s.key), ['72'], '"Book 1" wins over the class default');
+work['3rd'] = 'Tradition of Excellence Book 2 pg. 31 #143\nToE #70'; a.deepEqual(boardToday_('3rd', FRI).songs.map(s => s.key), ['2-143', '70'], 'Book 2 line + plain Book 1 line');
+work['4th'] = 'ToE 2 #70'; a.deepEqual(boardToday_('4th', FRI).songs.map(s => s.title), ['The Thunderer'], '"ToE 2" means Book 2');
+a.ok(tabs['Map Played'].vals.some(x => x[1] === '3rd' && x[3] === '2-143' && x[2].startsWith('Triumphal')), 'Book 2 logged as 2-143');
+Object.assign(work, keep);
 
 // logged once per date + block + song (Map Played made on first use)
 const played = tabs['Map Played'];
