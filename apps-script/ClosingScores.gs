@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.5  (Raven Band, 11/10/2026)
+ * ClosingScores.gs  v1.6  (Raven Band, 11/10/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -25,6 +25,17 @@
  *   - v1.5: a=map   the board's World Map content from the Content Pool sheet tabs "Map Songs",
  *       "Map Composers" and "Map Countries" (row 1 = headers; every row as {header: value}).
  *       A missing or empty tab sends [] and the map uses its built-in list. Same sheet as before.
+ *   - v1.6 (Mat 11/10): what each class played, for the map's 🌍 button and the class passport.
+ *       a=today&block=   reads that block's WORK SESSION box and finds the map songs on it:
+ *                        Tradition of Excellence Book 1 numbers ("ToE Book 1 pg. 21 #72") and titles on lines that say
+ *                        ToE / Tradition / Book 1 (only for CLOSING.BOOK1_BLOCKS: "Technique Builder #3" never counts),
+ *                        plus that class's concert pieces (Map Songs rows with Book # "Concert"; column "Ensemble").
+ *                        What it finds is written to the "Map Played" tab (Date | Block | Song | Book # | Country | How),
+ *                        one row per date + block + song.
+ *       a=passport       every class's played songs (the Map Played tab), for the map's 🛂 Passport.
+ *       boardPlayedDaily runs on weekdays ~3 PM and logs all five slides, so days the board is off still count.
+ *       setupMapPassport (run once) makes that trigger and adds each class's starting songs (How = "start",
+ *       CLOSING.PASSPORT_START). Same spreadsheet + deck as before: no new permissions.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -47,6 +58,13 @@ var CLOSING = {
   LOG_TAB: 'Closing Scores',
   BOARD_TAB: 'Board Settings',
   MAP_TABS: { songs: 'Map Songs', composers: 'Map Composers', countries: 'Map Countries' },
+  PLAYED_TAB: 'Map Played',
+  BOOK1_BLOCKS: ['3rd', '4th', '6th', '7th'],        // their slides' ToE numbers are Book 1 (8th grade is in Book 2)
+  BLOCK_BANDS: { '1st': '8th Grade Band', '3rd': '7th Grade Band', '4th': '7th Grade Band',
+                 '6th': '6th Grade Intermediate Band', '7th': '6th Grade Beginning Band' },
+  // Passport start (Mat 11/10): 8th grade finished Book 1; 7th grade through #80; both 6th grade classes through The Dreidel Song
+  PASSPORT_START: { '1st': 'all', '3rd': '#80', '4th': '#80', '6th': 'The Dreidel Song', '7th': 'The Dreidel Song' },
+  PLAYED_HOUR: 15,
   ADMIN_ID: '1FZRxwbaoUscTIzidpVT1f7xzz1j1XaJgG6fn67y-yyI',     // Admin - Band Ninja (Pass-Off Log)
   TRACKER_ID: '1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw',   // Band Ninja Tracker (Pass-Off Line, Pass-Off Targets)
   BLOCKS: ['1st', '3rd', '4th', '6th', '7th'],
@@ -62,9 +80,11 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
-    if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm' || p.a === 'map') {
+    if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm' || p.a === 'map' || p.a === 'today' || p.a === 'passport') {
       out = p.a === 'config' ? { config: boardSettings_() } :
             p.a === 'map' ? boardCached_('boardMap', 60, boardMap_) :
+            p.a === 'today' ? boardToday_(String(p.block || ''), new Date()) :
+            p.a === 'passport' ? boardCached_('boardPassport', 60, boardPassport_) :
             p.a === 'stats' ? boardStats_(new Date()) :
             p.a === 'rhythm' ? boardRhythm_(String(p.block || '')) : boardLine_(String(p.block || ''), new Date());
       out.ok = true;
@@ -173,6 +193,157 @@ function boardMap_() {
     out[k] = rows;
   });
   return out;
+}
+
+// ---------------------------------------------------------------- v1.6: songs played (🌍 button + passport)
+
+function boardNorm_(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[“”"'’.,!?()&:;#\-–]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function boardIsConcert_(s) { return /^concert$/i.test(String(s['Book #'] || '').trim()); }
+function boardSongKey_(s) { var n = String(s['Book #'] || '').trim(); return /^\d+$/.test(n) ? n : String(s['Title'] || '').trim(); }
+
+/** The text of the WORK SESSION box on a block's agenda slide (without the heading). '' if there isn't one. */
+function boardWorkText_(block) {
+  var re = new RegExp('^\\s*' + block + '\\s+Block\\s+Agenda', 'i');
+  var slides = SlidesApp.openById(CLOSING.SLIDES_ID).getSlides();
+  for (var i = 0; i < slides.length; i++) {
+    var els = slides[i].getPageElements(), isBlock = false, work = null;
+    for (var j = 0; j < els.length; j++) {
+      if (els[j].getPageElementType() !== SlidesApp.PageElementType.SHAPE) continue;
+      var t = els[j].asShape().getText().asString();
+      if (re.test(t)) isBlock = true;
+      if (/^\s*WORK\s*SESSION/i.test(t)) work = t.replace(/^\s*WORK\s*SESSION[^\n]*\n?/i, '');
+    }
+    if (isBlock) return work || '';
+  }
+  return '';
+}
+
+/** Map songs named in an agenda's text. Book 1 songs only on lines that say ToE / Tradition / Book 1, and only for Book 1 classes. */
+function boardMatchSongs_(text, block, songs) {
+  var book1 = CLOSING.BOOK1_BLOCKS.indexOf(block) >= 0, band = boardNorm_(CLOSING.BLOCK_BANDS[block] || '');
+  var bookRows = songs.filter(function (s) { return !boardIsConcert_(s) && s['Title']; });
+  var conc = songs.filter(function (s) { return boardIsConcert_(s) && s['Title']; });
+  var out = [], seen = {};
+  function add(s, how) {
+    var k = boardSongKey_(s); if (seen[k]) return; seen[k] = 1;
+    out.push({ key: k, n: String(s['Book #'] || ''), title: String(s['Title']), country: String(s['Country'] || ''), how: how });
+  }
+  String(text || '').split(/\n+/).forEach(function (line) {
+    var l = line.trim(); if (!l) return;
+    var nl = ' ' + boardNorm_(l) + ' ';
+    if (book1 && /\b(toe|t\.o\.e|tradition|book\s*1)\b/i.test(l)) {
+      var nums = [], m, re = /(?:#|\bnos?\.?\s)\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?((?:\s*(?:,|&|and)\s*#?\s*\d{1,3})*)/gi;
+      while ((m = re.exec(l))) {
+        var a = +m[1], b = m[2] ? +m[2] : a;
+        if (b >= a && b - a <= 15) for (var i = a; i <= b; i++) nums.push(i);
+        String(m[3] || '').replace(/\d{1,3}/g, function (x) { nums.push(+x); return x; });
+      }
+      nums.forEach(function (n) { bookRows.forEach(function (s) { if (String(s['Book #']).trim() === String(n)) add(s, '#'); }); });
+      bookRows.forEach(function (s) {
+        var t = boardNorm_(s['Title']).replace(/^the /, '');
+        if (t.length >= 4 && nl.indexOf(' ' + t + ' ') >= 0) add(s, 'title');
+      });
+    }
+    conc.forEach(function (s) {
+      if (band && s['Ensemble'] && boardNorm_(s['Ensemble']).indexOf(band) < 0) return;
+      var t = boardNorm_(s['Title']);
+      if (nl === ' ' + t + ' ' || (t.length >= 8 && nl.indexOf(' ' + t + ' ') >= 0)) add(s, 'concert');
+    });
+  });
+  return out;
+}
+
+function boardPlayedSheet_() {
+  var ss = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID), sh = ss.getSheetByName(CLOSING.PLAYED_TAB);
+  if (!sh) {
+    sh = ss.insertSheet(CLOSING.PLAYED_TAB);
+    sh.getRange(1, 1, 1, 6).setValues([['Date', 'Block', 'Song', 'Book #', 'Country', 'How']]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function boardPlayedRows_(sh) {
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 6).getDisplayValues();
+}
+/** Adds date + block + song rows that aren't there yet. Returns how many were added. */
+function boardLogPlayed_(date, block, found) {
+  if (!found.length) return 0;
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = boardPlayedSheet_(), have = {};
+    boardPlayedRows_(sh).forEach(function (r) { have[boardYmd_(r[0]) + '|' + r[1] + '|' + boardNorm_(r[2])] = 1; });
+    var add = found.filter(function (f) { return !have[date + '|' + block + '|' + boardNorm_(f.title)]; })
+      .map(function (f) { return [date, block, f.title, f.n, f.country, f.how]; });
+    if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+    if (add.length) try { CacheService.getScriptCache().remove('boardPassport'); } catch (e) {}
+    return add.length;
+  } finally { lock.releaseLock(); }
+}
+
+/** a=today&block= : the map songs on that block's agenda right now (and logs them). */
+function boardToday_(block, now) {
+  if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
+  var date = boardYmd_(now);
+  var songs = boardCached_('boardMap', 60, boardMap_).songs || [];
+  var found = boardMatchSongs_(boardWorkText_(block), block, songs);
+  var d = now.getDay();
+  if (d > 0 && d < 6) boardLogPlayed_(date, block, found);
+  return { block: block, date: date, songs: found.map(function (f) { return { key: f.key, n: f.n, title: f.title, country: f.country }; }) };
+}
+
+/** a=passport : {blocks: {'1st': [{title, n, country, date, how}], ...}} from the Map Played tab. */
+function boardPassport_() {
+  var out = {}; CLOSING.BLOCKS.forEach(function (b) { out[b] = []; });
+  var sh = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID).getSheetByName(CLOSING.PLAYED_TAB);
+  boardPlayedRows_(sh).forEach(function (r) {
+    var b = String(r[1]).trim(); if (!out[b] || !String(r[2]).trim()) return;
+    out[b].push({ title: String(r[2]).trim(), n: String(r[3]).trim(), country: String(r[4]).trim(), date: boardYmd_(r[0]), how: String(r[5]).trim() });
+  });
+  return { blocks: out };
+}
+
+/** Weekdays ~3 PM: log every block's slide (so days the board is off still count). */
+function boardPlayedDaily() {
+  var now = new Date(), d = now.getDay(); if (d === 0 || d === 6) return;
+  var songs = boardMap_().songs || [], date = boardYmd_(now);
+  CLOSING.BLOCKS.forEach(function (b) {
+    try { boardLogPlayed_(date, b, boardMatchSongs_(boardWorkText_(b), b, songs)); } catch (e) { Logger.log(b + ': ' + e); }
+  });
+}
+
+/** Book 1 songs (Map Songs order) up to a rule: 'all', '#80' (through the last row numbered 80 or lower) or a title. */
+function boardStartSongs_(rule, songs) {
+  var rows = songs.filter(function (s) { return !boardIsConcert_(s) && s['Title']; });
+  rule = String(rule || '').trim(); if (!rule) return [];
+  if (/^all$/i.test(rule)) return rows;
+  var end = -1, m = rule.match(/^#\s*(\d+)$/);
+  rows.forEach(function (s, i) {
+    if (m) { var n = parseInt(s['Book #'], 10); if (/^\d+$/.test(String(s['Book #']).trim()) && n <= +m[1]) end = i; }
+    else if (boardNorm_(s['Title']).replace(/^the /, '') === boardNorm_(rule).replace(/^the /, '')) end = i;
+  });
+  return rows.slice(0, end + 1);
+}
+
+/** Run once: the weekday ~3 PM trigger + every class's starting songs (only if the class has no "start" rows yet). */
+function setupMapPassport() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'boardPlayedDaily') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('boardPlayedDaily').timeBased().everyDays(1).atHour(CLOSING.PLAYED_HOUR).create();
+  var songs = boardMap_().songs || [], sh = boardPlayedSheet_(), started = {};
+  boardPlayedRows_(sh).forEach(function (r) { if (String(r[5]).trim() === 'start') started[String(r[1]).trim()] = 1; });
+  var add = [];
+  CLOSING.BLOCKS.forEach(function (b) {
+    if (started[b]) return;
+    boardStartSongs_(CLOSING.PASSPORT_START[b], songs).forEach(function (s) {
+      add.push(['', b, String(s['Title']), String(s['Book #'] || ''), String(s['Country'] || ''), 'start']);
+    });
+  });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+  Logger.log('Map passport ready: trigger set, ' + add.length + ' starting rows added.');
+  return add.length;
 }
 
 // ---------------------------------------------------------------- pass-off counts for the board (no names)
