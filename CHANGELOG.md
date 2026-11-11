@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.0 — 2026-11-10 (night)
+- **🌍 Today's music:** when a class's agenda is up, the board reads that slide's WORK SESSION box (ClosingScores v1.6 a=today):
+  Tradition of Excellence Book 1 song numbers / titles on lines that say ToE, Tradition or Book 1 (3rd, 4th, 6th, 7th Block only),
+  plus that band's concert pieces. The 🌍 button turns gold, "Today's music (n)", and opens the map on those songs.
+- **🎺 Our concert music:** Map Songs rows with Book # "Concert" and an Ensemble (the Winter Concert pieces, researched;
+  see the Check column). Green badges; a "All our music / ♪ Book 1 / 🎺 Concert" switch on the Songs map; 10 new composers.
+- **🛂 Passport** mode: each class's countries light up from the new "Map Played" tab (filled from the slides every weekday
+  ~3 PM and whenever the board asks; starting songs per class added once by setupMapPassport).
+- **❓ Mystery Country team game:** 2–4 teams, 4/3/2/1 points by clues used, tap the team that got it; scores kept for the day.
+- Small countries' ♪ badges are pushed apart (with a short line back to the country) and have a bigger tap area.
+- Timeline: last names, more rows, and a scale that gives the many modern composers room.
+- Links: map/?song=72, ?today=72|Abundant Joy&block=3rd, ?mode=passport&block=3rd.
+- tests/smoke.py now counts its own checks (the total had fallen behind): 54.
+
 ## 2.2.2 — 2026-11-10
 - World map: a song, composer or country whose name the map can't place is no longer a silent surprise. The Content Pool
   sheet's Country columns (Map Songs D, Map Composers E, Map Countries A) now get a red corner + note when a name won't be

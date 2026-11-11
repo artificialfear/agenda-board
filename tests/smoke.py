@@ -16,6 +16,12 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
+_RESULTS = [0]
+import builtins as _bi
+_print = _bi.print
+def print(*a, **k):
+    if a and isinstance(a[0], str) and a[0] in ("PASS", "FAIL"): _RESULTS[0] += 1
+    _print(*a, **k)
 PORT = 8765
 
 # (label, ISO local time, expected shown)
@@ -551,7 +557,7 @@ def main():
         fr = page.frame_locator("#mapFrame")
         mf = None
         for _ in range(40):
-            mf = next((f for f in page.frames if f.url.endswith("/map/")), None)
+            mf = next((f for f in page.frames if "/map/" in f.url), None)
             if mf and mf.evaluate("!!window.__map"): break
             page.wait_for_timeout(150)
         n = mf.evaluate("window.__map.songs.length")
@@ -634,6 +640,102 @@ def main():
         failures += 0 if ok else 1
         ctx.close()
 
+        # 2.3.0 map: concert music (sheet rows with Book # "Concert" + Ensemble), Book/Concert filter, deep links, today's list,
+        # class passport (a=passport), Mystery team scoring, Caribbean badges pushed apart so each is tappable
+        PASS = {"1st": [{"title": "Joy", "n": "Concert", "country": "USA", "date": "2026-11-10", "how": "concert"}],
+                "3rd": [{"title": "Theme from “The Nutcracker”", "n": "72", "country": "Russia", "date": "", "how": "start"},
+                        {"title": "Carnival of Venice", "n": "66", "country": "Italy", "date": "", "how": "start"},
+                        {"title": "Abundant Joy", "n": "Concert", "country": "United States of America", "date": "2026-11-10", "how": "concert"}],
+                "4th": [], "6th": [], "7th": []}
+        def m23(route):
+            q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+            if q.get("a") == "map":
+                base = _json.loads((ROOT / "map" / "data.json").read_text(encoding="utf-8"))
+                rows = [{"Book #": s_["n"], "Title": s_["title"], "Book says": s_["label"], "Country": s_["country"], "Place": s_.get("place", ""),
+                         "Lat": s_.get("lat", ""), "Lon": s_.get("lon", ""), "Composer": s_.get("composer", ""), "Fun fact": s_.get("fact", ""), "YouTube link": s_.get("yt", "")} for s_ in base["songs"]]
+                rows += [{"Book #": "Concert", "Title": "Abundant Joy", "Book says": "Adrian B. Sims", "Country": "United States of America", "Place": "Seattle, Washington",
+                          "Lat": "47.61", "Lon": "-122.33", "Composer": "Adrian B. Sims", "Ensemble": "7th Grade Band"},
+                         {"Book #": "Concert", "Title": "March of the Frost Giants", "Book says": "Randall D. Standridge", "Country": "Norway", "Place": "Jotunheimen, Norway",
+                          "Lat": "61.6", "Lon": "8.3", "Ensemble": "8th Grade Band"},
+                         {"Book #": "901", "Title": "Made-up Haiti Tune", "Country": "Haiti"}, {"Book #": "902", "Title": "Made-up Merengue", "Country": "Dominican Republic"}]
+                body = {"ok": True, "songs": rows, "composers": [{"Composer": "Adrian B. Sims", "Years": "born 2000", "Born year": "2000", "Era": "Today", "Country": "USA"}], "countries": []}
+            elif q.get("a") == "passport":
+                body = {"ok": True, "blocks": PASS}
+            elif q.get("a") == "today":
+                body = {"ok": True, "block": q.get("block"), "songs": [{"key": "72", "title": "x"}, {"key": "Abundant Joy", "title": "Abundant Joy"}] if q.get("block") == "3rd" else []}
+            else:
+                body = {"ok": True, "config": {}}
+            route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=_json.dumps(body))
+        def m23_ctx():
+            c = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+            c.add_init_script("localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))")
+            c.route("https://script.google.com/**", m23)
+            c.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+            return c
+        ctx = m23_ctx(); page = ctx.new_page()
+        page.goto(f"http://127.0.0.1:{PORT}/map/?song=72"); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(300)
+        deep = page.inner_text("#cardBody")
+        page.evaluate("window.__map.pickSong(window.__map.songs.find(s => s.title === 'Abundant Joy'))"); page.wait_for_timeout(200)
+        conc = page.inner_text("#cardBody")
+        page.evaluate("window.__map.setMode('map')"); page.click("#setBar [data-set=concert]"); page.wait_for_timeout(200)
+        onlyC = sorted(b["name"].split(":")[0] for b in page.evaluate("window.__map.badges()"))
+        page.click("#setBar [data-set=book]"); page.wait_for_timeout(200)
+        bookN = page.evaluate("window.__map.badges().length"); hasNo = any(b["name"].startswith("Norway") for b in page.evaluate("window.__map.badges()"))
+        page.click("#setBar [data-set=all]"); page.click("#zHome"); page.wait_for_timeout(1000)
+        import re as _re
+        pos = {b["name"].split(":")[0]: tuple(map(float, _re.findall(r"-?[\d.]+", b["t"])[:2])) for b in page.evaluate("window.__map.badges()")}
+        car = [pos[k] for k in ("Haiti", "Dominican Rep.", "Puerto Rico", "Jamaica") if k in pos]
+        apart = len(car) == 4 and all(((a[0]-b[0])**2 + (a[1]-b[1])**2) ** .5 >= 33 for i, a in enumerate(car) for b in car[i+1:])
+        page.evaluate("window.__map.show({today: ['72', 'Abundant Joy', 'nope'], block: '3rd'})"); page.wait_for_timeout(300)
+        today = page.inner_text("#cardBody")
+        deep, conc, today = deep.lower(), conc.lower(), today.lower()
+        ok = ("nutcracker" in deep and "no. 72" in deep and "our concert music" in conc and "7th grade band" in conc
+              and onlyC == ["Norway", "United States of America"] and not hasNo and bookN >= 20 and apart
+              and "today in 3rd block" in today and "abundant joy" in today and "nutcracker" in today and "2 countries" in today)
+        print(("PASS" if ok else "FAIL"), f"{'map: concert, links, today':34s}" + ("" if ok else f" {deep[:60]!r} {conc[:80]!r} {onlyC} {hasNo} {bookN} {car} {today[:120]!r}"))
+        failures += 0 if ok else 1
+        # passport
+        page.goto(f"http://127.0.0.1:{PORT}/map/?mode=passport&block=3rd"); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(600)
+        pp = page.evaluate("window.__map.passport()"); cnt = page.inner_text("#passCount"); lst = page.inner_text("#passList")
+        stampOn = page.evaluate("Array.from(document.querySelectorAll('path.land.stamp')).map(p => p.querySelector('title').textContent).sort()")
+        dimN = page.evaluate("document.querySelectorAll('path.land.unstamp').length")
+        page.click("#passList [data-pc=Italy]"); page.wait_for_timeout(300); itc = page.inner_text("#cardBody")
+        page.click("#passBlocks [data-pb='1st']"); page.wait_for_timeout(200)
+        cnt1 = page.inner_text("#passCount"); remembered = page.evaluate("localStorage.getItem('agendaMap.passBlock')")
+        if shots_dir: page.screenshot(path=str(shots_dir / "map_passport.png"))
+        ok = (pp["block"] == "3rd" and stampOn == ["Italy", "Russia", "United States of America"] and dimN > 100 and "3 countries" in cnt and "♪ 3 songs" in cnt
+              and "NEW" in lst and "3rd block played (1)" in itc.lower() and "Carnival of Venice" in itc and "1 country" in cnt1 and remembered == "1st")
+        print(("PASS" if ok else "FAIL"), f"{'map: class passport':34s}" + ("" if ok else f" {stampOn} {dimN} {cnt!r} {lst!r} {itc[:80]!r} {cnt1!r} {remembered}"))
+        failures += 0 if ok else 1
+        # mystery teams: 1 clue = 4 points, 2 clues = 3; tapping a team reveals; scores kept for today
+        page.evaluate("window.__map.setMode('mystery')"); page.wait_for_timeout(200)
+        page.click("#mTeams [data-tn='3']"); page.click("#mTeams [data-team='1']"); page.wait_for_timeout(200)
+        s1 = page.evaluate("window.__map.teams().scores.slice()"); rev = page.evaluate("window.__map.mystery().revealed")
+        page.click("#mTeams [data-team='0']"); s1b = page.evaluate("window.__map.teams().scores.slice()")   # after reveal: no points
+        page.click("#mNew"); page.click("#mNext"); page.wait_for_timeout(100); pts = page.inner_text("#mTeams .pts")
+        page.click("#mTeams [data-team='2']"); s2 = page.evaluate("window.__map.teams().scores.slice()")
+        page.reload(); page.wait_for_function("!!window.__map", timeout=8000); kept = page.evaluate("window.__map.teams()")
+        if shots_dir: page.evaluate("window.__map.setMode('mystery')"); page.screenshot(path=str(shots_dir / "map_teams.png"))
+        ok = s1 == [0, 4, 0, 0] and rev and s1b == s1 and "= 3 points" in pts and s2 == [0, 4, 3, 0] and kept["n"] == 3 and kept["scores"] == [0, 4, 3, 0]
+        print(("PASS" if ok else "FAIL"), f"{'map: mystery teams':34s}" + ("" if ok else f" {s1} {rev} {s1b} {pts!r} {s2} {kept}"))
+        failures += 0 if ok else 1
+        ctx.close()
+        # board: 3rd Block agenda asks a=today -> gold "🌍 Today's music (2)"; it opens the map on that list
+        ctx = m23_ctx(); page = ctx.new_page(); page.clock.install(time="2026-11-11T10:00:00")   # Wednesday: 3rd Block 9:29-10:20 (Tuesday IF = Band Ninja: no extras)
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(800)
+        lab = page.inner_text("#btnMap"); gold = page.evaluate("document.getElementById('btnMap').classList.contains('has-today')")
+        page.click("#btnMap"); mf = None
+        for _ in range(60):
+            mf = next((f for f in page.frames if "/map/" in f.url), None)
+            if mf and mf.evaluate("!!window.__map"): break
+            page.wait_for_timeout(150)
+        page.wait_for_timeout(400)
+        src = page.evaluate("document.getElementById('mapFrame').getAttribute('src')"); tc = mf.inner_text("#cardBody")
+        ok = lab.strip() == "🌍 Today's music (2)" and gold and "today=72%7CAbundant%20Joy" in src and "block=3rd" in src and "today in 3rd block" in tc.lower()
+        print(("PASS" if ok else "FAIL"), f"{'board: today\'s music button':34s}" + ("" if ok else f" {lab!r} {gold} {src} {tc[:80]!r} {page.evaluate('window.__agendaBoard.shown()')}"))
+        failures += 0 if ok else 1
+        ctx.close()
+
         # Welcome screen pass-offs this week, and the pass-off line count on Band Ninja days (counts only)
         def stats_script(route):
             q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
@@ -669,7 +771,7 @@ def main():
         browser.close()
 
     httpd.shutdown()
-    total = len(CASES) + 1 + 7 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2
+    total = _RESULTS[0]   # every PASS/FAIL line printed (was a hand-kept sum that fell behind)
     print(f"\n{total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
