@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.0 — 2026-11-11
+- **Tradition of Excellence Book 2** on the map: 72 pieces (rows 83–154 of Map Songs, new column N "Book" = 2) and 14 new composers.
+  "♪ Book 2" switch next to Book 1 / Concert; Book 2 songs show "B2·72" and "Tradition of Excellence 2"; country cards list
+  Book 1 and Book 2 separately; search says "Book 2 No. n"; ?song=2-72 opens Book 2 No. 72 (plain 72 = Book 1).
+- ClosingScores v1.7 (deployed @8): a ToE line means the class's own book (1st Block = Book 2, others Book 1) unless the line
+  says "Book 1" / "Book 2" / "ToE 2"; Book 2 songs are logged in Map Played as "2-n". Passport start songs stay Book 1 only.
+
 ## 2.3.0 — 2026-11-10 (night)
 - **🌍 Today's music:** when a class's agenda is up, the board reads that slide's WORK SESSION box (ClosingScores v1.6 a=today):
   Tradition of Excellence Book 1 song numbers / titles on lines that say ToE, Tradition or Book 1 (3rd, 4th, 6th, 7th Block only),

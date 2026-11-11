@@ -32,6 +32,13 @@ Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it 
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
+## 2.4.0 Book 2 (11/11, Mat sent the Book 2 PDF; live)
+- Map Songs column N "Book" ("2" = Book 2, blank = Book 1); rows 83–154 = Book 2 (numbers, plus Ens./Band/Solo pieces);
+  Map Composers rows 32–45 new. Server ClosingScores v1.7 deployed @8 via Chrome (same deployment): CLOSING.BOOK_DEFAULT
+  {'1st':'2', others '1'}, boardBookOf_, keys "2-n". Map: isBook2 / songNo / showSet "book2"; findSong("2-72").
+- No Book 2 passport backfill for 1st Block (Mat: "used book 2 only a little"); it fills as the slides are logged.
+- Tests: passport_gs_test.js Book 2 cases, smoke "map: Book 2" (both sabotage-checked).
+
 ## 2.3.0 map: today's music, concert music, passport, team game (11/10 night, Mat: "implement all")
 - **Server = ClosingScores.gs v1.6, deployed @7 via Chrome** (clasp sign-in is blocked from the session; Monaco model swap after
   checking live = main by SHA-256). setupMapPassport was run: weekday trigger boardPlayedDaily (~3 PM) + 187 "start" rows.
