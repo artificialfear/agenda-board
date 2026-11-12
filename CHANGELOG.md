@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.5.0 — 2026-11-12
+- **🎯 Playing Test day** (Mat): a full-screen Raven Band page for a class's playing test (ptest.js): what they're playing,
+  Now playing + On deck, and a spinning name wheel ("First L.") that picks who goes next.
+  - Turns on by itself when the block's slide has a line "Playing Test: …" (or "Playing Test" with the items under it);
+    ☰ → 🎯 Playing Test switches it on/off for today, with a box for the test when the slide has none.
+  - ✓ Done (played, off the wheel; On deck moves up) · ↺ Later (back on the wheel) · ⤺ Undo · 👥 Class list (absent) ·
+    📋 Agenda (hide; 🎯 Playing Test on the left bar brings it back) · ☰ Menu. Progress kept per block per day.
+- **📱 Remote** (remote.html, like Grudgeball's): QR / 4-letter code on the board, PIN from the Board Settings sheet
+  ("Playing Test PIN"). Spin, pick by hand, mark absent, put back, undo, and **1–4 scores + notes** (4 Exceeds · 3 Meets ·
+  2 Approaching · 1 Beginning). Scores only show on the remote; the board saves them (queued + retried) to the new
+  "Playing Tests" tab: Date | Block | Student | Test | Score | Note | Saved.
+- ClosingScores v1.8 (deployed @9): a=ptest (slide line + class list from the Band Ninja Tracker block tab as "First L." with
+  short ids; full names never reach the board) and a=ptscore. Tests: tests/ptest_gs_test.js, tests/ptest_smoke.py.
+
 ## 2.4.2 — 2026-11-12
 - **✕ Close always on screen** (Mat: "how do I close the map?"): on screens under ~1500 px wide the top bar pushed the Close
   button off the right edge. Now the title words hide below 1600 px (the 🌍 stays) and the tabs shrink below 1200 px, so

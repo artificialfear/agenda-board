@@ -32,6 +32,18 @@ Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it 
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
+## 2.5.0 Playing Test day (11/12, Mat; live)
+- ptest.js (board module, uses window.__board from index.html: call/settings/now/ymd/shown/test) + ptnet.js (PeerJS wrapper,
+  lazy-loads lib/peerjs.min.js + lib/qrcode.js from Grudgeball; ?peerfake=1 = BroadcastChannel stand-in for tests) + remote.html.
+- On: slide line "Playing Test: …" (server a=ptest, cached 60 s) or menu switch (localStorage agendaBoard.ptOn {date,on,text}).
+  State per block per day: agendaBoard.pt.<date>.<block> {now, deck, played, absent, later, scores, hist, rot}.
+  Score queue: agendaBoard.ptQueue → a=ptscore (retry 20 s). Remote code per day: agendaBoard.ptCode; peer id ravenband-ptest-v1-CODE.
+- PIN: Board Settings row "Playing Test PIN" (set to a random 4 digits 11/12; Mat can change it) → settings.ptPin via a=config.
+  A remote without the PIN gets nothing and can't act (tested).
+- Mat's choices 11/12: slide line + menu; Now playing + On deck; played off the wheel, absent, "later", kept on reload;
+  1–4 rubric; scores in a "Playing Tests" tab of the Content Pool sheet; scores only on the remote.
+- Tests: node tests/ptest_gs_test.js; python3 tests/ptest_smoke.py (25 checks, board + remote end to end).
+
 ## 2.4.0 Book 2 (11/11, Mat sent the Book 2 PDF; live)
 - Map Songs column N "Book" ("2" = Book 2, blank = Book 1); rows 83–154 = Book 2 (numbers, plus Ens./Band/Solo pieces);
   Map Composers rows 32–45 new. Server ClosingScores v1.7 deployed @8 via Chrome (same deployment): CLOSING.BOOK_DEFAULT
