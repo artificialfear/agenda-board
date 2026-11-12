@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.8  (Raven Band, 11/12/2026)
+ * ClosingScores.gs  v1.9  (Raven Band, 11/12/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -44,6 +44,9 @@
  *       a=ptscore&block=&id=&s=1-4&note=&test=   saves a score to the "Playing Tests" tab of the content sheet
  *                        (Date | Block | Student | Test | Score | Note | Saved), one row per date + block + student + test;
  *                        s blank deletes that row. Same spreadsheets as before: no new permissions.
+ *   - v1.9 (Mat 11/12): POST {k, a:'planPut', ...} = the week's agenda from the Lesson Plan Generator (AgendaFill.gs stores it
+ *       and fills the WORK SESSION and FOCUS WALL boxes). A concert piece also counts when its line is the title plus measures,
+ *       e.g. "Joy (mm. 5-20)" or "Repertoire: Joy", which is how the generator writes them.
  *       setupMapPassport (run once) makes that trigger and adds each class's starting songs (How = "start",
  *       CLOSING.PASSPORT_START). Same spreadsheet + deck as before: no new permissions.
  *
@@ -133,6 +136,11 @@ function doPost(e) {
     var p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key.');
+    if (p.a === 'planPut') {
+      out = agendaPlanPut_(p, new Date());   // AgendaFill.gs (locks itself)
+      out.ok = true;
+      return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+    }
     if (p.a !== 'rhythmPut') throw new Error('Unknown action: ' + p.a);
     var lock = LockService.getScriptLock();
     lock.waitLock(30000);
@@ -257,6 +265,8 @@ function boardMatchSongs_(text, block, songs) {
   String(text || '').split(/\n+/).forEach(function (line) {
     var l = line.trim(); if (!l) return;
     var nl = ' ' + boardNorm_(l) + ' ';
+    // v1.9: "Repertoire: Joy (mm. 5-20)" → " joy " (a leading label and trailing measures don't stop a whole-line match)
+    var core = nl.replace(/^ (?:repertoire|concert) /, ' ').replace(/ (?:mm|m|meas|measures?) \d[\d ]*(?:to [\d ]*)?$/, ' ');
     if (/\b(toe|t\.o\.e|tradition|book\s*[12])\b/i.test(l)) {
       var bk = /\b(book|toe|tradition)\s*(?:of\s+excellence\s*)?(?:book\s*)?2\b|\bbook\s*2\b/i.test(l) ? '2' : /\bbook\s*1\b/i.test(l) ? '1' : defBook;
       var rows = bookRows.filter(function (s) { return boardBookOf_(s) === bk; });
@@ -275,7 +285,7 @@ function boardMatchSongs_(text, block, songs) {
     conc.forEach(function (s) {
       if (band && s['Ensemble'] && boardNorm_(s['Ensemble']).indexOf(band) < 0) return;
       var t = boardNorm_(s['Title']);
-      if (nl === ' ' + t + ' ' || (t.length >= 8 && nl.indexOf(' ' + t + ' ') >= 0)) add(s, 'concert');
+      if (nl === ' ' + t + ' ' || core === ' ' + t + ' ' || (t.length >= 8 && nl.indexOf(' ' + t + ' ') >= 0)) add(s, 'concert');
     });
   });
   return out;
