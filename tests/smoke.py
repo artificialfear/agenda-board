@@ -571,6 +571,14 @@ def main():
         if shots_dir: page.screenshot(path=str(shots_dir / "map_mystery.png"))
         mf.evaluate("window.__map.setMode('map')")
         open1 = page.evaluate("document.getElementById('mapView').classList.contains('open')")
+        # 2.4.2: the Close button stays on screen at narrower board sizes too
+        closeFits = []
+        for vw in (1920, 1366, 1024):
+            page.set_viewport_size({"width": vw, "height": 768}); page.wait_for_timeout(250)
+            closeFits.append(mf.evaluate("(() => { const r = document.getElementById('close').getBoundingClientRect(); return r.width > 0 && r.x >= 0 && r.right <= innerWidth; })()"))
+        page.set_viewport_size({"width": 1920, "height": 1080}); page.wait_for_timeout(250)
+        if not all(closeFits): print("FAIL", f"{'map: Close button on screen':34s} {closeFits}"); failures += 1
+        else: print("PASS", f"{'map: Close button on screen':34s}")
         mf.click("#close"); page.wait_for_timeout(200)
         open2 = page.evaluate("document.getElementById('mapView').classList.contains('open')")
         page.click("#btnMap"); page.wait_for_timeout(200)

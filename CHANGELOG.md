@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.2 — 2026-11-12
+- **✕ Close always on screen** (Mat: "how do I close the map?"): on screens under ~1500 px wide the top bar pushed the Close
+  button off the right edge. Now the title words hide below 1600 px (the 🌍 stays) and the tabs shrink below 1200 px, so
+  Close fits at every width. Esc still closes the map too.
+
 ## 2.4.1 — 2026-11-11
 - **U.S. state lines** on the map (Mat): thin lines between the states, from us-atlas states-10m (vendored as
   map/us-states-10m.json, loaded after the world map so the first draw isn't slower). They never catch taps (the U.S. is

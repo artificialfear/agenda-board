@@ -24,7 +24,7 @@
   .tab { background: var(--navy2); color: var(--soft); border: 2px solid #34405f; border-radius: 999px; padding: 7px 14px;
     font: 600 17px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; white-space: nowrap; }
   .tab.on { background: var(--gold); color: var(--navy); border-color: var(--gold); }
-  #searchWrap { position: relative; flex: 1; min-width: 160px; max-width: 520px; margin-left: auto; }
+  #searchWrap { position: relative; flex: 1; min-width: 120px; max-width: 520px; margin-left: auto; }
   #search { width: 100%; padding: 10px 14px 10px 38px; border-radius: 999px; border: 2px solid #34405f; background: #0f1626;
     color: #fff; font-size: 17px; outline: none; }
   #search:focus { border-color: var(--gold); }
@@ -39,7 +39,11 @@
   #results .s { color: var(--soft); font-size: 14px; margin-left: auto; }
   #close { background: var(--gold); color: var(--navy); border: 0; border-radius: 999px; padding: 9px 18px;
     font: 600 18px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; display: none; }
-  body.embedded #close { display: block; }
+  body.embedded #close { display: block; flex-shrink: 0; }
+  /* 2.4.2 (Mat 11/12): the ✕ Close button was pushed off the right edge on screens under ~1500 px wide.
+     Narrower screens drop the title words (the 🌍 stays), then shrink the tabs, so Close always fits. */
+  @media (min-width: 901px) and (max-width: 1599px) { #top h1 .t { display: none; } }
+  @media (min-width: 901px) and (max-width: 1199px) { .tab { font-size: 15px; padding: 6px 10px; } #top { gap: 8px; } #searchWrap { min-width: 80px; } }
 
   /* ---------- map ---------- */
   #mapBox { position: absolute; left: 0; right: 0; top: 64px; bottom: 0; background: radial-gradient(ellipse at 50% 40%, #155089 0%, #0d3b66 55%, #0a2f52 100%); }
@@ -203,7 +207,7 @@
 </head>
 <body>
 <div id="top">
-  <h1>🌍 MUSIC AROUND THE WORLD</h1>
+  <h1>🌍 <span class="t">MUSIC AROUND THE WORLD</span></h1>
   <div class="tabs" role="tablist">
     <button class="tab on" data-mode="map">🗺 Songs</button>
     <button class="tab" data-mode="instruments">🎺 Instruments</button>
