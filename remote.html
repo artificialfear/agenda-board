@@ -83,7 +83,7 @@
   <div class="conn wait" id="conn"><i></i><span id="connT">Connecting…</span></div></div>
 <main id="main"><div class="msg">Connecting to the board…</div></main>
 
-<div id="pin"><h2>🔒 Playing Test PIN</h2><p>Type the PIN from the "Board Settings" sheet. This phone remembers it.</p>
+<div id="pin"><h2>🔒 Playing Test PIN</h2><p id="pinMsg">Connected to the board. Now type the <b>number PIN</b> (from the Board Settings sheet), not the board's letters. This device remembers it.</p>
   <div class="dots" id="dots"></div><div id="pinErr"></div>
   <div class="pad" id="pad"></div></div>
 
@@ -158,6 +158,7 @@
 
   // ---------------------------------------------------------------- PIN
   function pinOpen(err) {
+    $("pinMsg").innerHTML = "✓ Connected to board <b>" + esc(code) + "</b>. Now type the <b>number PIN</b> (from the Board Settings sheet), not the letters. This device remembers it.";
     typedPin = ""; $("pinErr").textContent = err || ""; drawPin(); $("pin").classList.add("open");
   }
   function drawPin() {
