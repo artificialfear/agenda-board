@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.6.0 — 2026-11-12
+- **🥪 Lunch & Learn** (Mat; lunch.js): full-screen Raven Band page for Lunch & Learn in the band room.
+  - ☰ → 🥪 Lunch & Learn · 8th grade / · 7th grade switches, today only (localStorage agendaBoard.lunchOn {date, 8th, 7th}).
+  - Times: 8th 11:15–11:40, 7th 12:15–12:35; the Content Pool "Board Settings" rows "Lunch & Learn 8th/7th" win (start-end).
+  - Start → big countdown "Pack up in" + the three rules. End − 5 min (PACK_MIN) → pack chime, 10 s flash, gold timer
+    "Brain Break in" + the four pack-up steps (reopens even if hidden). End → score chime + "Time for Brain Break!" for 2 min.
+  - Waits while a block is in session by its bell times (IF day: 4th ends 11:17). Never on weekends. ✕ Hide → 🥪 button on the left bar.
+  - __board gained state() (schedule + inClass) and chime(kind). Tests: tests/lunch_smoke.py (27).
+
 ## 2.5.3 — 2026-11-12
 - Wheel size set by the page itself (the ViewBoard's older browser ignores CSS aspect-ratio, so the wheel stayed small there).
 - 2.5.2: the board updates itself: every 5 min it reads version.json (never cached) and reloads once with ?v=<build> when a newer

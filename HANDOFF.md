@@ -32,6 +32,13 @@ Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it 
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
+## 2.6.0 Lunch & Learn (11/12, Mat; live)
+- lunch.js (board module; uses __board now/ymd/settings/state/chime). ☰ switches "🥪 Lunch & Learn · 8th grade / 7th grade", today
+  only (agendaBoard.lunchOn). Times 8th 11:15–11:40, 7th 12:15–12:35; Content Pool → Board Settings rows "Lunch & Learn 8th/7th"
+  (start-end) override (REMOTE_SETTINGS ll8/ll7). Countdown + 3 rules → pack-up 5 min before the end (chime, flash, 4 steps) →
+  "Time for Brain Break!" 2 min → closed. Waits while a block is in session (IF day 4th → 11:17). Rules/steps text in RULES/STEPS.
+- Tests: python3 tests/lunch_smoke.py (27). Possible next: automatic weekdays if Mat settles on fixed Lunch & Learn days.
+
 ## 2.5.0 Playing Test day (11/12, Mat; live)
 - ptest.js (board module, uses window.__board from index.html: call/settings/now/ymd/shown/test) + ptnet.js (PeerJS wrapper,
   lazy-loads lib/peerjs.min.js + lib/qrcode.js from Grudgeball; ?peerfake=1 = BroadcastChannel stand-in for tests) + remote.html.
