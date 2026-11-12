@@ -218,3 +218,15 @@ function setupAgendaFill() {
 
 /** Run from the editor to fill today's boxes now (same as the morning run). */
 function agendaFillNow() { Logger.log('Filled: ' + (agendaFill_(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')).join(', ') || 'nothing planned today')); }
+
+/** Run once from the editor to check the look on real Slides: copies the deck, fills 3rd Block of the COPY with sample
+ *  items + Focus Wall, and logs the copy's link and text. The live deck is never touched. Trash the copy afterwards. */
+function agendaTryOnCopy() {
+  var copy = DriveApp.getFileById(CLOSING.SLIDES_ID).makeCopy('TEST COPY (delete me) – agenda fill');
+  var box = agendaBoxes_(SlidesApp.openById(copy.getId()).getSlides(), '3rd');
+  if (!box) throw new Error('No 3rd Block slide in the copy.');
+  agendaSetWork_(box.work, ['Technique Builder #4', 'ToE Book 1 #81 "Sample Line"', 'Abundant Joy (mm. 5–20)', 'Music Theory: key signatures']);
+  agendaSetFocus_(box.focus, { learning: 'Sample learning target', why: 'Sample essential question?', success: 'I can do the sample thing.' });
+  Logger.log('Copy: ' + copy.getUrl() + '\nWORK: ' + box.work.getText().asString() + '\nFOCUS: ' + box.focus.getText().asString());
+  return copy.getId();
+}
