@@ -863,6 +863,7 @@
     if (window.rhythmSync) window.rhythmSync();
     if (window.bookSync) window.bookSync();
     if (window.mapSync) window.mapSync();
+    if (window.ptestSync) window.ptestSync();
   }
 
   function render(force) {
@@ -1498,7 +1499,7 @@
   // ===================== SETTINGS FROM THE SHEET =====================
   // The Daily Slides script (same link as closing scores, a=config) serves the "Board Settings" tab of the
   // Daily Agenda Content Pool sheet, so links can be changed from a laptop. A value there wins over the board's own.
-  var REMOTE_SETTINGS = { "method book pdf link": "bookUrl" };
+  var REMOTE_SETTINGS = { "method book pdf link": "bookUrl", "playing test pin": "ptPin" };
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -1847,7 +1848,12 @@
     pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
       pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },
     timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };
+  // 2.5.0: what ptest.js (Playing Test day) needs from the board
+  window.__board = { call: scoresCall, settings: function () { return settings; }, now: now, ymd: ymd,
+    shown: function () { return { key: shownKey, ninja: shownNinja }; }, test: !!TEST };
 })();
 </script>
+<script src="ptnet.js?v=2.5.0"></script>
+<script src="ptest.js?v=2.5.0"></script>
 </body>
 </html>

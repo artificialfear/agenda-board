@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Playing Test Remote · Raven Band</title>
+<style>
+  /* Playing Test remote (2.5.0, Mat 11/12): spin, move students along and enter 1–4 scores from a phone or iPad.
+     Scores only show here; the board saves them to the "Playing Tests" tab. */
+  @font-face { font-family: "Oswald"; font-weight: 600; font-style: normal; font-display: swap;
+    src: url("assets/oswald-latin-600-normal.woff2?v=1.1.0") format("woff2"); }
+  :root { --navy: #1f2a44; --deep: #141c30; --card: #2a3858; --gold: #c9a227; --soft: #b7bfd0; --line: #34405e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--deep); color: #fff; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+  button { font: inherit; cursor: pointer; }
+  .top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 10px 14px calc(10px);
+    background: var(--navy); border-bottom: 3px solid var(--gold); }
+  .top img { height: 34px; }
+  .top h1 { margin: 0; font: 600 21px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top h1 span { color: var(--gold); }
+  .conn { margin-left: auto; font-size: 13px; color: var(--soft); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .conn i { width: 11px; height: 11px; border-radius: 50%; background: #888; }
+  .conn.ok i { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; } .conn.wait i { background: var(--gold); } .conn.err i { background: #ff5a4a; }
+  main { padding: 12px 12px 90px; max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+  .card { background: var(--card); border-radius: 16px; padding: 14px; }
+  .h { font: 600 15px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px; }
+  .h small { margin-left: auto; color: var(--soft); letter-spacing: 0; text-transform: none; font-family: "Segoe UI", Arial, sans-serif; font-size: 13px; }
+  .test { font-size: 18px; font-weight: 600; }
+  .now { border: 3px solid var(--gold); }
+  .name { font: 600 34px/1.1 "Oswald", "Arial Narrow", Arial, sans-serif; }
+  .name.empty { font-size: 20px; color: var(--soft); }
+  .scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .sc { border: 2px solid var(--line); background: var(--navy); color: #fff; border-radius: 14px; padding: 10px 4px; text-align: center; }
+  .sc b { display: block; font: 600 30px/1 "Oswald", "Arial Narrow", Arial, sans-serif; }
+  .sc small { display: block; font-size: 12px; color: var(--soft); margin-top: 4px; }
+  .sc.on { background: var(--gold); border-color: var(--gold); color: var(--deep); } .sc.on small { color: var(--deep); }
+  textarea { width: 100%; margin-top: 10px; min-height: 54px; resize: vertical; border-radius: 12px; border: 1px solid var(--line); background: var(--deep);
+    color: #fff; padding: 10px; font: 16px "Segoe UI", Arial, sans-serif; }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .b { flex: 1; border-radius: 999px; border: 2px solid var(--gold); background: var(--navy); color: var(--gold); padding: 13px 10px;
+    font: 600 18px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; }
+  .b.gold { background: var(--gold); color: var(--deep); }
+  .b.small { flex: 0 0 auto; padding: 8px 14px; font-size: 15px; }
+  .b[disabled] { opacity: .35; pointer-events: none; }
+  .spin { font-size: 24px; padding: 16px; }
+  .list { display: grid; gap: 6px; }
+  .it { display: flex; align-items: center; gap: 8px; background: var(--navy); border-radius: 12px; padding: 9px 10px; }
+  .it .n { flex: 1; font-weight: 600; font-size: 17px; }
+  .badge { font: 600 15px "Oswald", Arial, sans-serif; border-radius: 8px; padding: 3px 9px; background: var(--gold); color: var(--deep); }
+  .badge.none { background: transparent; color: var(--soft); border: 1px dashed var(--soft); }
+  .badge.err { background: #ff5a4a; color: #fff; } .badge.saving { background: #6d8cc7; color: #fff; }
+  .note { display: block; font-size: 13px; color: var(--soft); font-weight: 400; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--navy); color: #fff; border-radius: 999px; padding: 8px 12px; font-size: 15px; }
+  .chip.abs { border-style: dashed; color: var(--soft); text-decoration: line-through; }
+  .msg { text-align: center; color: var(--soft); padding: 30px 10px; font-size: 17px; }
+  .warn { background: #5a3b00; border: 2px solid var(--gold); border-radius: 12px; padding: 10px 12px; font-weight: 600; }
+  /* PIN */
+  #pin { position: fixed; inset: 0; z-index: 10; background: var(--deep); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; }
+  #pin.open { display: flex; }
+  #pin h2 { margin: 0; font: 600 26px "Oswald", Arial, sans-serif; color: var(--gold); }
+  #pin p { margin: 0; color: var(--soft); text-align: center; max-width: 320px; }
+  .dots { display: flex; gap: 12px; height: 22px; }
+  .dots i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--gold); }
+  .dots i.f { background: var(--gold); }
+  .pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 10px; }
+  .pad button { height: 64px; border-radius: 16px; border: 2px solid var(--line); background: var(--navy); color: #fff; font: 600 26px "Oswald", Arial, sans-serif; }
+  #pinErr { color: #ff9a8a; min-height: 20px; font-weight: 600; }
+  /* sheet for a played student's score */
+  #edit { position: fixed; inset: 0; z-index: 9; background: rgba(10,15,28,.75); display: none; align-items: flex-end; justify-content: center; }
+  #edit.open { display: flex; }
+  #edit .card { width: 100%; max-width: 760px; border-radius: 18px 18px 0 0; padding-bottom: 24px; }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #ff5a4a; color: #fff; padding: 10px 16px; border-radius: 12px;
+    font-weight: 600; z-index: 20; display: none; }
+  .toast.show { display: block; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1 id="title">Playing Test <span>Remote</span></h1>
+  <div class="conn wait" id="conn"><i></i><span id="connT">Connecting…</span></div></div>
+<main id="main"><div class="msg">Connecting to the board…</div></main>
+
+<div id="pin"><h2>🔒 Playing Test PIN</h2><p>Type the PIN from the "Board Settings" sheet. This phone remembers it.</p>
+  <div class="dots" id="dots"></div><div id="pinErr"></div>
+  <div class="pad" id="pad"></div></div>
+
+<div id="edit"><div class="card" id="editCard"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="ptnet.js?v=2.5.0"></script>
+<script>
+(function () {
+  "use strict";
+  var NET = window.PTNET, q = new URLSearchParams(location.search);
+  var code = String(q.get("c") || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+  var PIN_KEY = "ptRemote.pin";
+  var RUBRIC = [[4, "Exceeds"], [3, "Meets"], [2, "Approaching"], [1, "Beginning"]];
+  var peer = null, conn = null, connected = false, authed = false, retryT = null, openT = null;
+  var st = null, pick = { id: null, s: "", note: "" }, typedPin = "", editId = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function setConn(cls, t) { $("conn").className = "conn " + cls; $("connT").textContent = t; }
+  function toast(t) { var e = $("toast"); e.textContent = t; e.classList.add("show"); clearTimeout(e._t); e._t = setTimeout(function () { e.classList.remove("show"); }, 2600); }
+
+  // ---------------------------------------------------------------- connection
+  function connect() {
+    clearTimeout(retryT); retryT = null;
+    if (!code) { setConn("err", "No code"); $("main").innerHTML = '<div class="msg">Open the link from the board (📱 Remote) — it has the 4-letter code.</div>' + codeForm(); bindCodeForm(); return; }
+    connected = false; authed = false;
+    try { if (conn) conn.close(); } catch (e) {} try { if (peer) peer.destroy(); } catch (e) {}
+    setConn("wait", "Connecting to " + code + "…");
+    NET.ready(function (ok) {
+      if (!ok) { setConn("err", "Couldn't load"); return; }
+      var p = peer = NET.makePeer();
+      p.on("open", function () {
+        if (p !== peer) return;
+        var c = conn = p.connect(NET.PREFIX + code, { reliable: true, serialization: "json" });
+        clearTimeout(openT); openT = setTimeout(function () { if (c === conn && !connected) retry(); }, 12000);
+        c.on("open", function () { if (c !== conn) return; connected = true; clearTimeout(openT); setConn("ok", "Board " + code); hello(); });
+        c.on("data", onData);
+        c.on("close", function () { if (c !== conn) return; connected = false; authed = false; setConn("err", "Lost the board — reconnecting…"); retry(); });
+        c.on("error", function () { if (c !== conn) return; connected = false; retry(); });
+      });
+      p.on("error", function (e) {
+        if (p !== peer) return;
+        connected = false;
+        setConn("err", e && e.type === "peer-unavailable" ? "Board " + code + " not found — retrying" : "Connection problem — retrying");
+        if (e && e.type === "peer-unavailable") $("main").innerHTML = '<div class="msg">Board <b>' + esc(code) + '</b> isn\'t answering. Is the Playing Test showing on the board? On the board tap 📱 Remote and check the code.</div>' + codeForm();
+        bindCodeForm();
+        retry();
+      });
+      p.on("disconnected", function () { if (p === peer && !connected) retry(); });
+    });
+  }
+  function retry() { if (retryT) return; retryT = setTimeout(function () { retryT = null; if (!connected) connect(); }, 3000); }
+  function hello() { try { conn.send({ type: "hello", pin: lsGet(PIN_KEY) || "" }); } catch (e) {} }
+  function send(a, x) {
+    if (!connected || !authed) { toast("Not connected to the board yet"); return; }
+    try { conn.send({ type: "act", a: a, x: x || {} }); } catch (e) { toast("Couldn't send — reconnecting"); retry(); }
+  }
+  function codeForm() { return '<div class="card"><div class="h">Board code</div><div class="row"><input id="codeIn" maxlength="4" autocapitalize="characters" value="' + esc(code) +
+    '" style="flex:1;font:600 26px Oswald,Arial;letter-spacing:.3em;text-transform:uppercase;border-radius:12px;border:1px solid #34405e;background:#141c30;color:#fff;padding:8px 12px">' +
+    '<button class="b gold small" id="codeGo">Connect</button></div></div>'; }
+  function bindCodeForm() {
+    var b = $("codeGo"); if (!b) return;
+    b.onclick = function () {
+      code = String($("codeIn").value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+      var u = new URL(location.href); u.searchParams.set("c", code); history.replaceState(null, "", u.toString());
+      connect();
+    };
+  }
+
+  // ---------------------------------------------------------------- PIN
+  function pinOpen(err) {
+    typedPin = ""; $("pinErr").textContent = err || ""; drawPin(); $("pin").classList.add("open");
+  }
+  function drawPin() {
+    $("dots").innerHTML = Array.from({ length: Math.max(4, typedPin.length) }, function (_, i) { return '<i class="' + (i < typedPin.length ? "f" : "") + '"></i>'; }).join("");
+  }
+  $("pad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"].map(function (k) { return '<button data-k="' + k + '">' + k + "</button>"; }).join("");
+  $("pad").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var k = b.getAttribute("data-k");
+    if (k === "⌫") typedPin = typedPin.slice(0, -1);
+    else if (k === "OK") { lsSet(PIN_KEY, typedPin); $("pinErr").textContent = "Checking…"; hello(); return; }
+    else if (typedPin.length < 12) typedPin += k;
+    drawPin();
+  });
+
+  // ---------------------------------------------------------------- incoming
+  function onData(d) {
+    if (!d || typeof d !== "object") return;
+    if (d.type === "pin") {
+      authed = false;
+      if (d.none) { $("pin").classList.remove("open"); $("main").innerHTML = '<div class="card warn">The board has no Playing Test PIN yet. Add a row "Playing Test PIN" with a number in the Board Settings sheet, then reload the board.</div>'; return; }
+      if (d.bad) lsSet(PIN_KEY, null);
+      pinOpen(d.bad ? "That PIN didn't match." : "");
+      return;
+    }
+    if (d.type === "state") {
+      authed = true; $("pin").classList.remove("open");
+      st = d; render();
+    }
+  }
+
+  // ---------------------------------------------------------------- drawing
+  function nm(id) { return (st && st.names && st.names[id]) || "?"; }
+  function scoreBadge(id) {
+    var s = st.scores && st.scores[id];
+    if (!s) return '<span class="badge none">–</span>';
+    var cls = s.st === "err" ? "err" : s.st === "saving" ? "saving" : "";
+    return '<span class="badge ' + cls + '" title="' + (s.st === "err" ? "Not saved yet: " + esc(s.err || "") : s.st === "saving" ? "Saving…" : "Saved") + '">' +
+      esc(s.s) + (s.st === "err" ? " ⚠" : s.st === "saving" ? " …" : "") + "</span>";
+  }
+  function scoreButtons(sel, attr) {
+    return '<div class="scores">' + RUBRIC.map(function (r) {
+      return '<button class="sc' + (String(sel) === String(r[0]) ? " on" : "") + '" ' + attr + '="' + r[0] + '"><b>' + r[0] + "</b><small>" + r[1] + "</small></button>";
+    }).join("") + "</div>";
+  }
+  function render() {
+    if (!st) return;
+    if (!st.block) { $("title").innerHTML = "Playing Test <span>Remote</span>"; $("main").innerHTML = '<div class="msg">The board isn\'t showing a playing test right now.</div>'; return; }
+    $("title").innerHTML = esc(st.block) + " Block <span>Playing Test</span>";
+    if (pick.id !== st.now) {                       // a new student is up: start from their saved score (if any)
+      var have = st.now && st.scores && st.scores[st.now];
+      pick = { id: st.now, s: have ? have.s : "", note: have ? have.note || "" : "" };
+    }
+    var full = !!(st.now && st.deck), h = "";
+    var errs = Object.keys(st.scores || {}).filter(function (id) { return st.scores[id].st === "err"; }).length;
+    if (errs) h += '<div class="card warn">⚠ ' + errs + " score" + (errs > 1 ? "s" : "") + " not saved yet. The board keeps trying.</div>";
+    h += '<div class="card"><div class="h">🎯 Today\'s test<small>' + (st.played || []).length + " played · " + (st.wheel || []).length + " left</small></div><div class=\"test\">" + esc(st.test) + "</div></div>";
+    h += '<div class="card now"><div class="h">Now playing' + (st.now ? '<small><button class="b small" data-a="clear" data-slot="now">↩ Put back</button></small>' : "") + "</div>";
+    if (st.now) {
+      h += '<div class="name">' + esc(nm(st.now)) + "</div>" + scoreButtons(pick.s, "data-s") +
+        '<textarea id="note" placeholder="Note (optional): what to work on…">' + esc(pick.note) + "</textarea>" +
+        '<div class="row"><button class="b gold" id="doneBtn"' + (st.spinning ? " disabled" : "") + ">✓ " + (pick.s ? "Save " + pick.s + " & next" : "Done (no score)") + "</button>" +
+        '<button class="b" data-a="later"' + (st.spinning ? " disabled" : "") + ">↺ Later</button></div>";
+    } else h += '<div class="name empty">' + ((st.wheel || []).length ? "Spin to pick who plays" : "Everyone has played 🎉") + "</div>";
+    h += "</div>";
+    h += '<div class="card"><div class="h">On deck' + (st.deck ? '<small><button class="b small" data-a="clear" data-slot="deck">↩ Put back</button></small>' : "") + "</div>" +
+      '<div class="name' + (st.deck ? "" : " empty") + '">' + (st.deck ? esc(nm(st.deck)) : "—") + "</div></div>";
+    h += '<button class="b gold spin" data-a="spin"' + (st.spinning || full || !(st.wheel || []).length ? " disabled" : "") + ">" +
+      (st.spinning ? "Spinning…" : full ? "Tap Done first" : "🎡 Spin" + (st.now ? " for On deck" : "")) + "</button>";
+    h += '<div class="row"><button class="b small" data-a="undo"' + (st.canUndo && !st.spinning ? "" : " disabled") + ">⤺ Undo</button></div>";
+    var played = (st.played || []).slice().reverse();
+    h += '<div class="card"><div class="h">Played (' + played.length + ")<small>tap to change a score</small></div><div class=\"list\">" +
+      (played.length ? played.map(function (id) {
+        var s = st.scores && st.scores[id];
+        return '<div class="it" data-edit="' + esc(id) + '"><span class="n">' + esc(nm(id)) + (s && s.note ? '<span class="note">' + esc(s.note) + "</span>" : "") + "</span>" + scoreBadge(id) + "</div>";
+      }).join("") : '<div class="note">Nobody yet.</div>') + "</div></div>";
+    h += '<div class="card"><div class="h">Still to play (' + (st.wheel || []).length + ")<small>tap a name: pick next / absent</small></div><div class=\"chips\">" +
+      (st.wheel || []).map(function (id) { return '<button class="chip" data-who="' + esc(id) + '">' + esc(nm(id)) + "</button>"; }).join("") + "</div></div>";
+    if ((st.absent || []).length) h += '<div class="card"><div class="h">Absent (' + st.absent.length + ")<small>tap when they're back</small></div><div class=\"chips\">" +
+      st.absent.map(function (id) { return '<button class="chip abs" data-here="' + esc(id) + '">' + esc(nm(id)) + "</button>"; }).join("") + "</div></div>";
+    var note = $("note"), keep = note && document.activeElement === note ? note.value : null;
+    $("main").innerHTML = h;
+    if (keep !== null) { $("note").value = keep; $("note").focus(); }
+    if (editId) drawEdit();
+  }
+  function drawEdit() {
+    var id = editId, s = (st.scores && st.scores[id]) || {};
+    $("editCard").innerHTML = '<div class="h">' + esc(nm(id)) + '<small><button class="b small" id="editX">✕</button></small></div>' +
+      scoreButtons(s.s || "", "data-es") + '<textarea id="editNote" placeholder="Note (optional)">' + esc(s.note || "") + "</textarea>" +
+      '<div class="row"><button class="b" id="editBack">↩ Back on the wheel</button>' + (s.s ? '<button class="b" id="editClear">Clear score</button>' : "") + "</div>";
+    $("edit").classList.add("open");
+  }
+
+  // ---------------------------------------------------------------- taps
+  $("main").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a],[data-s],[data-edit],[data-who],[data-here],#doneBtn,#codeGo");
+    if (!b || b.disabled) return;
+    if (b.id === "doneBtn") {
+      var note = $("note") ? $("note").value : "";
+      if (pick.s) send("score", { id: st.now, s: pick.s, note: note });
+      send("done");
+      return;
+    }
+    if (b.hasAttribute("data-s")) { pick.s = b.getAttribute("data-s"); pick.note = $("note") ? $("note").value : pick.note; render(); return; }
+    if (b.hasAttribute("data-edit")) { editId = b.getAttribute("data-edit"); drawEdit(); return; }
+    if (b.hasAttribute("data-who")) {
+      var id = b.getAttribute("data-who"), full = st.now && st.deck;
+      chooser(id, full);
+      return;
+    }
+    if (b.hasAttribute("data-here")) { send("absent", { id: b.getAttribute("data-here"), on: false }); return; }
+    var a = b.getAttribute("data-a");
+    if (a === "clear") send("clear", { slot: b.getAttribute("data-slot") });
+    else if (a) send(a);
+  });
+  function chooser(id, full) {
+    $("editCard").innerHTML = '<div class="h">' + esc(nm(id)) + '<small><button class="b small" id="editX">✕</button></small></div>' +
+      '<div class="row"><button class="b gold" id="chPick"' + (full ? " disabled" : "") + ">" + (st.now ? "Put On deck" : "Play now") + "</button>" +
+      '<button class="b" id="chAbs">Absent</button></div>';
+    $("edit").classList.add("open");
+    $("chPick").onclick = function () { send("pick", { id: id }); closeEdit(); };
+    $("chAbs").onclick = function () { send("absent", { id: id, on: true }); closeEdit(); };
+  }
+  function closeEdit() { editId = null; $("edit").classList.remove("open"); }
+  $("edit").addEventListener("click", function (e) {
+    if (e.target === $("edit") || e.target.id === "editX") { closeEdit(); return; }
+    var b = e.target.closest("[data-es]");
+    if (b && editId) { send("score", { id: editId, s: b.getAttribute("data-es"), note: $("editNote").value }); closeEdit(); return; }
+    if (e.target.id === "editClear" && editId) { send("score", { id: editId, s: "", note: "" }); closeEdit(); return; }
+    if (e.target.id === "editBack" && editId) { send("back", { id: editId }); closeEdit(); }
+  });
+  document.addEventListener("input", function (e) { if (e.target.id === "note") pick.note = e.target.value; });
+
+  // keep the phone awake while it's the remote
+  var wake = null;
+  function keepAwake() { try { if (!wake && navigator.wakeLock) navigator.wakeLock.request("screen").then(function (w) { wake = w; w.addEventListener("release", function () { wake = null; }); }); } catch (e) {} }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { keepAwake(); if (!connected) connect(); } });
+  keepAwake();
+
+  window.__remote = { state: function () { return st; }, authed: function () { return authed; }, connected: function () { return connected; },
+    raw: function (m) { try { conn.send(m); } catch (e) {} } };          // tests: send without the page's own checks
+  connect();
+})();
+</script>
+</body>
+</html>

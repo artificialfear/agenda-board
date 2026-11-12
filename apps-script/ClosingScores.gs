@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.7  (Raven Band, 11/11/2026)
+ * ClosingScores.gs  v1.8  (Raven Band, 11/12/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -37,6 +37,13 @@
  *   - v1.7 (Mat 11/11): Tradition of Excellence Book 2 rows (Map Songs column "Book" = 2). A ToE line counts as the book it
  *       names ("Book 2", "ToE 2", "Book 1"); otherwise the class's usual book (CLOSING.BOOK_DEFAULT: 8th grade = Book 2).
  *       Book 2 songs are keyed and logged as "2-72" so they never mix with Book 1's #72.
+ *   - v1.8 (Mat 11/12): Playing Test days.
+ *       a=ptest&block=   the "Playing Test: …" line on that block's agenda slide (test = the rest of the line, or the lines
+ *                        under it when the line is just "Playing Test") + the class list from the Band Ninja Tracker block tab
+ *                        as "First L." with a short id each (full names never leave Google) + today's saved scores.
+ *       a=ptscore&block=&id=&s=1-4&note=&test=   saves a score to the "Playing Tests" tab of the content sheet
+ *                        (Date | Block | Student | Test | Score | Note | Saved), one row per date + block + student + test;
+ *                        s blank deletes that row. Same spreadsheets as before: no new permissions.
  *       setupMapPassport (run once) makes that trigger and adds each class's starting songs (How = "start",
  *       CLOSING.PASSPORT_START). Same spreadsheet + deck as before: no new permissions.
  *
@@ -70,6 +77,7 @@ var CLOSING = {
   PLAYED_HOUR: 15,
   ADMIN_ID: '1FZRxwbaoUscTIzidpVT1f7xzz1j1XaJgG6fn67y-yyI',     // Admin - Band Ninja (Pass-Off Log)
   TRACKER_ID: '1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw',   // Band Ninja Tracker (Pass-Off Line, Pass-Off Targets)
+  PTEST_TAB: 'Playing Tests',
   BLOCKS: ['1st', '3rd', '4th', '6th', '7th'],
   SCORES: ['1', '2', '3'],
   CLEAR_HOUR: 4
@@ -83,6 +91,12 @@ function doGet(e) {
   try {
     var key = PropertiesService.getScriptProperties().getProperty('closingKey');
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
+    if (p.a === 'ptest' || p.a === 'ptscore') {
+      out = p.a === 'ptest' ? boardPtest_(String(p.block || ''), new Date())
+                            : boardPtScore_(String(p.block || ''), String(p.id || ''), String(p.s == null ? '' : p.s), String(p.note || ''), String(p.test || ''), new Date());
+      out.ok = true;
+      return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+    }
     if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm' || p.a === 'map' || p.a === 'today' || p.a === 'passport') {
       out = p.a === 'config' ? { config: boardSettings_() } :
             p.a === 'map' ? boardCached_('boardMap', 60, boardMap_) :
@@ -451,6 +465,153 @@ function boardRhythm_(block) {
     return { b: it.hasNext() ? it.next().getSize() : 0 };
   }).b;
   return { block: block, set: set, name: saved.name, meter: saved.meter || '', date: saved.date || '', bytes: bytes };
+}
+
+// ---------------------------------------------------------------- v1.8: Playing Test days
+
+/** Every text box on a block's agenda slide, as strings. [] if the slide isn't found. */
+function boardSlideTexts_(block) {
+  var re = new RegExp('^\\s*' + block + '\\s+Block\\s+Agenda', 'i');
+  var slides = SlidesApp.openById(CLOSING.SLIDES_ID).getSlides();
+  for (var i = 0; i < slides.length; i++) {
+    var texts = [], isBlock = false;
+    slides[i].getPageElements().forEach(function (el) {
+      if (el.getPageElementType() !== SlidesApp.PageElementType.SHAPE) return;
+      var t = el.asShape().getText().asString();
+      if (re.test(t)) isBlock = true;
+      texts.push(t);
+    });
+    if (isBlock) return texts;
+  }
+  return [];
+}
+
+/** "Playing Test: F scale, ToE #72" → "F scale, ToE #72". A line that is only "Playing Test" takes the lines under it
+ *  (same text box, up to 4, stopping at a blank line). '' = no playing test on the slide. */
+function boardPtestText_(texts) {
+  for (var i = 0; i < texts.length; i++) {
+    var lines = String(texts[i]).split(/\r?\n|\u000b/);
+    for (var j = 0; j < lines.length; j++) {
+      var m = lines[j].match(/^\s*(?:[•·\-*]\s*)?playing[\s-]*tests?\b(?:\s*day)?\s*[:\-–—]?\s*(.*)$/i);
+      if (!m) continue;
+      var rest = m[1].trim();
+      if (rest) return rest;
+      var more = [];
+      for (var k = j + 1; k < lines.length && more.length < 4; k++) {
+        var l = lines[k].replace(/^\s*[•·\-*]\s*/, '').trim();
+        if (!l) break;
+        more.push(l);
+      }
+      return more.join(' · ') || 'Playing test';
+    }
+  }
+  return '';
+}
+
+/** Short id for a student (FNV-1a of the normalized full name, base 36). The board only ever sees ids + "First L.". */
+function boardPtId_(full) {
+  var s = boardNorm_(full), h = 0x811c9dc5;
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+
+/** The class list from the Band Ninja Tracker tab "<block> Block" (column A "Last, First", row 2 down to the first blank).
+ *  Test rows ("Test, Student") and summary rows are skipped. [{id, n: "First L.", full}] sorted by "First L.". */
+function boardPtRoster_(block) {
+  var sh = SpreadsheetApp.openById(CLOSING.TRACKER_ID).getSheetByName(block + ' Block');
+  if (!sh || sh.getLastRow() < 2) return [];
+  var out = [];
+  var vals = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues();
+  for (var i = 0; i < vals.length; i++) {
+    var full = String(vals[i][0]).trim();
+    if (!full) break;
+    if (/\btest\b/i.test(full) || /^(block\s+)?(average|total)s?$/i.test(full)) continue;
+    var last = '', first = full, c = full.indexOf(',');
+    if (c >= 0) { last = full.slice(0, c).trim(); first = full.slice(c + 1).trim(); }
+    else { var w = full.split(/\s+/); first = w.shift(); last = w.join(' '); }
+    out.push({ id: boardPtId_(full), first: first, last: last, full: full, len: 1 });
+  }
+  // "First L." — more letters of the last name only when two students would look the same
+  for (var round = 0; round < 12; round++) {
+    var seen = {}, clash = false;
+    out.forEach(function (s) { var k = (s.first + ' ' + s.last.slice(0, s.len)).toLowerCase(); (seen[k] = seen[k] || []).push(s); });
+    Object.keys(seen).forEach(function (k) {
+      var g = seen[k]; if (g.length < 2) return;
+      g.forEach(function (s) {        // grow only past students with a different last name (twins stay short and get "2")
+        var other = g.some(function (o) { return o !== s && o.last.toLowerCase() !== s.last.toLowerCase(); });
+        if (other && s.len < s.last.length) { s.len++; clash = true; }
+      });
+    });
+    if (!clash) break;
+  }
+  var used = {};
+  out.forEach(function (s) {
+    var n = s.first + (s.last ? ' ' + s.last.slice(0, s.len) + '.' : '');
+    used[n] = (used[n] || 0) + 1;
+    s.n = used[n] > 1 ? n + ' ' + used[n] : n;
+  });
+  out.sort(function (a, b) { var x = a.n.toLowerCase(), y = b.n.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+  return out.map(function (s) { return { id: s.id, n: s.n, full: s.full }; });
+}
+
+function boardPtSheet_() {
+  var ss = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID), sh = ss.getSheetByName(CLOSING.PTEST_TAB);
+  if (!sh) {
+    sh = ss.insertSheet(CLOSING.PTEST_TAB);
+    sh.getRange(1, 1, 1, 7).setValues([['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved']]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+/** a=ptest: { block, date, test, students: [{id, n}], scores: {id: {s, note, test}} } (scores saved today for this block). */
+function boardPtest_(block, now) {
+  if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
+  var today = boardYmd_(now);
+  var test = boardCached_('boardPtText:' + block + ':' + today, 60, function () { return { t: boardPtestText_(boardSlideTexts_(block)) }; }).t;
+  var roster = boardCached_('boardPtRoster:' + block, 600, function () { return boardPtRoster_(block); });
+  var byFull = {};
+  roster.forEach(function (s) { byFull[boardNorm_(s.full)] = s.id; });
+  var scores = {}, sh = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID).getSheetByName(CLOSING.PTEST_TAB);
+  if (sh && sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, 6).getDisplayValues().forEach(function (r) {
+      if (boardYmd_(r[0]) !== today || String(r[1]).trim() !== block) return;
+      var id = byFull[boardNorm_(r[2])];
+      if (id) scores[id] = { s: String(r[4]), note: String(r[5]), test: String(r[3]) };
+    });
+  }
+  return { block: block, date: today, test: test,
+           students: roster.map(function (s) { return { id: s.id, n: s.n }; }), scores: scores };
+}
+
+/** a=ptscore: saves (or with s blank, removes) one student's score for today. Returns { saved: {id, s, note} }. */
+function boardPtScore_(block, id, s, note, test, now) {
+  if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
+  s = String(s).trim();
+  if (s !== '' && ['1', '2', '3', '4'].indexOf(s) < 0) throw new Error('Score must be 1, 2, 3 or 4.');
+  var st = boardPtRoster_(block).filter(function (x) { return x.id === id; })[0];
+  if (!st) throw new Error('That student is not on the ' + block + ' Block list any more.');
+  test = String(test || '').trim().slice(0, 200);
+  note = String(note || '').trim().slice(0, 500);
+  var today = boardYmd_(now);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sh = boardPtSheet_(), row = 0;
+    if (sh.getLastRow() > 1) {
+      var v = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues();
+      for (var i = 0; i < v.length; i++) {
+        if (boardYmd_(v[i][0]) === today && String(v[i][1]).trim() === block && boardNorm_(v[i][2]) === boardNorm_(st.full) &&
+            String(v[i][3]).trim() === test) { row = i + 2; break; }
+      }
+    }
+    if (s === '') { if (row) sh.deleteRow(row); }
+    else {
+      var line = [today, block, st.full, test, Number(s), note, Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')];
+      sh.getRange(row || sh.getLastRow() + 1, 1, 1, 7).setValues([line]);
+    }
+  } finally { lock.releaseLock(); }
+  return { saved: { id: id, s: s, note: note } };
 }
 
 // ---------------------------------------------------------------- table on the slide
