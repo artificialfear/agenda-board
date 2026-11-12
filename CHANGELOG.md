@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.1 — 2026-11-12
+- Playing Test wheel much bigger (Mat): it fills the whole right side top to bottom; title, date and count moved into the left
+  column; the buttons sit in the wheel's empty corners. The pointer is part of the wheel drawing with its tip just over the
+  rim (names end a little short of it so the top name is never covered). After a spin the wheel holds still ~3 s with the
+  winning slice outlined in white, then that name drops off.
+
 ## 2.5.0 — 2026-11-12
 - **🎯 Playing Test day** (Mat): a full-screen Raven Band page for a class's playing test (ptest.js): what they're playing,
   Now playing + On deck, and a spinning name wheel ("First L.") that picks who goes next.

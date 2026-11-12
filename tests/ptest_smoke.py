@@ -61,7 +61,7 @@ def main():
         page.clock.install(time="2026-11-12T09:40:00")          # Thursday, 3rd Block (regular day)
         page.goto(f"http://127.0.0.1:{PORT}/index.html?peerfake=1")
         page.wait_for_timeout(600)
-        page.evaluate("window.__ptSpinMs = 300; window.__ptPick = () => 1;")       # always the 2nd name on the wheel
+        page.evaluate("window.__ptSpinMs = 300; window.__ptHoldMs = 1200; window.__ptPick = () => 1;")       # always the 2nd name on the wheel
         page.wait_for_function("document.getElementById('pt').classList.contains('open')", timeout=8000)
         txt = page.inner_text("#pt")
         check("opens from the slide line", "3rd Block" in txt and "Playing Test" in txt and "F Concert scale, ToE #72" in txt and "Spin the wheel!" in txt, txt[:200])
@@ -71,8 +71,20 @@ def main():
             page.screenshot(path=sys.argv[1] + "/ptest_start.png")
         check("no scores drawn on the board", "from the sheet" not in page.content() and "2 Approaching" not in txt)
 
+        # 2.5.1: the wheel fills the right side; the pointer tip reaches over the rim
+        geo = page.evaluate("""(() => { const b = document.getElementById('ptWheelBox').getBoundingClientRect(), pol = document.querySelector('.pt-pointer polygon').getBoundingClientRect(),
+          c = document.querySelector('#ptRot circle[fill=none]').getBoundingClientRect(), r = document.querySelector('.pt-right').getBoundingClientRect();
+          return { h: b.height / innerHeight, w: b.width / r.width, tip: pol.bottom - c.top, rim: c.height, left: c.left - r.left }; })()""")
+        check("wheel fills the right side", geo["h"] > 0.9 and geo["w"] > 0.85 and 0 < geo["tip"] < geo["rim"] * 0.06, geo)
         # spin → Now playing; spin again → On deck
-        page.click("#ptSpin"); page.wait_for_timeout(700)
+        page.click("#ptSpin"); page.wait_for_timeout(450)
+        land = page.evaluate("""(() => { const w = document.querySelector('#ptRot path.win'); if (!w) return null;
+          const b = w.getBoundingClientRect(), c = document.querySelector('#ptRot circle[fill=none]').getBoundingClientRect();
+          const dx = (b.left + b.right) / 2 - (c.left + c.right) / 2, dy = (b.top + b.bottom) / 2 - (c.top + c.bottom) / 2;
+          return { id: w.getAttribute('data-id'), ang: Math.atan2(dx, -dy) * 180 / Math.PI, onWheel: Array.from(document.querySelectorAll('#ptRot text')).map(x => x.textContent) }; })()""")
+        check("lands under the pointer, holds a moment", land is not None and land["id"] == "b2" and abs(land["ang"]) < 36 and "Ben K." in land["onWheel"], land)
+        page.wait_for_timeout(1100)
+        check("then the name leaves the wheel", "Ben K." not in page.evaluate("Array.from(document.querySelectorAll('#ptRot text')).map(x => x.textContent)"))
         s = page.evaluate("window.__ptest.state()")
         check("spin fills Now playing", s["now"] == "b2" and page.inner_text("#ptNow") == "Ben K.", s)
         ang = page.evaluate("getComputedStyle(document.getElementById('ptRot')).transform")

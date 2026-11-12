@@ -34,14 +34,15 @@
     "#pt { position: fixed; inset: 0; z-index: 25; display: none; flex-direction: column; background: #1f2a44; color: #fff;",
     "  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; user-select: none; -webkit-user-select: none; }",
     "#pt.open { display: flex; }",
-    "#pt .pt-head { display: flex; align-items: center; gap: 1.4vw; padding: 2.2vh 2.4vw 1.6vh; }",
+    "#pt .pt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 40fr 60fr; gap: 1.6vw; padding: 2vh 2vw 2vh 2.4vw; }",
+    "#pt .pt-head { display: flex; align-items: center; gap: 1vw; }",
     "#pt .pt-head img { height: 7vh; width: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }",
-    "#pt .pt-head h1 { margin: 0; font: 600 6vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .02em; white-space: nowrap; }",
+    "#pt .pt-head h1 { margin: 0; font: 600 5.6vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .02em; white-space: nowrap; }",
     "#pt .pt-head h1 span { color: #c9a227; }",
-    "#pt .pt-date { margin-left: auto; font: 600 3.4vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; white-space: nowrap; }",
-    "#pt .pt-count { background: #c9a227; color: #141c30; border-radius: 1.2vh; padding: .9vh 1.4vw; font: 600 3vh 'Oswald', 'Arial Narrow', Arial, sans-serif; white-space: nowrap; }",
-    "#pt .pt-rule { height: .6vh; background: #c9a227; margin: 0 2.4vw; border-radius: 3px; }",
-    "#pt .pt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 44fr 56fr; gap: 2vw; padding: 2.2vh 2.4vw 2vh; }",
+    "#pt .pt-sub { display: flex; align-items: center; gap: 1vw; margin-top: -.6vh; }",
+    "#pt .pt-date { font: 600 3vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; white-space: nowrap; }",
+    "#pt .pt-count { margin-left: auto; background: #c9a227; color: #141c30; border-radius: 1.2vh; padding: .6vh 1.1vw; font: 600 2.7vh 'Oswald', 'Arial Narrow', Arial, sans-serif; white-space: nowrap; }",
+    "#pt .pt-rule { height: .6vh; background: #c9a227; border-radius: 3px; flex: none; }",
     "#pt .pt-left { display: flex; flex-direction: column; gap: 1.8vh; min-height: 0; }",
     "#pt .pt-card { background: #2a3858; border-radius: 2vh; padding: 1.8vh 1.6vw; }",
     "#pt .pt-h { font: 600 2.6vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .08em; color: #c9a227; text-transform: uppercase; margin-bottom: .6vh; }",
@@ -59,18 +60,21 @@
     "#pt .pt-played { margin-top: auto; min-height: 0; overflow: hidden; }",
     "#pt .pt-chips { display: flex; flex-wrap: wrap; gap: .8vh .6vw; max-height: 12vh; overflow: hidden; }",
     "#pt .pt-chips i { font-style: normal; background: #33466e; color: #dfe4ee; border-radius: 999px; padding: .4vh .9vw; font-size: 2.2vh; }",
-    "#pt .pt-right { display: flex; flex-direction: column; align-items: center; min-height: 0; }",
-    "#pt .pt-wheelbox { position: relative; flex: 1; min-height: 0; aspect-ratio: 1; max-width: 100%; }",
+    "#pt .pt-right { position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; min-width: 0; }",
+    /* 2.5.1 (Mat 11/12): the wheel fills the whole right side, top to bottom; the pointer is part of the drawing, its tip just over the rim */
+    "#pt .pt-wheelbox { position: relative; height: 100%; max-width: 100%; aspect-ratio: 1; }",
     "#pt svg.pt-wheel { width: 100%; height: 100%; display: block; overflow: visible; }",
-    "#pt .pt-spin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 22%; aspect-ratio: 1; border-radius: 50%;",
-    "  background: #1f2a44; border: .7vh solid #c9a227; color: #c9a227; font: 600 4.2vh 'Oswald', 'Arial Narrow', Arial, sans-serif; padding: 0;",
+    "#pt .pt-spin { position: absolute; left: 50%; top: 53.24%; transform: translate(-50%, -50%); width: 20%; aspect-ratio: 1; border-radius: 50%;",
+    "  background: #1f2a44; border: .7vh solid #c9a227; color: #c9a227; font: 600 4.6vh 'Oswald', 'Arial Narrow', Arial, sans-serif; padding: 0;",
     "  box-shadow: 0 .6vh 2.4vh rgba(0,0,0,.45); }",
     "#pt .pt-spin:active { transform: translate(-50%, -50%) scale(.96); }",
-    "#pt .pt-ptr { position: absolute; left: 50%; top: -1.2vh; transform: translateX(-50%); width: 0; height: 0; border-left: 2.4vh solid transparent;",
-    "  border-right: 2.4vh solid transparent; border-top: 4.4vh solid #c9a227; filter: drop-shadow(0 .4vh .6vh rgba(0,0,0,.5)); z-index: 2; }",
-    "#pt .pt-under { display: flex; gap: .6vw; align-items: center; margin-top: 1.4vh; flex-wrap: nowrap; }",
-    "#pt .pt-under button { font-size: 2.3vh; padding: .9vh .9vw; white-space: nowrap; }",
-    "#pt .pt-left-n { font: 600 2.8vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; margin-right: .6vw; white-space: nowrap; }",
+    "#pt #ptRot path.win { stroke: #fff; stroke-width: 2.6; filter: brightness(1.18); }",
+    "#pt .pt-corner { position: absolute; display: flex; flex-direction: column; gap: 1vh; z-index: 3; }",
+    "#pt .pt-corner.tl { left: 0; top: 0; } #pt .pt-corner.tr { right: 0; top: 0; align-items: flex-end; }",
+    "#pt .pt-corner.bl { left: 0; bottom: 0; } #pt .pt-corner.br { right: 0; bottom: 0; align-items: flex-end; }",
+    "#pt .pt-corner button { font-size: 2.3vh; padding: .9vh 1vw; white-space: nowrap; background: rgba(31,42,68,.92); }",
+    "#pt .pt-left-n { font: 600 3vh/1.15 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; white-space: nowrap; }",
+    "#pt .pt-left-n b { display: block; font-size: 6vh; color: #c9a227; }",
     "#pt .pt-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 10%;",
     "  font: 600 4.4vh/1.3 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; }",
     "#pt .pt-banner { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(.6); opacity: 0; pointer-events: none; z-index: 5;",
@@ -108,11 +112,11 @@
   var el = document.createElement("div");
   el.id = "pt"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Playing test");
   el.innerHTML =
-    '<div class="pt-head"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1 id="ptTitle"></h1>' +
-    '<div class="pt-date" id="ptDate"></div><div class="pt-count" id="ptCount"></div></div>' +
-    '<div class="pt-rule"></div>' +
     '<div class="pt-body">' +
     '  <div class="pt-left">' +
+    '    <div class="pt-head"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1 id="ptTitle"></h1></div>' +
+    '    <div class="pt-sub"><div class="pt-date" id="ptDate"></div><div class="pt-count" id="ptCount"></div></div>' +
+    '    <div class="pt-rule"></div>' +
     '    <div class="pt-card"><div class="pt-h">🎯 Today\'s playing test</div><div class="pt-test" id="ptTest"></div></div>' +
     '    <div class="pt-card pt-now"><div class="pt-h">Now playing</div><div class="pt-name" id="ptNow"></div></div>' +
     '    <div class="pt-card pt-deck"><div class="pt-h">On deck · get ready</div><div class="pt-name" id="ptDeck"></div></div>' +
@@ -120,11 +124,15 @@
     '    <div class="pt-card pt-played"><div class="pt-h" id="ptPlayedH">Played</div><div class="pt-chips" id="ptPlayed"></div></div>' +
     '  </div>' +
     '  <div class="pt-right">' +
-    '    <div class="pt-wheelbox" id="ptWheelBox"><div class="pt-ptr"></div>' +
-    '      <svg class="pt-wheel" id="ptWheel" viewBox="-104 -104 208 208" aria-hidden="true"><g id="ptRot"></g></svg>' +
+    '    <div class="pt-wheelbox" id="ptWheelBox">' +
+    '      <svg class="pt-wheel" id="ptWheel" viewBox="-108 -115 216 216" aria-hidden="true"><g id="ptRot"></g>' +
+    '        <g class="pt-pointer"><polygon points="0,-95 -10,-114 10,-114" fill="#c9a227" stroke="#141c30" stroke-width="1.6" stroke-linejoin="round"/>' +
+    '        <circle cx="0" cy="-111" r="3" fill="#141c30"/></g></svg>' +
     '      <button class="pt-spin" id="ptSpin" aria-label="Spin the wheel">SPIN</button><div class="pt-msg" id="ptMsg"></div></div>' +
-    '    <div class="pt-under"><span class="pt-left-n" id="ptLeftN"></span><button id="ptClass">👥 Class list</button>' +
-    '      <button id="ptRemote">📱 Remote</button><button id="ptUndo">⤺ Undo</button><button id="ptHide">📋 Agenda</button><button id="ptMenu" aria-label="Menu">☰</button></div>' +
+    '    <div class="pt-corner tl"><span class="pt-left-n" id="ptLeftN"></span></div>' +
+    '    <div class="pt-corner tr"><button id="ptHide">📋 Agenda</button><button id="ptMenu" aria-label="Menu">☰ Menu</button></div>' +
+    '    <div class="pt-corner bl"><button id="ptClass">👥 Class list</button><button id="ptRemote">📱 Remote</button></div>' +
+    '    <div class="pt-corner br"><button id="ptUndo">⤺ Undo</button></div>' +
     '  </div>' +
     '</div>' +
     '<div class="pt-banner" id="ptBanner"><small id="ptBannerH"></small><b id="ptBannerN"></b></div>' +
@@ -150,6 +158,7 @@
   var S = null;                       // that block's progress for today
   var hidden = {};                    // block → true after "📋 Agenda" (until the next time the test turns on)
   var spinning = false, rot = 0, wheelKey = "";
+  var landed = null, landT = null;     // the name just picked: the wheel holds still on it a moment before it drops off
 
   function dayOverride() { var o = load(DAY_KEY); return o && o.date === today() ? o : null; }
   function roster(block) { var r = R[block]; return r && r.date === today() ? r : (r && r.students ? { students: r.students, test: "", scores: {}, date: r.date } : null); }
@@ -246,7 +255,7 @@
     $("ptUndo").disabled = spinning || !S.hist.length;
     var ids = wheelIds();
     $("ptSpin").disabled = spinning || !ids.length || !!(S.now && S.deck);
-    $("ptLeftN").textContent = ids.length + " left to play";
+    $("ptLeftN").innerHTML = "<b>" + ids.length + "</b>left to play";
     var played = S.played.filter(function (id) { return n[id]; });
     $("ptPlayedH").textContent = "Played (" + played.length + ")" + (S.absent.length ? " · Absent: " + S.absent.length : "");
     $("ptPlayed").innerHTML = played.slice().reverse().map(function (id) { return "<i>" + esc(n[id]) + "</i>"; }).join("");
@@ -268,7 +277,7 @@
   }
   function pt(r, a) { var t = a * Math.PI / 180; return [r * Math.sin(t), -r * Math.cos(t)]; }   // angle clockwise from the top
   function drawWheel(ids) {
-    if (spinning) return;
+    if (spinning || landed) return;
     var key = ids.join(",");
     if (key === wheelKey) return;
     wheelKey = key;
@@ -283,9 +292,9 @@
         var col = COLORS[i % COLORS.length];
         if (i === n - 1 && n % COLORS.length === 1) col = COLORS[2];        // never the same color next to the first slice
         h += '<path d="M0 0 L' + a0[0].toFixed(2) + " " + a0[1].toFixed(2) + " A100 100 0 " + (seg > 180 ? 1 : 0) + " 1 " + a1[0].toFixed(2) + " " + a1[1].toFixed(2) +
-          ' Z" fill="' + col[0] + '" stroke="#141c30" stroke-width=".8"/>';
+          ' Z" fill="' + col[0] + '" stroke="#141c30" stroke-width=".8" data-id="' + esc(id) + '"/>';
         var label = nameOf(id); if (label.length > 14) label = label.slice(0, 13) + "…";
-        h += '<text transform="rotate(' + (c - 90).toFixed(3) + ')" x="94" y="0" text-anchor="end" dominant-baseline="middle" font-size="' + fs.toFixed(2) +
+        h += '<text transform="rotate(' + (c - 90).toFixed(3) + ')" x="87" y="0" text-anchor="end" dominant-baseline="middle" font-size="' + fs.toFixed(2) +
           '" font-weight="700" font-family="Oswald, Arial Narrow, Arial, sans-serif" fill="' + col[1] + '" data-id="' + esc(id) + '">' + esc(label) + "</text>";
       });
     }
@@ -335,6 +344,7 @@
     if (!cur || !S || spinning) return;
     var ids = wheelIds();
     if (!ids.length || (S.now && S.deck)) return;
+    if (landed) { clearTimeout(landT); landed = null; wheelKey = ""; drawWheel(ids); }   // the last pick leaves the wheel first
     var n = ids.length, i = rnd(n), seg = 360 / n;
     var jitter = n > 1 ? (Math.random() - 0.5) * seg * 0.6 : 0;
     var target = -(i * seg + jitter);                            // that slice's middle (± a little) under the pointer
@@ -363,7 +373,10 @@
       place(ids[i]);
       S.rot = rot;
       saveState();
-      wheelKey = "";
+      landed = ids[i];
+      Array.prototype.forEach.call(g.querySelectorAll("path"), function (p) { p.classList.toggle("win", p.getAttribute("data-id") === landed); });
+      clearTimeout(landT);
+      landT = setTimeout(function () { landed = null; wheelKey = ""; render(); }, window.__ptHoldMs || 2800);
       render(); broadcast();
       banner(head, nameOf(ids[i]));
     }, ms + 60);
