@@ -1,5 +1,23 @@
 # Agenda Board — handoff
 
+## Agenda fill from the lesson plan (11/12/2026, Mat; live)
+- New apps-script/AgendaFill.gs v1.0 + ClosingScores.gs v1.9 in "Class Agenda – Daily Slide Updater"; web app deployment
+  AKfycbw9… now @10 (same URL). Live ClosingScores was checked = main by SHA-256 before the swap. setupAgendaFill run:
+  daily ~5:40 AM trigger agendaFillDaily (skips weekends). No new permissions.
+- Lesson Plan Generator (school account, repo artificialfear/lesson-plan-generator, Agenda.js) POSTs {k, a:'planPut', weekOf,
+  today, days:[{date, blocks:{'1st':[lines]}}], focus:{'1st':{learning, why, success}}} on turn-in (today:false) and on its
+  "Send to agenda" button (today:true = fill today now). Stored in Content Pool tabs "Agenda Plan" (Date | Block | Work
+  Session | Sent) and "Agenda Focus" (Week Of | Block | Learning | Why | Success | Sent); Mat may edit future rows there.
+- Fill: WORK SESSION body replaced under the heading (setText keeps the first item's font + bullets; re-fetch getText()
+  after every edit, old ranges go stale); 16 pt, shrinks to 12 if the estimate says it won't fit. FOCUS WALL: only text
+  after "Learning:"/"Why:"/"Success:"; blank values leave the line. No row for a day/block = slide untouched.
+- Matcher: a concert piece also matches as "Title (mm. 5-20)" / "Repertoire: Title" (core match), so short titles like Joy
+  still count from generator lines.
+- Checked on real Slides with agendaTryOnCopy (copy trashed): bullets/list kept, Lato, bold gold labels kept; 4 items → 14 pt.
+- Mat's choices: Focus Wall weekly per class, 3rd+4th share; Band Ninja days write "Band Ninja: individual practice/pass-offs";
+  Opening untouched (rhythm). First real POST not yet exercised (Mat's next turn-in / Send to agenda).
+- Tests: node tests/agenda_fill_test.js (break-checked: matcher, stale range, blank focus).
+
 ## Latest session (11/10/2026, evening) — read this first
 - All live (CHANGELOG 2.1.0 / 2.2.0 / 2.2.1). Apps Script "Class Agenda – Daily Slide Updater"
   (1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG: Code.js v2.4, ClosingScores.js v1.5, NinjaGoals.js), web app
