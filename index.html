@@ -1848,12 +1848,32 @@
     pack: function () { return { open: packEl.classList.contains("open"), flash: packEl.classList.contains("flash"),
       pill: packPill.classList.contains("show") ? packPill.textContent : "" }; },
     timer: function () { return { state: timer.state, text: tTime.textContent, open: timerEl.classList.contains("open") }; } };
+  // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
+  // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
+  // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
+  var BUILD = "2.5.3";
+  function checkBuild() {
+    if (TEST) return;
+    fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+      var v = j && String(j.build || "");
+      if (!v || v === BUILD) return;
+      if (window.__ptest && window.__ptest.spinning && window.__ptest.spinning()) return;
+      var tried = {}; try { tried = JSON.parse(sessionStorage.getItem("agendaBoard.updTried") || "{}"); } catch (e) {}
+      if (tried[v] && Date.now() - tried[v] < 10 * 60000) return;
+      tried[v] = Date.now(); try { sessionStorage.setItem("agendaBoard.updTried", JSON.stringify(tried)); } catch (e) {}
+      var q = new URLSearchParams(location.search); q.set("v", v);
+      location.replace(location.pathname + "?" + q.toString() + location.hash);
+    }).catch(function () {});
+  }
+  setTimeout(checkBuild, 20000);
+  setInterval(checkBuild, 5 * 60000);
+
   // 2.5.0: what ptest.js (Playing Test day) needs from the board
   window.__board = { call: scoresCall, settings: function () { return settings; }, now: now, ymd: ymd,
     shown: function () { return { key: shownKey, ninja: shownNinja }; }, test: !!TEST };
 })();
 </script>
-<script src="ptnet.js?v=2.5.0"></script>
-<script src="ptest.js?v=2.5.1"></script>
+<script src="ptnet.js?v=2.5.3"></script>
+<script src="ptest.js?v=2.5.3"></script>
 </body>
 </html>

@@ -71,11 +71,15 @@ def main():
             page.screenshot(path=sys.argv[1] + "/ptest_start.png")
         check("no scores drawn on the board", "from the sheet" not in page.content() and "2 Approaching" not in txt)
 
-        # 2.5.1: the wheel fills the right side; the pointer tip reaches over the rim
+        # 2.5.1: the wheel fills the right side; the pointer tip reaches over the rim.
+        # 2.5.3: also on a browser without CSS aspect-ratio (the ViewBoard): switch the rule off and draw again
+        page.add_style_tag(content="#pt .pt-wheelbox, #pt .pt-spin { aspect-ratio: auto !important; }")
+        page.evaluate("window.__ptest.sync()"); page.wait_for_timeout(150)
         geo = page.evaluate("""(() => { const b = document.getElementById('ptWheelBox').getBoundingClientRect(), pol = document.querySelector('.pt-pointer polygon').getBoundingClientRect(),
           c = document.querySelector('#ptRot circle[fill=none]').getBoundingClientRect(), r = document.querySelector('.pt-right').getBoundingClientRect();
           return { h: b.height / innerHeight, w: b.width / r.width, tip: pol.bottom - c.top, rim: c.height, left: c.left - r.left }; })()""")
-        check("wheel fills the right side", geo["h"] > 0.9 and geo["w"] > 0.85 and 0 < geo["tip"] < geo["rim"] * 0.06, geo)
+        spin = page.evaluate("(() => { const b = document.getElementById('ptSpin').getBoundingClientRect(); return [b.width, b.height]; })()")
+        check("wheel fills the right side", geo["h"] > 0.9 and geo["w"] > 0.85 and 0 < geo["tip"] < geo["rim"] * 0.06 and abs(spin[0] - spin[1]) < 2 and spin[0] > 150, (geo, spin))
         # spin → Now playing; spin again → On deck
         page.click("#ptSpin"); page.wait_for_timeout(450)
         land = page.evaluate("""(() => { const w = document.querySelector('#ptRot path.win'); if (!w) return null;
@@ -177,6 +181,12 @@ def main():
         page.wait_for_function("document.getElementById('pt').classList.contains('open')", timeout=8000)
         check("typed test on a block with no slide line", "4th Block" in page.inner_text("#ptTitle") and page.inner_text("#ptTest") == "Lightly Row" and
               page.evaluate("window.__ptest.state().played.length") == 0)
+        # 2.5.2 self-update: a newer version.json makes an open board reload itself once with ?v=<build>
+        page.route("**/version.json*", lambda r: r.fulfill(status=200, content_type="application/json", body='{"build": "9.9.9"}'))
+        page.clock.fast_forward("00:05:05"); page.wait_for_timeout(2500)
+        u1 = page.url
+        page.clock.fast_forward("00:05:05"); page.wait_for_timeout(1500)
+        check("board updates itself, no reload loop", "v=9.9.9" in u1 and "peerfake=1" in u1 and page.url == u1, (u1, page.url))
         browser.close()
     srv.shutdown()
     n = len(RESULTS); ok = sum(1 for r in RESULTS if r)

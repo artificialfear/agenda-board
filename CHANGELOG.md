@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.3 — 2026-11-12
+- Wheel size set by the page itself (the ViewBoard's older browser ignores CSS aspect-ratio, so the wheel stayed small there).
+- 2.5.2: the board updates itself: every 5 min it reads version.json (never cached) and reloads once with ?v=<build> when a newer
+  build is out (not mid-spin; once per build per 10 min). **Bump BUILD in index.html and version.json together.**
+
 ## 2.5.1 — 2026-11-12
 - Playing Test wheel much bigger (Mat): it fills the whole right side top to bottom; title, date and count moved into the left
   column; the buttons sit in the wheel's empty corners. The pointer is part of the wheel drawing with its tip just over the

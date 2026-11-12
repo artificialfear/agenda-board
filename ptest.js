@@ -267,9 +267,21 @@
     $("ptMsg").style.display = msg ? "flex" : "none";
     $("ptSpin").style.display = msg ? "none" : "";
     drawWheel(ids);
+    sizeWheel();
     if ($("ptClassSheet").classList.contains("open")) drawRoll();
     remoteBadge();
   }
+  // 2.5.3: the wheel's size is set here, not with CSS aspect-ratio: the ViewBoard's older browser ignores that rule,
+  // so the wheel stayed small there (Mat 11/12). Square = the smaller of the right side's width and height.
+  function sizeWheel() {
+    var r = el.querySelector(".pt-right").getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    var side = Math.floor(Math.min(r.width, r.height)), box = $("ptWheelBox"), sp = $("ptSpin");
+    box.style.width = side + "px"; box.style.height = side + "px";
+    var b = Math.round(side * 0.2);
+    sp.style.width = b + "px"; sp.style.height = b + "px";
+  }
+  window.addEventListener("resize", function () { if (el.classList.contains("open")) sizeWheel(); });
   function nameBox(id, sid, empty) {
     var b = $(id);
     b.textContent = sid ? nameOf(sid) : empty;
