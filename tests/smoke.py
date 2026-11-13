@@ -562,6 +562,24 @@ def main():
               and not p4["on"] and p4["now"] == -1 and not M4["on"] and M4["title"].startswith("RHYTHM") and p5["on"] and not p6["on"])
         print(("PASS" if ok else "FAIL"), f"{'rhythm moving line + stops at end':34s}" + ("" if ok else f" {p0} {p1} {p2} {p3} {p4} {M4} {p5} {p6}"))
         failures += 0 if ok else 1
+        # 2.10.0: 🎲 New rhythm: another picture of the same set + meter over the slide's card, its own counts/line; ↩ Today's goes back
+        page.click("#mNew"); page.wait_for_timeout(600)
+        n1 = page.evaluate("window.__agendaBoard.rhythm()")
+        img_ok = page.evaluate("document.getElementById('rAltImg').complete && document.getElementById('rAltImg').naturalWidth === 1400")
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_new.png"))
+        page.click("#mNew"); page.wait_for_timeout(400); n2 = page.evaluate("window.__agendaBoard.rhythm()")
+        page.click("#mGo"); page.wait_for_timeout(1900); pn = P(); page.click("#mGo")
+        page.click("#mToday"); page.wait_for_timeout(300); n3 = page.evaluate("window.__agendaBoard.rhythm()")
+        page.mouse.click(960, 1060); page.wait_for_timeout(200); page.click("#btnRhythm"); page.wait_for_timeout(500)
+        n4 = page.evaluate("window.__agendaBoard.rhythm()")
+        box, view = n1["counts"]["altBox"], n1["view"]
+        ok = (n1["counts"]["name"].startswith("8th_4-4_") and n1["counts"]["name"] != "8th_4-4_004.png" and n1["counts"]["alt"] == n1["counts"]["name"]
+              and img_ok and box and 0 < box[0] < view[0] * 0.06 and box[2] > view[0] * 0.9 and 0 <= box[1] and box[1] + box[3] <= view[1]
+              and n2["counts"]["name"] not in (n1["counts"]["name"], "8th_4-4_004.png") and pn["on"] and pn["tl"]["length"] == 16
+              and n3["counts"]["name"] == "8th_4-4_004.png" and n3["counts"]["altBox"] is None and not page.is_visible("#mToday")
+              and n4["counts"]["name"] == "8th_4-4_004.png" and n4["counts"]["alt"] is None)
+        print(("PASS" if ok else "FAIL"), f"{'new rhythm for practice':34s}" + ("" if ok else f" {n1['counts']} {img_ok} {view} {n2['counts']['name']} {pn} {n3['counts']} {n4['counts']['name']}"))
+        failures += 0 if ok else 1
         # 2.9.2: Moving line Off (saved): the metronome still counts off and plays, no line
         page.click("#mLine"); page.wait_for_timeout(100)
         lbl = page.inner_text("#mLine")

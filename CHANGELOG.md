@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.10.0 — 2026-11-13 (Mat)
+- **🎲 New rhythm** in the Rhythm of the Day view: another picture from the same set and meter (rhythm-pictures/ on this site,
+  with its counts) drawn over the slide's rhythm card (#rAlt, RHYTHM_IMG_EMU y/h added); counts, moving line, metronome
+  stop and tap-along all use it. "↩ Today's rhythm" or reopening the view goes back. The slide in Drive is not changed.
+
 ## 2.9.2 — 2026-11-13 (Mat)
 - "〰 Moving line: On/Off" under the metronome (saved with the metronome prefs, agendaBoard.metro.line).
 - The metronome stops by itself after the rhythm's last beat (when the rhythm has counts; keeps going without counts and in

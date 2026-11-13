@@ -237,6 +237,13 @@
   #rhythm .m-dly { border: 0; background: none; color: #c9d0de; cursor: pointer; font: 2.1vh "Segoe UI", Arial, sans-serif; opacity: .85; padding: .4vh 1vw; }
   #rhythm .m-dly b { color: #c9a227; font-weight: 600; }
   #rhythm .m-opts { display: flex; gap: 2vw; }
+  /* 2.10.0: a practice rhythm drawn over the slide's rhythm card (same spot, same size) */
+  #rhythm .r-alt { position: absolute; display: none; background: #fff; border-radius: 6px; z-index: 1; overflow: hidden; }
+  #rhythm .r-alt.on { display: block; }
+  #rhythm .r-alt img { position: absolute; display: block; }
+  #rhythm .m-new { display: none; color: #c9a227; }
+  #rhythm.has-counts .m-new#mNew { display: inline-block; }
+  #rhythm.has-counts.alt .m-new#mToday { display: inline-block; }
   #rhythm .m-dbox { display: none; flex-direction: column; align-items: center; gap: 1.2vh; background: #2a3858; border: 1px solid #c9a227;
     border-radius: 2vh; padding: 1.6vh 1.6vw; max-width: 60vw; }
   #rhythm .m-dbox.open { display: flex; }
@@ -449,7 +456,7 @@
 <!-- Rhythm of the day, zoomed to full width (a second copy of the slide, cropped to the rhythm card) -->
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
   <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
-  <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe><div class="r-play" id="rPlay"></div></div>
+  <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe><div class="r-alt" id="rAlt"><img id="rAltImg" alt="Practice rhythm"></div><div class="r-play" id="rPlay"></div></div>
   <div class="r-counts" id="rCounts" aria-live="polite"></div>
   <div class="r-metro" id="metro">
     <div class="m-dots" id="mDots"></div>
@@ -467,7 +474,9 @@
       <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
     <!-- 2.9.0: Bluetooth speaker delay. The sound can't come sooner, so the dots, count-off numbers and moving line wait for it. -->
-    <div class="m-opts"><button class="m-dly" id="mLine" role="switch" aria-label="Moving line">〰 Moving line: <b id="mLineOn">On</b></button>
+    <div class="m-opts"><button class="m-dly m-new" id="mNew" aria-label="New rhythm">🎲 New rhythm</button>
+      <button class="m-dly m-new" id="mToday" aria-label="Back to today's rhythm">↩ Today's rhythm</button>
+      <button class="m-dly" id="mLine" role="switch" aria-label="Moving line">〰 Moving line: <b id="mLineOn">On</b></button>
       <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button></div>
     <div class="m-dbox" id="mDelayBox">
       <div class="d-row"><button class="m-b" id="dLess" aria-label="Less delay">−</button><div class="d-ms"><span id="dMs">0</span><small>ms</small></div>
@@ -663,7 +672,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.9.2"></script>
+<script src="rhythmtime.js?v=2.10.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1227,7 +1236,8 @@
     rView.style.width = Math.round(w * s) + "px"; rView.style.height = Math.round(h * s) + "px";
     rFrame.style.width = Math.round(SLIDE_EMU.w * s) + "px"; rFrame.style.height = Math.round(SLIDE_EMU.h * s) + "px";
     rFrame.style.left = Math.round(-x0 * s) + "px"; rFrame.style.top = Math.round(-y0 * s) + "px";
-    rGeo = { s: s, x0: x0, w: Math.round(w * s) };
+    rGeo = { s: s, x0: x0, y0: y0, w: Math.round(w * s) };
+    altPlace();
     countsPaint();
     return s;
   }
@@ -1236,9 +1246,9 @@
   // The Daily Slides script says which image is on the slide (a=rhythm); rhythm-counts.json (next to this page,
   // made by tools/rhythm with the images) has the counts for every image.
   // The rhythm image sits at this spot on every agenda slide (Code.gs daily:rhythm); x in the counts = fraction of its width.
-  var RHYTHM_IMG_EMU = { x: 603940, w: 4690000 };
+  var RHYTHM_IMG_EMU = { x: 603940, w: 4690000, y: 1286476, h: 536000 };     // y/h: 25.01% / 10.42% of the slide
   var rGeo = null, rCountsEl = document.getElementById("rCounts"), rCntBtn = document.getElementById("mCounts");
-  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0, tl: null };
+  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0, tl: null, today: null, alt: null };
   var countsBook = null;
   function countsBookGet() {
     if (!countsBook) countsBook = fetch("rhythm-counts.json").then(function (r) {
@@ -1248,7 +1258,7 @@
   }
   function countsFetch(blk) {
     var my = ++rc.seq;
-    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; countsPaint();
+    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; rc.alt = null; altPaint(); countsPaint();
     Promise.all([scoresCall({ a: "rhythm", block: blk }), countsBookGet()]).then(function (two) {
       if (my !== rc.seq) return;
       var j = two[0], line = (two[1].lines || {})[j.name];
@@ -1257,7 +1267,7 @@
       // the picture in Drive must be the one these counts were made with (same size); else say so instead of wrong counts
       j.stale = !!(line && line.b && j.bytes && line.b !== j.bytes);
       if (j.stale) j.counts = null;
-      rc.data = j; rc.loading = false;
+      rc.data = j; rc.today = j; rc.alt = null; altPaint(); rc.loading = false;
       // 2.7.0: the moving line's timeline; the metronome's beats follow the rhythm's meter (6/8 → 6)
       rc.tl = j.counts && window.RhythmTime ? window.RhythmTime.rhythmTimeline(j.counts, j.meter) : null;
       if (rc.tl && !metro.on && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
@@ -1298,6 +1308,44 @@
       rCountsEl.appendChild(e);
     });
   }
+  // ---------- 2.10.0 (Mat 11/13): 🎲 New rhythm for practice, right in this view ----------
+  // Picks another picture from the same set and meter (rhythm-pictures/ on this site, with its counts) and draws it over the
+  // slide's rhythm card. The slide itself is not changed; "↩ Today's rhythm" (or reopening the view) goes back to it.
+  var rAlt = document.getElementById("rAlt"), rAltImg = document.getElementById("rAltImg");
+  function altPlace() {
+    if (!rGeo) return;
+    var r = RHYTHM_EMU, im = RHYTHM_IMG_EMU, s = rGeo.s;
+    rAlt.style.left = Math.round((r.x - rGeo.x0) * s) + "px"; rAlt.style.top = Math.round((r.y - rGeo.y0) * s) + "px";
+    rAlt.style.width = Math.round(r.w * s) + "px"; rAlt.style.height = Math.round(r.h * s) + "px";
+    rAltImg.style.left = Math.round((im.x - r.x) * s) + "px"; rAltImg.style.top = Math.round((im.y - r.y) * s) + "px";
+    rAltImg.style.width = Math.round(im.w * s) + "px"; rAltImg.style.height = Math.round(im.h * s) + "px";
+  }
+  function altPaint() {
+    rAlt.classList.toggle("on", !!rc.alt);
+    rhythmEl.classList.toggle("alt", !!rc.alt);
+    if (rc.alt) rAltImg.src = "rhythm-pictures/" + rc.alt;
+    altPlace();
+  }
+  function altUse(d) {
+    if (metro.on) metroStop();
+    rc.data = d;
+    rc.tl = d && d.counts && window.RhythmTime ? window.RhythmTime.rhythmTimeline(d.counts, d.meter) : null;
+    if (rc.tl && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
+    altPaint(); countsPaint();
+  }
+  function altNew() {
+    var base = rc.today; if (!base || !base.name) return;
+    countsBookGet().then(function (book) {
+      var pre = base.name.replace(/_\d{3}\.png$/, "") + "_", cur = rc.alt || base.name;
+      var names = Object.keys(book.lines || {}).filter(function (n) { return n.indexOf(pre) === 0 && n !== cur && n !== base.name; });
+      if (!names.length) return;
+      var n = names[Math.floor(Math.random() * names.length)], line = book.lines[n];
+      rc.alt = n;
+      altUse({ block: base.block, set: base.set, name: n, counts: line.c, meter: line.m, stale: false, alt: true });
+    });
+  }
+  document.getElementById("mNew").onclick = altNew;
+  document.getElementById("mToday").onclick = function () { rc.alt = null; altUse(rc.today); };
   rCntBtn.onclick = function () {
     rc.shown = !rc.shown;
     if (rc.shown && !rc.loading && !(rc.data && rc.data.block === rc.block && rc.data.counts)) countsFetch(rc.block);
@@ -1973,7 +2021,8 @@
         text: Array.prototype.map.call(rCountsEl.children, function (e) { return e.textContent; }).join(" "),
         dim: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.className === "h"; }).length,
         lefts: Array.prototype.map.call(rCountsEl.children, function (e) { return parseInt(e.style.left, 10); }),
-        font: parseInt(rCountsEl.style.fontSize, 10) || 0 },
+        font: parseInt(rCountsEl.style.fontSize, 10) || 0, name: rc.data && rc.data.name || "", alt: rc.alt,
+        altBox: rAlt.classList.contains("on") ? [rAlt.offsetLeft, rAlt.offsetTop, rAlt.offsetWidth, rAlt.offsetHeight] : null },
       play: { on: rPlay.classList.contains("on"), left: parseInt(rPlay.style.left, 10) || 0, now: playIdx,
         beats: mPrefs.beats, tl: rc.tl ? { beats: rc.tl.beats, length: rc.tl.length, onsets: rc.tl.onsets.length } : null } }; },
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
@@ -1987,7 +2036,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.9.2";
+  var BUILD = "2.10.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2016,9 +2065,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.9.2"></script>
-<script src="ptest.js?v=2.9.2"></script>
-<script src="lunch.js?v=2.9.2"></script>
-<script src="rtap.js?v=2.9.2"></script>
+<script src="ptnet.js?v=2.10.0"></script>
+<script src="ptest.js?v=2.10.0"></script>
+<script src="lunch.js?v=2.10.0"></script>
+<script src="rtap.js?v=2.10.0"></script>
 </body>
 </html>
