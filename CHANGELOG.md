@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.12.1 — 2026-11-13 (Mat)
+- Closing scores window: much bigger numbers (full-screen closing time: 11–12vh, was 5–8vh; opened by hand: 64–68px in a
+  1500px card, was 30–32px in 980px), saved numbers white instead of grey.
+
 ## 2.12.0 — 2026-11-13 (Mat)
 - Tap along: after each round the Top 5 + class average fill the middle of the screen for 5 s (#rtBig, z 36 over the rhythm
   view; tap to close sooner), then the corner card is back. Waits up to 3 s for the first score; late scores join; skipped while
