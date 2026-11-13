@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.12.0 — 2026-11-13 (Mat)
+- Tap along: after each round the Top 5 + class average fill the middle of the screen for 5 s (#rtBig, z 36 over the rhythm
+  view; tap to close sooner), then the corner card is back. Waits up to 3 s for the first score; late scores join; skipped while
+  the next speed-ladder pass is playing (window.rhythmBusy), so a ladder shows it after the last pass.
+
 ## 2.11.0 — 2026-11-13 (Mat)
 - **🔊 Hear it** (next to Count off): count-off, then the board plays the rhythm itself (woodblock "tock" on every note,
   hearTock) with softer clicks and the moving line; stops at the end. No tap-along round.

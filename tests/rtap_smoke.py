@@ -121,6 +121,14 @@ def main():
         check("steady lag forgiven without count-off taps", rbr and rbr["countCal"] is None and abs(rbr["cal"] - 140) <= 10 and rbr["good"] == 0, rbr)
         check("result screen on the device", "YOUR SCORE" in ana.inner_text("main").upper() and "100%" in ana.inner_text("main"))
         if shots: ana.screenshot(path=shots + "/tap_result.png")
+        # 2.12.0: the big leaderboard fills the middle of the screen for 5 s, then the corner card is back
+        bigtxt = board.inner_text("#rtBig") if board.is_visible("#rtBig") else ""
+        check("big leaderboard after the round", board.evaluate("window.__rtap.state().big") and "TOP 5" in bigtxt.upper() and "Ana R." in bigtxt
+              and "Class average 75%" in bigtxt and board.evaluate("document.querySelector('#rtBig .b-card').getBoundingClientRect().width") > 1100
+              and board.evaluate("!!document.elementFromPoint(innerWidth / 2, innerHeight / 2).closest('#rtBig')"), bigtxt)
+        if shots: board.screenshot(path=shots + "/tap_big.png")
+        board.wait_for_timeout(5200)
+        check("big leaderboard closes after 5 s", not board.is_visible("#rtBig") and board.is_visible("#rtCard"))
         txt = board.inner_text("#rtCard")
         check("board Top 5 + class average", "TOP 5" in txt.upper() and "Ana R." in txt and "100%" in txt and "Class average" in txt and "2 of 2 scored" in txt
               and txt.index("Ana R.") < txt.index("Ben K."), txt)

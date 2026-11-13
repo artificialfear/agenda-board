@@ -113,6 +113,22 @@
     "#rtCard.mini { width: auto; padding: .8vh 1.2vw; }",
     "#rtCard .rt-mini { font: 600 2.4vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; white-space: nowrap; }",
     "#rtCard .rt-mini b { color: #c9a227; letter-spacing: .08em; }",
+    /* 2.12.0: the big leaderboard for the whole room, 5 s after each round */
+    "#rtBig { position: fixed; inset: 0; z-index: 36; display: none; align-items: center; justify-content: center; background: rgba(12,17,30,.82);",
+    "  cursor: pointer; opacity: 0; transition: opacity .35s; }",
+    "#rtBig.open { display: flex; } #rtBig.show { opacity: 1; }",
+    "#rtBig .b-card { width: 64vw; background: #2a3858; border: .5vh solid #c9a227; border-radius: 4vh; padding: 4vh 4vw; box-sizing: border-box;",
+    "  box-shadow: 0 2vh 8vh rgba(0,0,0,.5); color: #fff; transform: scale(.94); transition: transform .35s; }",
+    "#rtBig.show .b-card { transform: scale(1); }",
+    "#rtBig h2 { margin: 0 0 2vh; text-align: center; font: 600 9vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; letter-spacing: .04em; }",
+    "#rtBig ol { list-style: none; margin: 0; padding: 0; }",
+    "#rtBig li { display: flex; align-items: baseline; gap: 2.4vw; font: 600 7.4vh/1.35 'Oswald', 'Arial Narrow', Arial, sans-serif; }",
+    "#rtBig li i { font-style: normal; color: #c9a227; width: 5vh; text-align: right; }",
+    "#rtBig li b { margin-left: auto; color: #c9a227; font-weight: 600; font-variant-numeric: tabular-nums; }",
+    "#rtBig li:first-child { color: #ffe08a; }",
+    "#rtBig .b-avg { margin-top: 2.4vh; padding-top: 2vh; border-top: 2px solid #34405e; text-align: center; font: 600 4.6vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
+    "#rtBig .b-avg b { color: #c9a227; font-weight: 600; }",
+    "#rtBig .b-wait { text-align: center; font: 4vh 'Segoe UI', Arial, sans-serif; color: #c9d0de; }",
     "#rhythm .m-tap { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30; color: #c9a227; cursor: pointer;",
     "  font: 600 2.8vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .04em; }",
     "#rhythm.has-counts .m-tap { display: block; }",
@@ -236,11 +252,12 @@
     if (!on || !r || !r.tl) return;
     round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length, name: r.name || "" };
     if (window.rhythmHeat) window.rhythmHeat(null);
+    bigHide();
     round.endsAt = r.t0 + (r.off + r.tl.length) * r.spb;
     results = {}; lastRound = round.id; view = "round";
     conns.forEach(function (c) { if (c.hi) send(c, roundMsg()); });
     clearTimeout(showResultsT);
-    showResultsT = setTimeout(function () { if (round && lastRound === round.id) { view = "results"; paint(); } },
+    showResultsT = setTimeout(function () { if (round && lastRound === round.id) { view = "results"; paint(); bigShow(round.id); } },
       Math.max(0, round.endsAt - performance.now()) + 1500);
     paint();
   };
@@ -262,7 +279,40 @@
   };
 
   // ---------------------------------------------------------------- drawing
+  // ---------- 2.12.0 (Mat 11/13): big leaderboard ----------
+  // When a round's scores come in, the Top 5 + class average fill the middle of the screen for BIG_MS (tap to close sooner),
+  // then the small card is back in its corner. Waits up to 3 s for the first score. Skipped while the next speed-ladder pass
+  // is already playing (it would cover the rhythm): that pass gets its own.
+  var BIG_MS = 5000, big = document.createElement("div"), bigT = null, bigFor = null;
+  big.id = "rtBig"; big.setAttribute("role", "dialog"); big.setAttribute("aria-label", "Tap along leaderboard");
+  document.body.appendChild(big);
+  function bigList() {
+    return Object.keys(results).map(function (k) { return results[k]; }).sort(function (a, b) { return b.pct - a.pct || b.p - a.p; });
+  }
+  function bigPaint() {
+    var list = bigList(), avg = list.length ? Math.round(list.reduce(function (s, r) { return s + r.pct; }, 0) / list.length) : 0;
+    big.innerHTML = '<div class="b-card"><h2>🏆 Top 5</h2>' + (list.length ? "<ol>" + list.slice(0, 5).map(function (r, i) {
+      return "<li><i>" + (i + 1) + "</i>" + esc(r.n) + "<b>" + r.pct + "%</b></li>"; }).join("") + "</ol>" +
+      '<div class="b-avg">Class average <b>' + avg + "%</b> · " + list.length + " scored</div>" : '<div class="b-wait">Waiting for scores…</div>') + "</div>";
+  }
+  function bigShow(id, tries) {
+    tries = tries || 0;
+    if (!on || lastRound !== id || !$("rhythm").classList.contains("open")) return;
+    if (window.rhythmBusy && window.rhythmBusy()) return;
+    if (!Object.keys(results).length && tries < 10) { setTimeout(function () { bigShow(id, tries + 1); }, 300); return; }
+    bigFor = id; bigPaint(); big.classList.add("open");
+    requestAnimationFrame(function () { big.classList.add("show"); });
+    clearTimeout(bigT); bigT = setTimeout(bigHide, BIG_MS);
+  }
+  function bigHide() {
+    clearTimeout(bigT); bigFor = null;
+    big.classList.remove("show");
+    setTimeout(function () { if (!big.classList.contains("show")) big.classList.remove("open"); }, 360);
+  }
+  big.addEventListener("click", function (e) { e.stopPropagation(); bigHide(); });
   function paint() {
+    if (bigFor && bigFor === lastRound && big.classList.contains("open")) bigPaint();     // late scores join the big board too
+    if (!on && bigFor) bigHide();
     btn.classList.toggle("on", on);
     btn.textContent = on ? "📱 Tap along: on" : "📱 Tap along";
     card.classList.toggle("open", on);
@@ -295,7 +345,7 @@
             (view === "round" ? " · tapping now!" : " · press ▶ Count off") : "Connecting…") + "</div>");
     }
     fit();
-    var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); if (window.rhythmHeat) window.rhythmHeat(null); paint(); };
+    var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); if (window.rhythmHeat) window.rhythmHeat(null); bigHide(); paint(); };
     var q = $("rtShowQr"); if (q) q.onclick = function () { view = "join"; paint(); };
   }
   // never over the rhythm: if the card is taller than the space above it (a taller screen puts the rhythm higher), shrink it
@@ -321,6 +371,6 @@
 
   window.__rtap = { state: function () {
     return { on: on, status: status, code: code, block: block, roster: roster.length, players: players().map(function (c) { return c.sn; }),
-      view: view, round: round ? round.id : null, results: results };
+      view: view, round: round ? round.id : null, results: results, big: big.classList.contains("show") };
   } };
 })();
