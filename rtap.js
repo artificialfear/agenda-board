@@ -1,0 +1,279 @@
+/* ===================== RHYTHM TAP-ALONG (2.8.0, Mat 11/13) =====================
+   Students tap the Rhythm of the Day on school Chromebooks / iPads and get a score.
+   - In the Rhythm of the Day view: 📱 Tap along → a card with a QR code + code. Students open tap.html?c=CODE, pick their
+     name from the class list (First L., same roster as the Playing Test wheel: a=ptest), and wait.
+   - ▶ Count off on the board starts a round on every device: tap with the count-off clicks (that measures each device's own
+     delay), then tap the rhythm. Devices stay silent; everyone listens to the board.
+   - Each device scores itself (rtapScore below, also used by tap.html) and sends the result. The board shows the Top 5 and the
+     class average. Just for fun: nothing is saved (Mat's choice 11/13).
+   Connection: PeerJS through ptnet.js (same as the Playing Test remote), peer id "ravenband-rtap-v1-" + CODE.
+   Clock: devices ping the board (performance.now() both ends) and keep the fastest answer to line their clocks up.
+   Uses window.__board (index.html): call(params), settings(), now(), ymd(d), shown(). index.html calls window.rtapStart(round)
+   from metroStart and window.rtapStop() from metroStop. */
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- scoring (shared with tap.html; pure)
+  // onsetsMs: when each note should be tapped; tapsMs: when the student tapped (both on one clock, delay already removed).
+  // Each tap goes to the nearest unclaimed note inside that note's window. Windows shrink for close notes (sixteenths).
+  function rtapScore(onsetsMs, tapsMs, opts) {
+    opts = opts || {};
+    var PERF = opts.perfect || 70, GOOD = opts.good || 140;
+    var n = onsetsMs.length, win = onsetsMs.map(function (o, i) {
+      var g = Math.min(i > 0 ? o - onsetsMs[i - 1] : Infinity, i + 1 < n ? onsetsMs[i + 1] - o : Infinity);
+      var good = Math.min(GOOD, g * 0.5), perfect = Math.min(PERF, good * 0.5);
+      return { good: good, perfect: perfect };
+    });
+    var lo = onsetsMs[0] - GOOD, hi = onsetsMs[n - 1] + GOOD;
+    var taken = [], res = { perfect: 0, good: 0, miss: 0, extra: 0, n: n, offs: [] };
+    tapsMs.slice().sort(function (a, b) { return a - b; }).forEach(function (t) {
+      if (t < lo || t > hi) return;                                  // count-off taps / after the end: not scored
+      var best = -1, bd = Infinity;
+      for (var i = 0; i < n; i++) {
+        if (taken[i]) continue;
+        var d = Math.abs(t - onsetsMs[i]);
+        if (d <= win[i].good && d < bd) { bd = d; best = i; }
+      }
+      if (best < 0) { res.extra++; return; }
+      taken[best] = true; res.offs.push(Math.round(t - onsetsMs[best]));
+      if (bd <= win[best].perfect) res.perfect++; else res.good++;
+    });
+    res.miss = n - res.perfect - res.good;
+    var pts = 100 * res.perfect + 60 * res.good - 25 * res.extra;
+    res.pct = n ? Math.max(0, Math.min(100, Math.round(pts / n))) : 0;
+    return res;
+  }
+  // The device's own delay: median of (tap − nearest click) for count-off taps. null when there aren't 2 good taps.
+  function rtapCalibrate(clicksMs, tapsMs, spb) {
+    var ds = [];
+    tapsMs.forEach(function (t) {
+      var best = null;
+      clicksMs.forEach(function (c) { if (best === null || Math.abs(t - c) < Math.abs(best)) best = t - c; });
+      if (best !== null && Math.abs(best) <= Math.min(300, spb * 0.45)) ds.push(best);
+    });
+    if (ds.length < 2) return null;
+    ds.sort(function (a, b) { return a - b; });
+    var m = ds.length >> 1;
+    return Math.round(ds.length % 2 ? ds[m] : (ds[m - 1] + ds[m]) / 2);
+  }
+  window.RTAP = { score: rtapScore, calibrate: rtapCalibrate, PREFIX: "ravenband-rtap-v1-" };
+
+  var B = window.__board, NET = window.PTNET;
+  if (!B || !NET || !document.getElementById("rhythm")) return;     // tap.html loads this file for the scoring only
+
+  var CODE_KEY = "agendaBoard.rtapCode";       // { date, code }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function save(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function today() { return B.ymd(B.now()); }
+
+  // ---------------------------------------------------------------- card in the rhythm view
+  var css = [
+    /* top-right, beside the title and above the rhythm (which starts ~31vh down), so nothing on the view is covered */
+    "#rtCard { position: absolute; right: 1.6vw; top: 1.6vh; width: 22vw; max-height: 28.5vh; overflow: hidden; z-index: 4; display: none; background: #2a3858;",
+    "  border: 2px solid #c9a227; border-radius: 2vh; padding: 1.4vh 1.2vw; box-sizing: border-box; cursor: default; color: #fff; font-family: 'Segoe UI', Roboto, Arial, sans-serif;",
+    "  box-shadow: 0 1vh 4vh rgba(0,0,0,.45); }",
+    "#rtCard.open { display: block; }",
+    "#rtCard h3 { margin: 0 0 .8vh; font: 600 2.7vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; letter-spacing: .05em; display: flex; align-items: center; gap: .5vw; white-space: nowrap; }",
+    "#rtCard h3 span { margin-right: auto; }",
+    "#rtCard button { cursor: pointer; border: 1px solid #c9a227; background: #141c30; color: #c9a227; border-radius: 999px; padding: .6vh 1vw;",
+    "  font: 600 1.9vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .04em; }",
+    "#rtCard .rt-join { display: flex; gap: 1vw; align-items: center; }",
+    "#rtCard .rt-qr { width: 13vh; height: 13vh; background: #fff; border-radius: 1vh; flex: none; }",
+    "#rtCard .rt-qr svg { width: 100%; height: 100%; display: block; }",
+    "#rtCard .rt-code { font: 600 5.6vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #fff; letter-spacing: .12em; }",
+    "#rtCard .rt-url { font-size: 1.7vh; color: #c9d0de; word-break: break-all; margin-top: .6vh; }",
+    "#rtCard .rt-n { margin-top: .9vh; font: 600 2.3vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
+    "#rtCard .rt-n.err { color: #ff9a8a; font-family: 'Segoe UI', Arial, sans-serif; font-size: 1.8vh; font-weight: 400; }",
+    "#rtCard ol { margin: .4vh 0 0; padding: 0; list-style: none; }",
+    "#rtCard li { display: flex; align-items: baseline; gap: .8vw; font: 600 2.6vh/1.3 'Oswald', 'Arial Narrow', Arial, sans-serif; }",
+    "#rtCard li i { font-style: normal; color: #c9a227; width: 2.2vh; }",
+    "#rtCard li b { margin-left: auto; color: #c9a227; font-weight: 600; }",
+    "#rtCard .rt-avg { margin-top: .6vh; padding-top: .6vh; border-top: 1px solid #34405e; font: 600 2.4vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
+    "#rtCard .rt-avg b { color: #c9a227; font-weight: 600; }",
+    "#rtCard .rt-wait { font-size: 2vh; color: #c9d0de; }",
+    "#rhythm .m-tap { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30; color: #c9a227; cursor: pointer;",
+    "  font: 600 2.8vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .04em; }",
+    "#rhythm.has-counts .m-tap { display: block; }",
+    "#rhythm .m-tap.on { background: #c9a227; color: #141c30; }"
+  ].join("\n");
+  var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+
+  var card = document.createElement("div");
+  card.id = "rtCard"; card.setAttribute("aria-live", "polite");
+  $("rhythm").appendChild(card);
+  card.addEventListener("click", function (e) { e.stopPropagation(); });
+  var btn = document.createElement("button");
+  btn.className = "m-tap"; btn.id = "mTap"; btn.textContent = "📱 Tap along";
+  var row = document.querySelector("#metro .m-row");
+  if (row) row.appendChild(btn);
+
+  // ---------------------------------------------------------------- host
+  var on = false, peer = null, conns = [], code = null, status = "off", err = "", retries = 0, restartT = null;
+  var block = null, roster = [];               // [{id, n}] for the block in the rhythm view
+  var round = null, results = {}, lastRound = null, showResultsT = null, view = "join";
+
+  function getCode() {
+    var c = load(CODE_KEY);
+    if (c && c.date === today() && c.code) return c.code;
+    var n = NET.newCode(); save(CODE_KEY, { date: today(), code: n }); return n;
+  }
+  function tapUrl() {
+    return location.origin + location.pathname.replace(/[^/]*$/, "") + "tap.html?c=" + code + (NET.FAKE ? "&peerfake=1" : "");
+  }
+  function shownBlock() { var s = B.shown(); return s.key && s.key !== "welcome" ? s.key : null; }
+  function loadRoster() {
+    var b = shownBlock(); if (!b) return;
+    if (b !== block) {                         // another class: everyone picks their name again from the new list
+      block = b; roster = []; results = {}; lastRound = null; view = "join";
+      conns.forEach(function (c) { c.sid = null; });
+    }
+    var cached = load("agendaBoard.ptRoster") || {};
+    if (cached[b] && cached[b].students && !roster.length) roster = cached[b].students;
+    if (!B.settings().closingUrl) return;
+    B.call({ a: "ptest", block: b }).then(function (j) {
+      if (block !== b) return;
+      roster = (j.students || []).map(function (s) { return { id: s.id, n: s.n }; });
+      conns.forEach(function (c) { if (c.hi) send(c, rosterMsg()); });
+      paint();
+    }).catch(function () {});
+  }
+  function rosterMsg() { return { type: "roster", block: block, students: roster }; }
+
+  function start() {
+    if (peer) return;
+    code = getCode(); status = "wait"; paint();
+    NET.ready(function (ok) {
+      if (!ok) { status = "err"; err = "The connection library didn't load."; paint(); return; }
+      if (peer || !on) return;
+      var p;
+      try { p = peer = NET.makePeer(window.RTAP.PREFIX + code); } catch (e) { status = "err"; err = String(e.message || e); paint(); return; }
+      p.on("open", function () { if (p !== peer) return; status = "ready"; retries = 0; paint(); });
+      p.on("connection", function (c) {
+        c.on("open", function () { conns.push(c); paint(); });
+        c.on("data", function (d) { try { onData(c, d); } catch (e) { console.error(e); } });
+        c.on("close", function () { conns = conns.filter(function (x) { return x !== c; }); paint(); });
+        c.on("error", function () {});
+      });
+      p.on("disconnected", function () {
+        if (p !== peer) return;
+        status = "wait"; paint();
+        setTimeout(function () { try { if (p === peer && !p.destroyed && p.disconnected) p.reconnect(); } catch (e) {} }, 2000);
+      });
+      p.on("error", function (e) {
+        if (p !== peer) return;
+        var t = e && e.type;
+        if (t === "unavailable-id") { retries++; if (retries > 4) { save(CODE_KEY, null); retries = 0; } restart(3000); return; }
+        if (["network", "server-error", "socket-error", "socket-closed", "browser-incompatible", "ssl-unavailable"].indexOf(t) >= 0) {
+          status = "err"; err = "Can't reach the connection service (the school network may block it). Retrying…"; paint(); restart(8000);
+        }
+      });
+    });
+    NET.qrReady(function () { paint(); });
+  }
+  function restart(ms) {
+    clearTimeout(restartT);
+    restartT = setTimeout(function () {
+      conns.forEach(function (c) { try { c.close(); } catch (e) {} }); conns = [];
+      if (peer) { var p = peer; peer = null; try { p.destroy(); } catch (e) {} }
+      if (on) start();
+    }, ms);
+  }
+  function stopHost() {
+    clearTimeout(restartT);
+    conns.forEach(function (c) { try { c.close(); } catch (e) {} }); conns = [];
+    if (peer) { var p = peer; peer = null; try { p.destroy(); } catch (e) {} }
+    status = "off";
+  }
+  function send(c, m) { try { if (c.open) c.send(m); } catch (e) {} }
+  function players() { return conns.filter(function (c) { return c.sid; }); }
+
+  function onData(c, d) {
+    if (!d || typeof d !== "object") return;
+    if (d.type === "ping") { send(c, { type: "pong", c: d.c, b: performance.now() }); return; }
+    if (d.type === "hello") { c.hi = true; send(c, rosterMsg()); if (round && performance.now() < round.endsAt) send(c, roundMsg()); return; }
+    if (d.type === "join") {
+      var s = roster.filter(function (x) { return x.id === d.id; })[0];
+      if (!s) { send(c, { type: "nojoin" }); return; }
+      c.sid = s.id; c.sn = s.n;
+      send(c, { type: "joined", id: s.id, n: s.n }); paint(); return;
+    }
+    if (d.type === "leave") { c.sid = null; paint(); return; }
+    if (d.type === "result" && c.sid && round && d.round === round.id) {
+      results[c.sid] = { n: c.sn, pct: Math.max(0, Math.min(100, Math.round(+d.pct || 0))), p: +d.p || 0, g: +d.g || 0, m: +d.m || 0, x: +d.x || 0 };
+      paint();
+    }
+  }
+
+  // ---------------------------------------------------------------- rounds (index.html metroStart / metroStop)
+  // r = { t0: performance.now() ms of the first count-off click, spb: ms per click, off: count-off clicks, tl: rhythmtime timeline }
+  function roundMsg() {
+    return { type: "round", id: round.id, t0: round.t0, spb: round.spb, off: round.off, onsets: round.onsets, length: round.length };
+  }
+  window.rtapStart = function (r) {
+    if (!on || !r || !r.tl) return;
+    round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length };
+    round.endsAt = r.t0 + (r.off + r.tl.length) * r.spb;
+    results = {}; lastRound = round.id; view = "round";
+    conns.forEach(function (c) { if (c.hi) send(c, roundMsg()); });
+    clearTimeout(showResultsT);
+    showResultsT = setTimeout(function () { if (round && lastRound === round.id) { view = "results"; paint(); } },
+      Math.max(0, round.endsAt - performance.now()) + 1500);
+    paint();
+  };
+  window.rtapStop = function () {
+    if (!round) return;
+    if (performance.now() < round.endsAt) {               // stopped before the end: the round doesn't count
+      conns.forEach(function (c) { if (c.hi) send(c, { type: "stop", id: round.id }); });
+      clearTimeout(showResultsT); round = null; view = "join"; paint();
+    }
+  };
+
+  // ---------------------------------------------------------------- drawing
+  function paint() {
+    btn.classList.toggle("on", on);
+    btn.textContent = on ? "📱 Tap along: on" : "📱 Tap along";
+    card.classList.toggle("open", on);
+    if (!on) return;
+    var n = players().length;
+    var res = view === "results" || (view === "round" && Object.keys(results).length);
+    var head = '<h3><span>' + (res ? "🏆 Top 5" : "📱 Tap along") + "</span>" + (res ? '<button id="rtShowQr">QR</button>' : "") +
+      '<button id="rtOff">Turn off</button></h3>';
+    if (res) {
+      var list = Object.keys(results).map(function (k) { return results[k]; })
+        .sort(function (a, b) { return b.pct - a.pct || b.p - a.p; });
+      var avg = list.length ? Math.round(list.reduce(function (s, r) { return s + r.pct; }, 0) / list.length) : 0;
+      card.innerHTML = head + "<ol>" +
+        list.slice(0, 5).map(function (r, i) { return "<li><i>" + (i + 1) + "</i>" + esc(r.n) + "<b>" + r.pct + "%</b></li>"; }).join("") +
+        (list.length ? "" : '<li class="rt-wait">Waiting for scores…</li>') + "</ol>" +
+        '<div class="rt-avg">Class average <b>' + (list.length ? avg + "%" : "–") + "</b> · " + list.length + " of " + n + " scored</div>";
+    } else {
+      var qr = window.qrcode && code ? NET.qrSvg(tapUrl()) : "";
+      card.innerHTML = head + '<div class="rt-join"><div class="rt-qr">' + qr + '</div><div><div class="rt-wait">Scan, or open the tap page and type</div>' +
+        '<div class="rt-code">' + esc(code || "…") + '</div><div class="rt-url">' + esc(tapUrl().replace(/^https?:\/\//, "").replace(/\?.*$/, "")) + "</div></div></div>" +
+        (status === "err" ? '<div class="rt-n err">' + esc(err) + "</div>" :
+          '<div class="rt-n">' + (status === "ready" ? n + (n === 1 ? " student" : " students") + " ready" +
+            (view === "round" ? " · tapping now!" : " · press ▶ Count off") : "Connecting…") + "</div>");
+    }
+    var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); paint(); };
+    var q = $("rtShowQr"); if (q) q.onclick = function () { view = "join"; paint(); };
+  }
+  btn.onclick = function (e) {
+    e.stopPropagation();
+    on = !on;
+    if (on) { view = lastRound && Object.keys(results).length ? "results" : "join"; loadRoster(); start(); }
+    else stopHost();
+    paint();
+  };
+  // the rhythm view opening for another block brings that class's names
+  var rv = $("rhythm");
+  if (window.MutationObserver) new MutationObserver(function () { if (on && rv.classList.contains("open") && shownBlock() !== block) loadRoster(); })
+    .observe(rv, { attributes: true, attributeFilter: ["class"] });
+  setInterval(function () { if (on && view === "join") paint(); }, 5000);
+
+  window.__rtap = { state: function () {
+    return { on: on, status: status, code: code, block: block, roster: roster.length, players: players().map(function (c) { return c.sn; }),
+      view: view, round: round ? round.id : null, results: results };
+  } };
+})();

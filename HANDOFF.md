@@ -54,8 +54,14 @@ Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 - rhythmtime.js (window.RhythmTime / Node module): rhythmTimeline(counts, meter) → {beats, length, points[{x,t,kind,label}],
   onsets, end}; xAt(tl, t); countAt(tl, t). index.html: metroStart remembers t0/off/spb; metroDraw → playDraw(clicks since the
   downbeat after the count-off) moves #rPlay inside #rView and marks the count span .now. Once per Count off.
-- Mat asked next (11/13): students tap the rhythm on their own devices for a score. Planned on the ptnet.js/PeerJS pattern
-  (QR → student page, clock sync by ping, onsets from rhythmtime.js); waiting on his answers.
+
+## 2.8.0 Tap along (11/13, Mat; live, NOT yet tried on the school network)
+- rtap.js (board card + RTAP.score / RTAP.calibrate, also loaded by tap.html for scoring) + tap.html (student page).
+  Mat's choices 11/13: school Chromebooks + iPads; pick name from the roster; board shows Top 5 + class average; not saved.
+- Round message: {t0 (board performance.now ms of 1st count-off click, incl. outputLatency), spb ms, off clicks, onsets (clicks),
+  length}. Device: board time − ping offset; count-off taps → delay (median, ±min(300, 0.45 spb)); scores itself; sends result.
+- Risk: school Wi-Fi blocking WebRTC/PeerJS for student Chromebooks. First real test = one Chromebook.
+- Tests: node tests/rtap_test.js; python3 tests/rtap_smoke.py (board + 2 students over ?peerfake=1).
 
 ## 2.6.0 Lunch & Learn (11/12, Mat; live)
 - lunch.js (board module; uses __board now/ymd/settings/state/chime). ☰ switches "🥪 Lunch & Learn · 8th grade / 7th grade", today

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>Tap the Rhythm · Raven Band</title>
+<style>
+  /* Rhythm tap-along (2.8.0, Mat 11/13): students tap the Rhythm of the Day on a Chromebook or iPad and get a score.
+     They listen to the board's metronome (this page makes no sound), tap with the count-off (measures this device's delay),
+     then tap the rhythm. Space bar or any key works on a Chromebook. Just for fun: nothing is saved. */
+  @font-face { font-family: "Oswald"; font-weight: 600; font-style: normal; font-display: swap;
+    src: url("assets/oswald-latin-600-normal.woff2?v=1.1.0") format("woff2"); }
+  :root { --navy: #1f2a44; --deep: #141c30; --card: #2a3858; --gold: #c9a227; --soft: #b7bfd0; --line: #34405e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--deep); color: #fff; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  body { display: flex; flex-direction: column; }
+  button, input { font: inherit; }
+  .top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--navy); border-bottom: 3px solid var(--gold); flex: none; }
+  .top img { height: 34px; }
+  .top h1 { margin: 0; font: 600 21px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em; white-space: nowrap; }
+  .top h1 span { color: var(--gold); }
+  .who { margin-left: auto; font: 600 17px "Oswald", Arial, sans-serif; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conn { width: 12px; height: 12px; border-radius: 50%; background: #888; flex: none; }
+  .conn.ok { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; } .conn.wait { background: var(--gold); } .conn.err { background: #ff5a4a; }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px; gap: 12px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .msg { text-align: center; color: var(--soft); font-size: 19px; padding: 24px 10px; }
+  .msg b { color: #fff; }
+  .codebox { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+  .codebox input { width: 9ch; text-align: center; text-transform: uppercase; letter-spacing: .25em; font: 600 34px "Oswald", Arial, sans-serif;
+    border-radius: 14px; border: 2px solid var(--gold); background: var(--navy); color: #fff; padding: 8px; }
+  .b { border-radius: 999px; border: 2px solid var(--gold); background: var(--gold); color: var(--deep); padding: 12px 22px; cursor: pointer;
+    font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; }
+  .b.ghost { background: transparent; color: var(--gold); }
+  .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; overflow: auto; padding-bottom: 10px; }
+  .names button { border: 2px solid var(--line); background: var(--card); color: #fff; border-radius: 14px; padding: 14px 8px; cursor: pointer;
+    font: 600 21px "Oswald", "Arial Narrow", Arial, sans-serif; }
+  .names button:active { border-color: var(--gold); }
+  .h { font: 600 18px "Oswald", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); text-align: center; }
+  .status { text-align: center; font: 600 24px/1.25 "Oswald", "Arial Narrow", Arial, sans-serif; min-height: 2.6em; display: flex; align-items: center; justify-content: center; }
+  .status.big { font-size: 64px; color: var(--gold); }
+  .pad { flex: 1; min-height: 220px; border-radius: 28px; border: 4px solid var(--gold); background: var(--card); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; font: 600 54px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .1em; color: var(--gold);
+    transition: background .08s, transform .08s; }
+  .pad.hit { background: var(--gold); color: var(--deep); transform: scale(.985); transition: none; }
+  .pad.off { opacity: .45; }
+  .hint { text-align: center; color: var(--soft); font-size: 15px; }
+  .res { background: var(--card); border-radius: 20px; padding: 16px; text-align: center; }
+  .res .pct { font: 600 84px/1 "Oswald", "Arial Narrow", Arial, sans-serif; color: var(--gold); }
+  .res .row { display: flex; justify-content: center; gap: 18px; margin-top: 10px; font: 600 20px "Oswald", Arial, sans-serif; flex-wrap: wrap; }
+  .res .row span { color: var(--soft); font-weight: 400; font-family: "Segoe UI", Arial, sans-serif; font-size: 15px; display: block; }
+  .res .tip { margin-top: 10px; color: var(--soft); font-size: 15px; }
+  .link { background: none; border: 0; color: var(--soft); text-decoration: underline; cursor: pointer; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Tap the <span>Rhythm</span></h1><div class="who" id="who"></div><i class="conn" id="conn"></i></div>
+<main id="main"></main>
+<script src="ptnet.js?v=2.8.0"></script>
+<script src="rtap.js?v=2.8.0"></script>
+<script>
+(function () {
+  "use strict";
+  var NET = window.PTNET, RT = window.RTAP;
+  var $ = function (id) { return document.getElementById(id); };
+  var main = $("main");
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var q = new URLSearchParams(location.search);
+  var code = (q.get("c") || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+  var CAL_KEY = "rtap.cal";                 // this device's delay (ms), kept between rounds
+  var ME_KEY = "rtap.me";                   // { code, date, id, n } so a reload keeps the name
+
+  var peer = null, conn = null, connected = false, retryT = null, openT = null;
+  var roster = null, block = null, me = null, phase = code ? "connect" : "code";
+  var sync = [];                            // [{ rtt, off }] off = board clock − this clock
+  var round = null, taps = [], result = null, tickT = null;
+
+  // ---------------------------------------------------------------- connection
+  function setConn(c) { $("conn").className = "conn " + c; }
+  function connect() {
+    if (!code) return;
+    setConn("wait");
+    NET.ready(function (ok) {
+      if (!ok) { phase = "error"; draw("The connection library didn't load. Check the internet and reload."); return; }
+      if (peer) { try { peer.destroy(); } catch (e) {} }
+      var p = peer = NET.makePeer();
+      p.on("open", function () {
+        if (p !== peer) return;
+        var c = conn = p.connect(RT.PREFIX + code, { reliable: true, serialization: "json" });
+        clearTimeout(openT);
+        openT = setTimeout(function () { if (!connected) { setConn("err"); if (phase === "connect") draw("Can't find the board for code <b>" + esc(code) + "</b>. Check the code on the board."); retry(); } }, 9000);
+        c.on("open", function () {
+          if (c !== conn) return;
+          connected = true; clearTimeout(openT); setConn("ok");
+          c.send({ type: "hello" }); pingBurst();
+        });
+        c.on("data", function (d) { if (c === conn) onData(d); });
+        c.on("close", function () { if (c !== conn) return; connected = false; setConn("err"); retry(); });
+        c.on("error", function () {});
+      });
+      p.on("error", function (e) {
+        if (p !== peer) return;
+        setConn("err");
+        if (e && e.type === "peer-unavailable" && phase === "connect") draw("Can't find the board for code <b>" + esc(code) + "</b>. Check the code on the board.");
+        if (e && ["network", "server-error", "socket-error", "browser-incompatible"].indexOf(e.type) >= 0 && phase === "connect")
+          draw("Can't reach the connection service. The school network may be blocking it. Tell Mr. Graham.");
+        retry();
+      });
+    });
+  }
+  function retry() { if (retryT) return; retryT = setTimeout(function () { retryT = null; if (!connected) connect(); }, 3000); }
+  function send(m) { try { if (conn && conn.open) conn.send(m); } catch (e) {} }
+
+  // clock: keep the 12 newest pings, use the fastest round trip (least delay noise)
+  function pingBurst() { for (var i = 0; i < 6; i++) setTimeout(function () { send({ type: "ping", c: performance.now() }); }, i * 120); }
+  setInterval(function () { if (connected) send({ type: "ping", c: performance.now() }); }, 4000);
+  function offset() {
+    if (!sync.length) return null;
+    return sync.slice().sort(function (a, b) { return a.rtt - b.rtt; })[0].off;
+  }
+
+  function onData(d) {
+    if (!d || typeof d !== "object") return;
+    if (d.type === "pong") {
+      var now = performance.now(), rtt = now - d.c;
+      if (rtt >= 0 && rtt < 2000) { sync.push({ rtt: rtt, off: d.b - (d.c + rtt / 2) }); if (sync.length > 12) sync.shift(); }
+      return;
+    }
+    if (d.type === "roster") {
+      roster = d.students || []; block = d.block;
+      var saved = load(ME_KEY);
+      if (!me && saved && saved.code === code && saved.date === new Date().toDateString() && roster.some(function (s) { return s.id === saved.id; })) {
+        send({ type: "join", id: saved.id });
+      } else if (me) send({ type: "join", id: me.id });
+      else if (phase === "connect" || phase === "names") { phase = "names"; draw(); }
+      return;
+    }
+    if (d.type === "joined") {
+      me = { id: d.id, n: d.n }; save(ME_KEY, { code: code, date: new Date().toDateString(), id: d.id, n: d.n });
+      $("who").textContent = d.n;
+      if (phase !== "round") { phase = result ? "result" : "ready"; draw(); }
+      return;
+    }
+    if (d.type === "nojoin") { me = null; phase = "names"; draw(); return; }
+    if (d.type === "round") { startRound(d); return; }
+    if (d.type === "stop") { if (round && round.id === d.id) { round = null; clearInterval(tickT); phase = me ? "ready" : "names"; draw("The board stopped. Get ready to try again!"); } }
+  }
+
+  // ---------------------------------------------------------------- a round
+  // times from the board are on the board's clock: here = board − offset
+  function startRound(d) {
+    var off = offset();
+    if (off === null) { pingBurst(); off = 0; }
+    var t0 = d.t0 - off;
+    round = { id: d.id, t0: t0, spb: d.spb, off: d.off, clicks: [], onsets: [], end: 0 };
+    for (var k = 0; k < d.off; k++) round.clicks.push(t0 + k * d.spb);
+    round.onsets = d.onsets.map(function (o) { return t0 + (d.off + o) * d.spb; });
+    round.end = t0 + (d.off + d.length) * d.spb;
+    taps = []; result = null;
+    if (!me) return;                       // watching only until a name is picked
+    phase = "round"; draw();
+    clearInterval(tickT); tickT = setInterval(tick, 30); tick();
+  }
+  function tick() {
+    if (!round) return;
+    var now = performance.now(), s = $("status");
+    if (now > round.end + 600) { finish(); return; }
+    if (!s) return;
+    if (now < round.t0 - 50) { s.className = "status"; s.textContent = "Get ready…"; }
+    else if (now < round.t0 + round.off * round.spb - round.spb * 0.15) {
+      var k = Math.min(round.off - 1, Math.max(0, Math.floor((now - round.t0 + round.spb * 0.15) / round.spb)));
+      s.className = "status big"; s.textContent = String(k + 1);
+    } else { s.className = "status"; s.innerHTML = "Tap the rhythm! 🥁"; }
+  }
+  function finish() {
+    clearInterval(tickT);
+    var r = round; round = null;
+    var countTaps = taps.filter(function (t) { return t < r.t0 + (r.off - 0.5) * r.spb; });
+    var cal = RT.calibrate(r.clicks, countTaps, r.spb);
+    if (cal === null) cal = load(CAL_KEY) || 0; else save(CAL_KEY, cal);
+    var res = RT.score(r.onsets, taps.map(function (t) { return t - cal; }));
+    result = res; result.cal = cal;
+    send({ type: "result", round: r.id, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra });
+    phase = "result"; draw();
+  }
+  function tap(t) {
+    var pad = $("pad");
+    if (pad) { pad.classList.add("hit"); setTimeout(function () { pad.classList.remove("hit"); }, 90); }
+    if (round && phase === "round") taps.push(t);
+  }
+  function stamp(e) {
+    var n = performance.now(), t = e && e.timeStamp;
+    return t && t > 0 && Math.abs(n - t) < 1000 ? t : n;   // the moment of the touch, not when this code ran
+  }
+
+  // ---------------------------------------------------------------- screens
+  function draw(note) {
+    if (phase === "code") {
+      main.innerHTML = '<div class="msg">Type the 4-letter code on the board.</div><div class="codebox"><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters"><button class="b" id="go">Go</button></div>';
+      var go = function () { var v = $("code").value.toUpperCase().replace(/[^A-Z]/g, ""); if (v.length === 4) { code = v; phase = "connect"; draw(); connect(); } };
+      $("go").onclick = go; $("code").onkeydown = function (e) { if (e.key === "Enter") go(); };
+      setTimeout(function () { try { $("code").focus(); } catch (e) {} }, 50);
+      return;
+    }
+    if (phase === "connect" || phase === "error") { main.innerHTML = '<div class="msg">' + (note || "Connecting to the board…") + "</div>"; return; }
+    if (phase === "names") {
+      main.innerHTML = '<div class="h">' + esc(block ? block + " Block · " : "") + "Tap your name</div>" +
+        (roster && roster.length ? '<div class="names" id="names">' + roster.map(function (s) {
+          return '<button data-id="' + esc(s.id) + '">' + esc(s.n) + "</button>"; }).join("") + "</div>"
+          : '<div class="msg">The class list is still loading…</div>');
+      Array.prototype.forEach.call(main.querySelectorAll("#names button"), function (b) {
+        b.onclick = function () { send({ type: "join", id: b.getAttribute("data-id") }); main.innerHTML = '<div class="msg">Joining…</div>'; };
+      });
+      return;
+    }
+    var padHtml = '<div class="pad' + (phase === "round" ? "" : " off") + '" id="pad">TAP</div>';
+    if (phase === "ready") {
+      main.innerHTML = '<div class="status" id="status">' + (note || "Watch the board. Mr. Graham starts the count-off.") + "</div>" + padHtml +
+        '<div class="hint">Tap with the count-off clicks too: that tunes this device. Space bar works on a Chromebook.</div>' +
+        '<div style="text-align:center"><button class="link" id="notme">Not you? Pick your name again</button></div>';
+      $("notme").onclick = function () { me = null; send({ type: "leave" }); $("who").textContent = ""; try { localStorage.removeItem(ME_KEY); } catch (e) {} phase = "names"; draw(); };
+    } else if (phase === "round") {
+      main.innerHTML = '<div class="status" id="status">Get ready…</div>' + padHtml + '<div class="hint">Listen to the board\'s clicks.</div>';
+    } else if (phase === "result") {
+      var r = result, tip = r.extra > 2 ? "Lots of extra taps: only tap the notes, not the rests." :
+        r.miss > r.n / 3 ? "Missed a few notes: count along in your head." :
+        r.offs.length > 2 && avgOff(r.offs) > 40 ? "You were a little late. Lead with the click." :
+        r.offs.length > 2 && avgOff(r.offs) < -40 ? "You were a little early. Wait for the click." : "Nice and steady!";
+      main.innerHTML = '<div class="res"><div class="h">Your score</div><div class="pct">' + r.pct + "%</div>" +
+        '<div class="row"><div>' + r.perfect + "<span>Perfect</span></div><div>" + r.good + "<span>Good</span></div><div>" + r.miss +
+        "<span>Missed</span></div><div>" + r.extra + '<span>Extra taps</span></div></div><div class="tip">' + tip + "</div></div>" +
+        '<div class="status" id="status">Want another try? Watch the board.</div>' + padHtml;
+    }
+    var pad = $("pad");
+    if (pad) {
+      pad.addEventListener("pointerdown", function (e) { e.preventDefault(); tap(stamp(e)); });
+      pad.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    }
+  }
+  function avgOff(a) { return a.reduce(function (s, x) { return s + x; }, 0) / a.length; }
+  document.addEventListener("keydown", function (e) {
+    if (e.repeat || phase === "code" || /input/i.test((e.target || {}).tagName || "")) return;
+    if (e.key === " " || e.key === "Enter" || e.key.length === 1) { e.preventDefault(); tap(stamp(e)); }
+  });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !connected && code) connect(); });
+  var lock = null;
+  function keepAwake() { try { if (navigator.wakeLock && !lock) navigator.wakeLock.request("screen").then(function (l) { lock = l; l.addEventListener("release", function () { lock = null; }); }).catch(function () {}); } catch (e) {} }
+  document.addEventListener("pointerdown", keepAwake, { once: true });
+
+  window.__tap = { state: function () { return { phase: phase, me: me, roster: roster ? roster.length : 0, offset: offset(), sync: sync.length,
+    round: round ? { t0: round.t0, onsets: round.onsets, clicks: round.clicks, end: round.end } : null, result: result, taps: taps.length }; },
+    tapAt: function (t) { tap(t); } };
+  draw();
+  if (code) connect();
+})();
+</script>
+</body>
+</html>

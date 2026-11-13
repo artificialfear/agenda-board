@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.8.0 — 2026-11-13
+- **📱 Tap along** (Mat): students tap the Rhythm of the Day on school Chromebooks / iPads for a score.
+  - Rhythm view → 📱 Tap along: card top-right with QR + 4-letter code (tap.html?c=CODE). Students pick their name from the
+    class list (a=ptest roster, "First L."); a reload keeps the name; "Not you?" picks again; a class change asks again.
+  - ▶ Count off starts a round on every device (rtap.js window.rtapStart from metroStart; Stop mid-way cancels it).
+    Devices are silent; students tap with the count-off (median offset = that device's delay, kept in localStorage) then the
+    rhythm. Space bar / any key works too. Clocks matched by pings (fastest round trip).
+  - Scoring (RTAP.score, shared): Perfect ≤70 ms, Good ≤140 ms (both shrink for close notes), Miss, extra taps −25.
+    Percent on the device with a tip; board card shows 🏆 Top 5 + class average. Just for fun: nothing saved (Mat 11/13).
+  - Same PeerJS service as the Playing Test remote (peer "ravenband-rtap-v1-CODE"). Tests: tests/rtap_test.js, tests/rtap_smoke.py (18).
+
 ## 2.7.0 — 2026-11-13
 - **Rhythm of the day: moving line** (Mat): after the metronome's count-off bar, a gold line moves through the rhythm once, in
   time with the clicks (starts on the downbeat, stops at the end), and the count it's on lights up when counts are shown.

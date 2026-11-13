@@ -638,7 +638,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.7.0"></script>
+<script src="rhythmtime.js?v=2.8.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1344,6 +1344,11 @@
     metro.next = audio.currentTime + 0.25;
     metro.t0 = metro.next; metro.off = mPrefs.beats; metro.spb = 60 / mPrefs.bpm;      // the rhythm starts after one bar
     metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
+    // 2.8.0: students tapping along (rtap.js) get the round on the page clock (performance.now), when the click is heard
+    if (window.rtapStart && rc.tl) {
+      var lat = (audio.outputLatency || audio.baseLatency || 0) * 1000;
+      window.rtapStart({ t0: performance.now() + (metro.t0 - audio.currentTime) * 1000 + lat, spb: metro.spb * 1000, off: metro.off, tl: rc.tl });
+    }
     requestAnimationFrame(metroDraw); metroPaint();
   }
   // 2.7.0 (Mat 11/13): a gold line moves through the rhythm in time, once, starting on the downbeat after the count-off.
@@ -1365,6 +1370,7 @@
   }
   function metroStop() {
     playDraw(-1);
+    if (window.rtapStop) window.rtapStop();
     if (!metro.on) return;
     metro.on = false; clearInterval(metro.timer); metro.marks = [];
     Array.prototype.forEach.call(document.getElementById("mDots").children, function (e) { e.classList.remove("on"); });
@@ -1885,7 +1891,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.7.0";
+  var BUILD = "2.8.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -1914,8 +1920,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.7.0"></script>
-<script src="ptest.js?v=2.7.0"></script>
-<script src="lunch.js?v=2.7.0"></script>
+<script src="ptnet.js?v=2.8.0"></script>
+<script src="ptest.js?v=2.8.0"></script>
+<script src="lunch.js?v=2.8.0"></script>
+<script src="rtap.js?v=2.8.0"></script>
 </body>
 </html>
