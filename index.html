@@ -248,6 +248,11 @@
   #rhythm .l-steps button { border: 1px solid #34405e; border-radius: 1vh; background: #141c30; color: #fff; padding: .8vh 1vw; cursor: pointer;
     font: 600 2.6vh "Oswald", sans-serif; }
   #rhythm .l-steps button.sel { border-color: #c9a227; color: #c9a227; }
+  #rhythm .l-steps button:disabled { opacity: .3; cursor: default; }
+  #rhythm .m-pick { display: none; align-items: center; gap: 1vw; }
+  #rhythm.has-counts .m-pick { display: flex; }
+  #rhythm .m-pick .l-steps button { padding: .5vh .8vw; font-size: 2.3vh; }
+  #rhythm .m-pick .l-lbl { margin-left: .6vw; }
   #rhythm .r-counts.heat span { visibility: visible; }
   #rhythm .r-counts span.hg, #rhythm .r-counts span.hy, #rhythm .r-counts span.hr { border-radius: .8vh; padding: 0 .3em; }
   #rhythm .r-counts span.hg { color: #3ddc84; }
@@ -494,8 +499,15 @@
       <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
     <!-- 2.9.0: Bluetooth speaker delay. The sound can't come sooner, so the dots, count-off numbers and moving line wait for it. -->
-    <div class="m-opts"><button class="m-dly m-new" id="mNew" aria-label="New rhythm">🎲 New rhythm</button>
-      <button class="m-dly m-new" id="mToday" aria-label="Back to today's rhythm">↩ Today's rhythm</button>
+    <!-- 2.13.0: level + time signature for practice rhythms -->
+    <div class="m-pick" id="mPick"><span class="l-lbl">Level</span><span class="l-steps" id="pLevel">
+        <button data-v="6beg" title="6th Grade Beginning Band">6 Beg</button><button data-v="6int" title="6th Grade Intermediate Band">6 Int</button>
+        <button data-v="7th" title="7th Grade Band">7th</button><button data-v="8th" title="8th Grade Band">8th</button></span>
+      <span class="l-lbl">Time</span><span class="l-steps" id="pTime">
+        <button data-v="2/4">2/4</button><button data-v="3/4">3/4</button><button data-v="4/4">4/4</button><button data-v="6/8" title="8th grade only">6/8</button></span>
+      <button class="m-dly m-new" id="mNew" aria-label="New rhythm">🎲 New rhythm</button>
+      <button class="m-dly m-new" id="mToday" aria-label="Back to today's rhythm">↩ Today's rhythm</button></div>
+    <div class="m-opts">
       <button class="m-dly m-new" id="mLadder" aria-label="Speed ladder">🪜 Speed ladder</button>
       <button class="m-dly" id="mLine" role="switch" aria-label="Moving line">〰 Moving line: <b id="mLineOn">On</b></button>
       <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button></div>
@@ -701,7 +713,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.12.2"></script>
+<script src="rhythmtime.js?v=2.13.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1357,6 +1369,7 @@
     rAltImg.style.width = Math.round(im.w * s) + "px"; rAltImg.style.height = Math.round(im.h * s) + "px";
   }
   function altPaint() {
+    pickPaint();
     rAlt.classList.toggle("on", !!rc.alt);
     rhythmEl.classList.toggle("alt", !!rc.alt);
     if (rc.alt) rAltImg.src = "rhythm-pictures/" + rc.alt;
@@ -1370,10 +1383,34 @@
     if (rc.tl && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
     altPaint(); countsPaint();
   }
-  function altNew() {
+  // 2.13.0 (Mat 11/13): Level (6 Beg / 6 Int / 7th / 8th = the four rhythm sets) and Time (2/4 3/4 4/4, 6/8 = 8th only).
+  // Picking either shows a random rhythm from that set + meter; 🎲 New rhythm stays in whatever is picked.
+  function curKind() {
+    var m = String(rc.data && rc.data.name || "").match(/^([^_]+)_(\d)-(\d)_/);
+    return m ? { set: m[1], meter: m[2] + "/" + m[3] } : null;
+  }
+  function pickPaint() {
+    var k = curKind() || {};
+    Array.prototype.forEach.call(document.querySelectorAll("#pLevel button"), function (b) { b.classList.toggle("sel", b.getAttribute("data-v") === k.set); });
+    Array.prototype.forEach.call(document.querySelectorAll("#pTime button"), function (b) {
+      var v = b.getAttribute("data-v");
+      b.classList.toggle("sel", v === k.meter);
+      b.disabled = v === "6/8" && k.set !== "8th";
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#pLevel button"), function (b) {
+    b.onclick = function () { var k = curKind(); if (!k) return; var set = b.getAttribute("data-v");
+      altNew(set, k.meter === "6/8" && set !== "8th" ? "4/4" : k.meter); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#pTime button"), function (b) {
+    b.onclick = function () { var k = curKind(); if (!k || b.disabled) return; altNew(k.set, b.getAttribute("data-v")); };
+  });
+  function altNew(set, meter) {
     var base = rc.today; if (!base || !base.name) return;
+    var k = curKind(); if (!k) return;
+    set = typeof set === "string" ? set : k.set; meter = typeof meter === "string" ? meter : k.meter;
     countsBookGet().then(function (book) {
-      var pre = base.name.replace(/_\d{3}\.png$/, "") + "_", cur = rc.alt || base.name;
+      var pre = set + "_" + meter.replace("/", "-") + "_", cur = rc.data && rc.data.name;
       var names = Object.keys(book.lines || {}).filter(function (n) { return n.indexOf(pre) === 0 && n !== cur && n !== base.name; });
       if (!names.length) return;
       var n = names[Math.floor(Math.random() * names.length)], line = book.lines[n];
@@ -1381,7 +1418,7 @@
       altUse({ block: base.block, set: base.set, name: n, counts: line.c, meter: line.m, stale: false, alt: true });
     });
   }
-  document.getElementById("mNew").onclick = altNew;
+  document.getElementById("mNew").onclick = function () { altNew(); };
   document.getElementById("mToday").onclick = function () { rc.alt = null; altUse(rc.today); };
   rCntBtn.onclick = function () {
     rc.shown = !rc.shown;
@@ -2148,7 +2185,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.12.2";
+  var BUILD = "2.13.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2177,9 +2214,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.12.2"></script>
-<script src="ptest.js?v=2.12.2"></script>
-<script src="lunch.js?v=2.12.2"></script>
-<script src="rtap.js?v=2.12.2"></script>
+<script src="ptnet.js?v=2.13.0"></script>
+<script src="ptest.js?v=2.13.0"></script>
+<script src="lunch.js?v=2.13.0"></script>
+<script src="rtap.js?v=2.13.0"></script>
 </body>
 </html>

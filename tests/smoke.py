@@ -580,6 +580,25 @@ def main():
               and n4["counts"]["name"] == "8th_4-4_004.png" and n4["counts"]["alt"] is None)
         print(("PASS" if ok else "FAIL"), f"{'new rhythm for practice':34s}" + ("" if ok else f" {n1['counts']} {img_ok} {view} {n2['counts']['name']} {pn} {n3['counts']} {n4['counts']['name']}"))
         failures += 0 if ok else 1
+        # 2.13.0: Level + Time pickers (6/8 only for 8th)
+        NM = lambda: page.evaluate("window.__agendaBoard.rhythm().counts.name")
+        SEL = lambda: page.evaluate("[...document.querySelectorAll('#mPick .sel')].map(b => b.dataset.v)")
+        s0 = SEL()
+        page.click("#pLevel button[data-v='6beg']"); page.wait_for_timeout(400); a1 = NM(); s1 = SEL()
+        d68 = page.evaluate("document.querySelector(\"#pTime button[data-v='6/8']\").disabled")
+        page.click("#pTime button[data-v='3/4']"); page.wait_for_timeout(400); a2 = NM()
+        page.click("#mNew"); page.wait_for_timeout(400); a3 = NM()
+        page.click("#pLevel button[data-v='8th']"); page.wait_for_timeout(400); a4 = NM()
+        page.click("#pTime button[data-v='6/8']"); page.wait_for_timeout(400); a5 = NM(); b5 = page.evaluate("window.__agendaBoard.metro().beats")
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_pick.png"))
+        page.click("#pLevel button[data-v='7th']"); page.wait_for_timeout(400); a6 = NM()
+        page.click("#mToday"); page.wait_for_timeout(300); a7 = NM(); s7 = SEL()
+        ok = (s0 == ["8th", "4/4"] and a1.startswith("6beg_4-4_") and s1 == ["6beg", "4/4"] and d68 and a2.startswith("6beg_3-4_")
+              and a3.startswith("6beg_3-4_") and a3 != a2 and a4.startswith("8th_3-4_") and a5.startswith("8th_6-8_") and b5 == 6
+              and a6.startswith("7th_4-4_") and a7 == "8th_4-4_004.png" and s7 == ["8th", "4/4"])
+        print(("PASS" if ok else "FAIL"), f"{'level + time pickers':34s}" + ("" if ok else f" {s0} {a1} {s1} {d68} {a2} {a3} {a4} {a5} {b5} {a6} {a7} {s7}"))
+        failures += 0 if ok else 1
+        page.click("#pTime button[data-v='4/4']"); page.click("#mToday"); page.wait_for_timeout(200)
         # 2.11.0: 🔊 Hear it plays the rhythm (tocks on the notes), then stops by itself
         page.click("#mHear"); page.wait_for_timeout(2500)
         h1 = page.evaluate("window.__agendaBoard.rhythm()"); ht = page.inner_text("#mHear"); gt = page.inner_text("#mGo")

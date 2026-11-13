@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.13.0 — 2026-11-13 (Mat)
+- Rhythm view: **Level** (6 Beg / 6 Int / 7th / 8th = the four rhythm sets) and **Time** (2/4, 3/4, 4/4; 6/8 only for 8th)
+  chips next to 🎲 New rhythm. Picking one shows a random practice rhythm of that kind (switching to a level without 6/8 drops to
+  4/4); New rhythm stays in the picked kind; the current kind is highlighted; ↩ Today's rhythm goes back.
+
 ## 2.12.2 — 2026-11-13 (Mat)
 - Tap along ranking: percent, then Perfect count, then closest to the beat (devices now send `a` = average ms off; smaller wins,
   missing goes after). Exactly equal = shared place, next place skips (1, 1, 3). "±n ms" shows next to a percent someone else
