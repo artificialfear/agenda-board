@@ -236,6 +236,7 @@
   #rhythm .m-sep.c { display: none; }
   #rhythm .m-dly { border: 0; background: none; color: #c9d0de; cursor: pointer; font: 2.1vh "Segoe UI", Arial, sans-serif; opacity: .85; padding: .4vh 1vw; }
   #rhythm .m-dly b { color: #c9a227; font-weight: 600; }
+  #rhythm .m-opts { display: flex; gap: 2vw; }
   #rhythm .m-dbox { display: none; flex-direction: column; align-items: center; gap: 1.2vh; background: #2a3858; border: 1px solid #c9a227;
     border-radius: 2vh; padding: 1.6vh 1.6vw; max-width: 60vw; }
   #rhythm .m-dbox.open { display: flex; }
@@ -466,7 +467,8 @@
       <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
     <!-- 2.9.0: Bluetooth speaker delay. The sound can't come sooner, so the dots, count-off numbers and moving line wait for it. -->
-    <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button>
+    <div class="m-opts"><button class="m-dly" id="mLine" role="switch" aria-label="Moving line">〰 Moving line: <b id="mLineOn">On</b></button>
+      <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button></div>
     <div class="m-dbox" id="mDelayBox">
       <div class="d-row"><button class="m-b" id="dLess" aria-label="Less delay">−</button><div class="d-ms"><span id="dMs">0</span><small>ms</small></div>
         <button class="m-b" id="dMore" aria-label="More delay">+</button><button class="d-btn" id="dZero">0</button><button class="d-btn" id="dDone">Done</button></div>
@@ -661,7 +663,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.9.1"></script>
+<script src="rhythmtime.js?v=2.9.2"></script>
 <script>
 (function () {
   "use strict";
@@ -1343,6 +1345,7 @@
   function metroSchedule() {
     var spb = 60 / mPrefs.bpm;
     while (metro.next < audio.currentTime + 0.12) {
+      if (metro.stopAt && metro.count >= metro.stopAt) break;            // 2.9.2: no clicks after the rhythm's last beat
       metroClick(metro.next, metro.beat === 0);
       metro.marks.push({ t: metro.next, beat: metro.beat, count: metro.count });
       if (dly.test) dly.clicks.push(performance.now() + (metro.next - audio.currentTime) * 1000);   // when the click leaves the computer
@@ -1358,7 +1361,10 @@
       if (cur.count < mPrefs.beats) { rTitle.classList.add("count"); rTitle.textContent = String(cur.beat + 1); }   // count-off bar
       else if (rTitle.classList.contains("count")) { rTitle.classList.remove("count"); rTitle.textContent = titleText; }
     }
-    playDraw((now_ - metro.t0) / metro.spb - metro.off);
+    var tNow = (now_ - metro.t0) / metro.spb - metro.off;
+    playDraw(tNow);
+    // 2.9.2 (Mat 11/13): the metronome stops once the rhythm is over (heard time, so the line finishes first)
+    if (metro.stopAt && tNow + metro.off >= metro.stopAt + 0.3) { metro.finished = true; metroStop(); return; }
     requestAnimationFrame(metroDraw);
   }
   function metroStart() {
@@ -1367,6 +1373,7 @@
     metro.on = true; metro.beat = 0; metro.count = 0; metro.marks = [];
     metro.next = audio.currentTime + 0.25;
     metro.t0 = metro.next; metro.off = mPrefs.beats; metro.spb = 60 / mPrefs.bpm;      // the rhythm starts after one bar
+    metro.finished = false; metro.stopAt = rc.tl && !dly.test ? metro.off + rc.tl.length : 0;   // 0 = keep clicking (no counts / tap test)
     metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
     // 2.8.0: students tapping along (rtap.js) get the round on the page clock (performance.now), when the click is heard
     if (window.rtapStart && rc.tl && !dly.test) {
@@ -1379,7 +1386,7 @@
   // t = clicks since that downbeat. Needs the counts (Show counts data), so it only runs where counts exist.
   var rPlay = document.getElementById("rPlay"), playIdx = -1;
   function playDraw(t) {
-    var RT = window.RhythmTime, tl = rc.tl, x = tl && rGeo && RT ? RT.xAt(tl, t) : null;
+    var RT = window.RhythmTime, tl = rc.tl, x = tl && rGeo && RT && mPrefs.line !== false ? RT.xAt(tl, t) : null;
     if (x === null) { rPlay.classList.remove("on"); playMark(-1); return; }
     rPlay.style.left = Math.round((RHYTHM_IMG_EMU.x + x * RHYTHM_IMG_EMU.w - rGeo.x0) * rGeo.s) + "px";
     rPlay.classList.add("on");
@@ -1394,7 +1401,7 @@
   }
   function metroStop() {
     playDraw(-1);
-    if (window.rtapStop) window.rtapStop();
+    if (window.rtapStop && !metro.finished) window.rtapStop();      // a rhythm that played to the end isn't cancelled
     if (!metro.on) return;
     metro.on = false; clearInterval(metro.timer); metro.marks = [];
     Array.prototype.forEach.call(document.getElementById("mDots").children, function (e) { e.classList.remove("on"); });
@@ -1436,6 +1443,15 @@
     dlySet(Math.max(0, med));
     dlyPaint("Measured <b>" + Math.round(delaySec() * 1000) + " ms</b> and saved. Press ▶ Count off and watch the line: fine-tune with − / + if it still looks early or late.");
   }
+  function linePaint() {
+    var on = mPrefs.line !== false;
+    document.getElementById("mLineOn").textContent = on ? "On" : "Off";
+    document.getElementById("mLine").setAttribute("aria-checked", on ? "true" : "false");
+  }
+  document.getElementById("mLine").onclick = function () {
+    mPrefs.line = mPrefs.line === false; save(METRO_KEY, mPrefs); linePaint();
+  };
+  linePaint();
   document.getElementById("mDelay").onclick = function () { document.getElementById("mDelayBox").classList.toggle("open"); dlyPaint(); };
   document.getElementById("dLess").onclick = function () { dlySet(delaySec() * 1000 - 10); };
   document.getElementById("dMore").onclick = function () { dlySet(delaySec() * 1000 + 10); };
@@ -1971,7 +1987,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.9.1";
+  var BUILD = "2.9.2";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2000,9 +2016,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.9.1"></script>
-<script src="ptest.js?v=2.9.1"></script>
-<script src="lunch.js?v=2.9.1"></script>
-<script src="rtap.js?v=2.9.1"></script>
+<script src="ptnet.js?v=2.9.2"></script>
+<script src="ptest.js?v=2.9.2"></script>
+<script src="lunch.js?v=2.9.2"></script>
+<script src="rtap.js?v=2.9.2"></script>
 </body>
 </html>

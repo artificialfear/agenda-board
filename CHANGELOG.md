@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.9.2 — 2026-11-13 (Mat)
+- "〰 Moving line: On/Off" under the metronome (saved with the metronome prefs, agendaBoard.metro.line).
+- The metronome stops by itself after the rhythm's last beat (when the rhythm has counts; keeps going without counts and in
+  the speaker-delay Tap test). A tap-along round that played to the end is not cancelled by that stop.
+- Tap-along card: one line ("📱 n tapping · code") while the rhythm plays; otherwise scaled down when it would reach the rhythm
+  (taller screens put the rhythm higher).
+
 ## 2.9.1 — 2026-11-13
 - Tap along scoring fix (Mat: a perfect performance scored 47%). A steady lag (touchscreen, network clock, count-off not tapped
   or measured off) turned Perfects into Goods and sixteenths into Miss + extra. RTAP.scoreAligned tries every steady shift

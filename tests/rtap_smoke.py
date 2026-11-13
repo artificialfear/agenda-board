@@ -92,8 +92,14 @@ def main():
         if shots: board.screenshot(path=shots + "/tap_board_join.png")
 
         # a round: Ana taps every note exactly (+ the count-off, 110 ms late = her device's delay); Ben taps half the notes
+        GAP = "(() => { const c = document.getElementById('rtCard').getBoundingClientRect(), v = document.getElementById('rView').getBoundingClientRect(); return v.top - c.bottom; })()"
+        check("card above the rhythm (join)", board.evaluate(GAP) >= 0, board.evaluate(GAP))
         board.click("#mGo")
         for k in kids: k.wait_for_function("window.__tap.state().round !== null", timeout=3000)
+        board.wait_for_timeout(200)
+        mini = board.inner_text("#rtCard")
+        check("one-line card while playing", "2 tapping" in mini and code in mini and board.evaluate("document.getElementById('rtCard').offsetHeight") < 80
+              and board.evaluate(GAP) >= 0, mini)
         ana, ben = kids
         r = ana.evaluate("window.__tap.state().round")
         ana.evaluate("""(r) => { const late = 110; r.clicks.concat(r.onsets).forEach(t => setTimeout(() => window.__tap.tapAt(t + late),
@@ -119,13 +125,17 @@ def main():
         check("board Top 5 + class average", "TOP 5" in txt.upper() and "Ana R." in txt and "100%" in txt and "Class average" in txt and "2 of 2 scored" in txt
               and txt.index("Ana R.") < txt.index("Ben K."), txt)
         check("board never shows scores but Top 5/average", board.evaluate("window.__rtap.state().view") == "results")
+        check("card above the rhythm (results)", board.evaluate(GAP) >= 0, board.evaluate(GAP))
+        board.set_viewport_size({"width": 1440, "height": 1080}); board.wait_for_timeout(300)          # 4:3: the rhythm sits higher
+        check("card shrinks to stay above on 4:3", board.evaluate(GAP) >= 0, board.evaluate(GAP))
+        if shots: board.screenshot(path=shots + "/tap_board_43.png")
+        board.set_viewport_size({"width": 1920, "height": 1080}); board.wait_for_timeout(300)
         if shots: board.screenshot(path=shots + "/tap_board_results.png")
         st = board.evaluate("window.__rtap.state()")
         check("nothing saved anywhere", all(q not in ["ptscore"] for q in []) and set(st["results"].keys()) == {"a1", "b2"})
 
         # stopping in the middle cancels the round on the devices
-        check("metronome keeps clicking after the rhythm", board.evaluate("window.__agendaBoard.metro().on"))
-        board.click("#mGo"); board.wait_for_timeout(200)                     # stop, then a fresh count-off
+        check("metronome stopped after the rhythm (round still counts)", not board.evaluate("window.__agendaBoard.metro().on"))
         board.click("#mGo"); board.wait_for_timeout(300)
         for k in kids: k.wait_for_function("window.__tap.state().phase === 'round'", timeout=3000)
         board.click("#mGo"); board.wait_for_timeout(500)

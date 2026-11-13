@@ -554,12 +554,23 @@ def main():
         if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_line.png"))
         page.wait_for_timeout(1500); p3 = P()
         page.wait_for_timeout(4000); p4 = P()                                                     # 16 beats = 4.8 s: done
-        page.click("#mGo"); page.click("#mGo"); page.wait_for_timeout(1900); p5 = P()             # fresh count-off: line again
+        M4 = page.evaluate("window.__agendaBoard.metro()")                                        # 2.9.2: and the metronome stopped
+        page.click("#mGo"); page.wait_for_timeout(1900); p5 = P()                                 # fresh count-off: line again
         page.click("#mGo"); page.wait_for_timeout(100); p6 = P()                                  # stop: line gone
         ok = (p0["beats"] == 4 and p0["tl"] == {"beats": 4, "length": 16, "onsets": p0["tl"]["onsets"]} and not p0["on"]
               and not p1["on"] and p2["on"] and p3["on"] and 0 < p2["left"] < p3["left"] and 0 <= p2["now"] < p3["now"]
-              and not p4["on"] and p4["now"] == -1 and p5["on"] and not p6["on"])
-        print(("PASS" if ok else "FAIL"), f"{'rhythm moving line':34s}" + ("" if ok else f" {p0} {p1} {p2} {p3} {p4} {p5} {p6}"))
+              and not p4["on"] and p4["now"] == -1 and not M4["on"] and M4["title"].startswith("RHYTHM") and p5["on"] and not p6["on"])
+        print(("PASS" if ok else "FAIL"), f"{'rhythm moving line + stops at end':34s}" + ("" if ok else f" {p0} {p1} {p2} {p3} {p4} {M4} {p5} {p6}"))
+        failures += 0 if ok else 1
+        # 2.9.2: Moving line Off (saved): the metronome still counts off and plays, no line
+        page.click("#mLine"); page.wait_for_timeout(100)
+        lbl = page.inner_text("#mLine")
+        page.click("#mGo"); page.wait_for_timeout(1900); q1 = P(); m1 = page.evaluate("window.__agendaBoard.metro()")
+        page.click("#mGo")
+        pref = page.evaluate("JSON.parse(localStorage.getItem('agendaBoard.metro')).line")
+        page.click("#mLine"); lbl2 = page.inner_text("#mLine")
+        ok = "Off" in lbl and not q1["on"] and m1["on"] and pref is False and "On" in lbl2
+        print(("PASS" if ok else "FAIL"), f"{'moving line switch':34s}" + ("" if ok else f" {lbl} {q1} {m1} {pref} {lbl2}"))
         failures += 0 if ok else 1
         ctx.close()
         # 2.9.0: Bluetooth speaker delay: the line (and dots) wait for the sound; the tap test measures it

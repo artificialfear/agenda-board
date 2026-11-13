@@ -87,7 +87,7 @@
   // ---------------------------------------------------------------- card in the rhythm view
   var css = [
     /* top-right, beside the title and above the rhythm (which starts ~31vh down), so nothing on the view is covered */
-    "#rtCard { position: absolute; right: 1.6vw; top: 1.6vh; width: 22vw; max-height: 28.5vh; overflow: hidden; z-index: 4; display: none; background: #2a3858;",
+    "#rtCard { position: absolute; right: 1.6vw; top: 1.6vh; width: 22vw; z-index: 4; display: none; background: #2a3858; transform-origin: top right;",
     "  border: 2px solid #c9a227; border-radius: 2vh; padding: 1.4vh 1.2vw; box-sizing: border-box; cursor: default; color: #fff; font-family: 'Segoe UI', Roboto, Arial, sans-serif;",
     "  box-shadow: 0 1vh 4vh rgba(0,0,0,.45); }",
     "#rtCard.open { display: block; }",
@@ -109,6 +109,9 @@
     "#rtCard .rt-avg { margin-top: .6vh; padding-top: .6vh; border-top: 1px solid #34405e; font: 600 2.4vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
     "#rtCard .rt-avg b { color: #c9a227; font-weight: 600; }",
     "#rtCard .rt-wait { font-size: 2vh; color: #c9d0de; }",
+    "#rtCard.mini { width: auto; padding: .8vh 1.2vw; }",
+    "#rtCard .rt-mini { font: 600 2.4vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; white-space: nowrap; }",
+    "#rtCard .rt-mini b { color: #c9a227; letter-spacing: .08em; }",
     "#rhythm .m-tap { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30; color: #c9a227; cursor: pointer;",
     "  font: 600 2.8vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .04em; }",
     "#rhythm.has-counts .m-tap { display: block; }",
@@ -254,6 +257,12 @@
     if (!on) return;
     var n = players().length;
     var res = view === "results" || (view === "round" && Object.keys(results).length);
+    // 2.9.2 (Mat 11/13): while the rhythm plays the card shrinks to one line so it never covers the last measure
+    card.classList.toggle("mini", view === "round" && !res);
+    if (view === "round" && !res) {
+      card.innerHTML = '<div class="rt-mini">📱 ' + n + " tapping · code <b>" + esc(code || "") + "</b></div>";
+      fit(); return;
+    }
     var head = '<h3><span>' + (res ? "🏆 Top 5" : "📱 Tap along") + "</span>" + (res ? '<button id="rtShowQr">QR</button>' : "") +
       '<button id="rtOff">Turn off</button></h3>';
     if (res) {
@@ -272,9 +281,18 @@
           '<div class="rt-n">' + (status === "ready" ? n + (n === 1 ? " student" : " students") + " ready" +
             (view === "round" ? " · tapping now!" : " · press ▶ Count off") : "Connecting…") + "</div>");
     }
+    fit();
     var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); paint(); };
     var q = $("rtShowQr"); if (q) q.onclick = function () { view = "join"; paint(); };
   }
+  // never over the rhythm: if the card is taller than the space above it (a taller screen puts the rhythm higher), shrink it
+  function fit() {
+    card.style.transform = "";
+    var v = $("rView"); if (!v || !card.classList.contains("open")) return;
+    var avail = v.getBoundingClientRect().top - card.getBoundingClientRect().top - 8, h = card.offsetHeight;
+    if (avail > 0 && h > avail) card.style.transform = "scale(" + Math.max(0.45, avail / h).toFixed(3) + ")";
+  }
+  window.addEventListener("resize", function () { if (on) fit(); });
   btn.onclick = function (e) {
     e.stopPropagation();
     on = !on;
