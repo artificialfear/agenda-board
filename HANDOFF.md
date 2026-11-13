@@ -50,6 +50,13 @@ Schedule-aware agenda display for Mat's band room ViewSonic viewboard. Leave it 
 
 Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 
+## 2.7.0 Rhythm moving line (11/13, Mat; live)
+- rhythmtime.js (window.RhythmTime / Node module): rhythmTimeline(counts, meter) → {beats, length, points[{x,t,kind,label}],
+  onsets, end}; xAt(tl, t); countAt(tl, t). index.html: metroStart remembers t0/off/spb; metroDraw → playDraw(clicks since the
+  downbeat after the count-off) moves #rPlay inside #rView and marks the count span .now. Once per Count off.
+- Mat asked next (11/13): students tap the rhythm on their own devices for a score. Planned on the ptnet.js/PeerJS pattern
+  (QR → student page, clock sync by ping, onsets from rhythmtime.js); waiting on his answers.
+
 ## 2.6.0 Lunch & Learn (11/12, Mat; live)
 - lunch.js (board module; uses __board now/ymd/settings/state/chime). ☰ switches "🥪 Lunch & Learn · 8th grade / 7th grade", today
   only (agendaBoard.lunchOn). Times 8th 11:15–11:40, 7th 12:15–12:35; Content Pool → Board Settings rows "Lunch & Learn 8th/7th"

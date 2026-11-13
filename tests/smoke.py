@@ -495,6 +495,7 @@ def main():
         # the board's own counts file (site root); the real picture too when tools/rhythm/out is here
         rbytes = _json.load(open(_os.path.join(_os.path.dirname(__file__), "..", "rhythm-counts.json")))["lines"]["8th_4-4_004.png"]["b"]
         rstate = {"bytes": rbytes}
+        if not _os.path.exists(rpng): rpng = _os.path.join(_os.path.dirname(__file__), "..", "rhythm-pictures", "8th_4-4_004.png")
         img = ("data:image/png;base64," + _b64.b64encode(open(rpng, "rb").read()).decode()) if _os.path.exists(rpng) else ""
         slide_html = ('<body style="margin:0;background:#1f2a44"><div style="position:absolute;left:4.494%;top:24.711%;width:55.501%;'
                       'height:11.022%;background:#fff;border-radius:6px"></div>'
@@ -535,6 +536,30 @@ def main():
               and L == sorted(L) and 0 < L[0] and L[-1] < c1["view"][0] and c1["counts"]["font"] >= 28
               and not c2["shown"] and "new rhythm pictures" in c3["text"] and c3["dim"] == 0 and rcalls.count("rhythm") >= 3)
         print(("PASS" if ok else "FAIL"), f"{'rhythm show counts':34s}" + ("" if ok else f" {c0} {vis0} {c1} {vis1} {c2} {c3} {rcalls}"))
+        failures += 0 if ok else 1
+        ctx.close()
+        # 2.7.0: after the count-off a gold line moves through the rhythm once, in time; the metronome's beats follow the meter
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.add_init_script(init + ";localStorage.setItem('agendaBoard.metro', JSON.stringify({bpm: 200, beats: 3}))")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body=slide_html))
+        rstate["bytes"] = rbytes
+        ctx.route("https://script.google.com/**", rhythm_script)
+        page = ctx.new_page()
+        page.goto(f"http://127.0.0.1:{PORT}/index.html?test=2026-11-06T08:10:00&speed=1"); page.wait_for_timeout(300)
+        P = lambda: page.evaluate("window.__agendaBoard.rhythm().play")
+        page.click("#btnRhythm"); page.wait_for_timeout(700)
+        p0 = P()
+        page.click("#mCounts"); page.click("#mGo"); page.wait_for_timeout(700); p1 = P()        # 200 bpm: count-off = 1.2 s
+        page.wait_for_timeout(1000); p2 = P()
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_line.png"))
+        page.wait_for_timeout(1500); p3 = P()
+        page.wait_for_timeout(4000); p4 = P()                                                     # 16 beats = 4.8 s: done
+        page.click("#mGo"); page.click("#mGo"); page.wait_for_timeout(1900); p5 = P()             # fresh count-off: line again
+        page.click("#mGo"); page.wait_for_timeout(100); p6 = P()                                  # stop: line gone
+        ok = (p0["beats"] == 4 and p0["tl"] == {"beats": 4, "length": 16, "onsets": p0["tl"]["onsets"]} and not p0["on"]
+              and not p1["on"] and p2["on"] and p3["on"] and 0 < p2["left"] < p3["left"] and 0 <= p2["now"] < p3["now"]
+              and not p4["on"] and p4["now"] == -1 and p5["on"] and not p6["on"])
+        print(("PASS" if ok else "FAIL"), f"{'rhythm moving line':34s}" + ("" if ok else f" {p0} {p1} {p2} {p3} {p4} {p5} {p6}"))
         failures += 0 if ok else 1
         ctx.close()
         # without a closing link there is no counts button

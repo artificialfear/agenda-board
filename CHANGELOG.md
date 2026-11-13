@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.7.0 — 2026-11-13
+- **Rhythm of the day: moving line** (Mat): after the metronome's count-off bar, a gold line moves through the rhythm once, in
+  time with the clicks (starts on the downbeat, stops at the end), and the count it's on lights up when counts are shown.
+  rhythmtime.js turns a line's counts (rhythm-counts.json) into a timeline in clicks (6/8 = eighths); the line goes straight
+  between counts. Needs the counts (Daily Slides link set). The metronome's beats now follow the rhythm's meter when it loads.
+  Also the timeline's note onsets, ready for student tap scoring. Tests: tests/rhythmtime_test.js (all 780 lines), smoke "rhythm moving line".
+- tests/ptest_gs_test.js no longer depends on the day it runs.
+
 ## 2.6.0 — 2026-11-12
 - **🥪 Lunch & Learn** (Mat; lunch.js): full-screen Raven Band page for Lunch & Learn in the band room.
   - ☰ → 🥪 Lunch & Learn · 8th grade / · 7th grade switches, today only (localStorage agendaBoard.lunchOn {date, 8th, 7th}).

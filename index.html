@@ -222,6 +222,11 @@
     visibility: hidden; }
   #rhythm .r-counts.show span { visibility: visible; }
   #rhythm .r-counts span.h { color: #6f7a93; }
+  /* 2.7.0: the line that moves through the rhythm after the count-off (+ the count it's on lights up) */
+  #rhythm .r-play { position: absolute; top: 4%; bottom: 4%; width: 6px; margin-left: -3px; border-radius: 3px; background: #c9a227;
+    box-shadow: 0 0 14px 3px rgba(201,162,39,.75); display: none; pointer-events: none; z-index: 2; }
+  #rhythm .r-play.on { display: block; }
+  #rhythm .r-counts span.now { color: #c9a227; transform: translateX(-50%) scale(1.25); }
   #rhythm .r-counts .c-msg { left: 50%; font: 2.4vh "Segoe UI", Arial, sans-serif; color: #c9d0de; }
   #rhythm .m-cnt { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30;
     color: #c9a227; cursor: pointer; font: 600 2.8vh "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; }
@@ -429,7 +434,7 @@
 <!-- Rhythm of the day, zoomed to full width (a second copy of the slide, cropped to the rhythm card) -->
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
   <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
-  <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe></div>
+  <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe><div class="r-play" id="rPlay"></div></div>
   <div class="r-counts" id="rCounts" aria-live="polite"></div>
   <div class="r-metro" id="metro">
     <div class="m-dots" id="mDots"></div>
@@ -633,6 +638,7 @@
   </div>
 </div>
 
+<script src="rhythmtime.js?v=2.7.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1207,7 +1213,7 @@
   // The rhythm image sits at this spot on every agenda slide (Code.gs daily:rhythm); x in the counts = fraction of its width.
   var RHYTHM_IMG_EMU = { x: 603940, w: 4690000 };
   var rGeo = null, rCountsEl = document.getElementById("rCounts"), rCntBtn = document.getElementById("mCounts");
-  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0 };
+  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0, tl: null };
   var countsBook = null;
   function countsBookGet() {
     if (!countsBook) countsBook = fetch("rhythm-counts.json").then(function (r) {
@@ -1217,15 +1223,20 @@
   }
   function countsFetch(blk) {
     var my = ++rc.seq;
-    rc.block = blk; rc.loading = true; rc.err = ""; countsPaint();
+    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; countsPaint();
     Promise.all([scoresCall({ a: "rhythm", block: blk }), countsBookGet()]).then(function (two) {
       if (my !== rc.seq) return;
       var j = two[0], line = (two[1].lines || {})[j.name];
       j.counts = line ? line.c : null;
+      j.meter = line ? line.m : null;
       // the picture in Drive must be the one these counts were made with (same size); else say so instead of wrong counts
       j.stale = !!(line && line.b && j.bytes && line.b !== j.bytes);
       if (j.stale) j.counts = null;
-      rc.data = j; rc.loading = false; countsPaint();
+      rc.data = j; rc.loading = false;
+      // 2.7.0: the moving line's timeline; the metronome's beats follow the rhythm's meter (6/8 → 6)
+      rc.tl = j.counts && window.RhythmTime ? window.RhythmTime.rhythmTimeline(j.counts, j.meter) : null;
+      if (rc.tl && !metro.on && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
+      countsPaint();
     }).catch(function (e) {
       if (my !== rc.seq) return;
       rc.loading = false; rc.err = String(e && e.message || e); countsPaint();
@@ -1240,7 +1251,7 @@
     rCntBtn.textContent = rc.shown ? "Hide counts" : (!d && rc.loading ? "Getting counts…" : "Show counts");
     rCntBtn.classList.toggle("on", rc.shown);
     rCountsEl.classList.toggle("show", rc.shown);
-    rCountsEl.innerHTML = "";
+    rCountsEl.innerHTML = ""; playIdx = -1;
     if (!rGeo) return;
     rCountsEl.style.width = rGeo.w + "px";
     var msg = function (t) { var m = document.createElement("span"); m.className = "c-msg"; m.textContent = t; rCountsEl.appendChild(m); };
@@ -1323,6 +1334,7 @@
       if (cur.count < mPrefs.beats) { rTitle.classList.add("count"); rTitle.textContent = String(cur.beat + 1); }   // count-off bar
       else if (rTitle.classList.contains("count")) { rTitle.classList.remove("count"); rTitle.textContent = titleText; }
     }
+    playDraw((now_ - metro.t0) / metro.spb - metro.off);
     requestAnimationFrame(metroDraw);
   }
   function metroStart() {
@@ -1330,10 +1342,29 @@
     titleText = rTitle.textContent;
     metro.on = true; metro.beat = 0; metro.count = 0; metro.marks = [];
     metro.next = audio.currentTime + 0.25;
+    metro.t0 = metro.next; metro.off = mPrefs.beats; metro.spb = 60 / mPrefs.bpm;      // the rhythm starts after one bar
     metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
     requestAnimationFrame(metroDraw); metroPaint();
   }
+  // 2.7.0 (Mat 11/13): a gold line moves through the rhythm in time, once, starting on the downbeat after the count-off.
+  // t = clicks since that downbeat. Needs the counts (Show counts data), so it only runs where counts exist.
+  var rPlay = document.getElementById("rPlay"), playIdx = -1;
+  function playDraw(t) {
+    var RT = window.RhythmTime, tl = rc.tl, x = tl && rGeo && RT ? RT.xAt(tl, t) : null;
+    if (x === null) { rPlay.classList.remove("on"); playMark(-1); return; }
+    rPlay.style.left = Math.round((RHYTHM_IMG_EMU.x + x * RHYTHM_IMG_EMU.w - rGeo.x0) * rGeo.s) + "px";
+    rPlay.classList.add("on");
+    playMark(RT.countAt(tl, t));
+  }
+  function playMark(i) {
+    if (i === playIdx) return;
+    var kids = rCountsEl.children;
+    if (kids[playIdx]) kids[playIdx].classList.remove("now");
+    playIdx = i;
+    if (kids[i] && rc.tl && kids.length === rc.tl.points.length) kids[i].classList.add("now");
+  }
   function metroStop() {
+    playDraw(-1);
     if (!metro.on) return;
     metro.on = false; clearInterval(metro.timer); metro.marks = [];
     Array.prototype.forEach.call(document.getElementById("mDots").children, function (e) { e.classList.remove("on"); });
@@ -1840,7 +1871,9 @@
         text: Array.prototype.map.call(rCountsEl.children, function (e) { return e.textContent; }).join(" "),
         dim: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.className === "h"; }).length,
         lefts: Array.prototype.map.call(rCountsEl.children, function (e) { return parseInt(e.style.left, 10); }),
-        font: parseInt(rCountsEl.style.fontSize, 10) || 0 } }; },
+        font: parseInt(rCountsEl.style.fontSize, 10) || 0 },
+      play: { on: rPlay.classList.contains("on"), left: parseInt(rPlay.style.left, 10) || 0, now: playIdx,
+        beats: mPrefs.beats, tl: rc.tl ? { beats: rc.tl.beats, length: rc.tl.length, onsets: rc.tl.onsets.length } : null } }; },
     scores: function () { return { can: document.body.classList.contains("can-score"), open: scoresEl.classList.contains("open"),
       big: scoresEl.classList.contains("big"), change: sChangeEl.textContent,
       msg: sMsg.textContent, data: sc.data[sc.block] || null, queue: sc.queue.length }; },
@@ -1852,7 +1885,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.6.0";
+  var BUILD = "2.7.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -1881,8 +1914,8 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.6.0"></script>
-<script src="ptest.js?v=2.6.0"></script>
-<script src="lunch.js?v=2.6.0"></script>
+<script src="ptnet.js?v=2.7.0"></script>
+<script src="ptest.js?v=2.7.0"></script>
+<script src="lunch.js?v=2.7.0"></script>
 </body>
 </html>

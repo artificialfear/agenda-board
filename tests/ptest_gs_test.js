@@ -56,7 +56,7 @@ let out = doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s:
 a.ok(out.ok, out.error);
 const PT = tabs['Playing Tests'];
 a.deepEqual(PT.vals[0], ['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved'], 'tab made with headers');
-a.deepEqual(PT.vals[1].slice(0, 6), ['2026-11-12', '1st', 'Lee, Mia', 'F Concert scale, ToE #72', 3, 'great tone'], 'full name saved in the sheet');
+a.deepEqual(PT.vals[1].slice(0, 6), [(d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), '1st', 'Lee, Mia', 'F Concert scale, ToE #72', 3, 'great tone'], 'full name saved in the sheet');
 doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '4', note: '', test: 'F Concert scale, ToE #72' } });
 a.equal(PT.vals.length, 2, 'a re-score replaces the row'); a.equal(PT.vals[1][4], 4);
 r = doGet({ parameter: { k: 'KEY', a: 'ptest', block: '1st' } });
