@@ -56,7 +56,23 @@
     var m = ds.length >> 1;
     return Math.round(ds.length % 2 ? ds[m] : (ds[m - 1] + ds[m]) / 2);
   }
-  window.RTAP = { score: rtapScore, calibrate: rtapCalibrate, PREFIX: "ravenband-rtap-v1-" };
+  // 2.9.1 (Mat 11/13: a perfect performance scored 47%): a device's delay isn't always measured right by the count-off (or the
+  // count-off wasn't tapped), and a steady 80–150 ms lag turns every Perfect into Good and every sixteenth into a Miss + extra tap.
+  // So the score also tries every steady shift around `center` (the count-off measurement, or 0) up to ± range ms and keeps the best:
+  // a steady lag (device, Bluetooth, network clock) is forgiven, uneven taps are not. range stays under half a beat so the taps can't
+  // be slid onto the wrong notes.
+  function rtapScoreAligned(onsetsMs, tapsMs, center, range) {
+    center = center || 0;
+    var best = null;
+    for (var s = -range; s <= range; s += 5) {
+      var sh = center + s, r = rtapScore(onsetsMs, tapsMs.map(function (t) { return t - sh; }));
+      r.err = r.offs.reduce(function (t, o) { return t + Math.abs(o); }, 0);       // ties: the shift that centers the taps best
+      if (!best || r.pct > best.pct || (r.pct === best.pct && (r.perfect > best.perfect ||
+          (r.perfect === best.perfect && r.err < best.err)))) { best = r; best.shift = sh; }
+    }
+    return best;
+  }
+  window.RTAP = { score: rtapScore, scoreAligned: rtapScoreAligned, calibrate: rtapCalibrate, PREFIX: "ravenband-rtap-v1-" };
 
   var B = window.__board, NET = window.PTNET;
   if (!B || !NET || !document.getElementById("rhythm")) return;     // tap.html loads this file for the scoring only

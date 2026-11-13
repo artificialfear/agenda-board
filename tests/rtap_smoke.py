@@ -99,7 +99,7 @@ def main():
         ana.evaluate("""(r) => { const late = 110; r.clicks.concat(r.onsets).forEach(t => setTimeout(() => window.__tap.tapAt(t + late),
                          Math.max(0, t + late - performance.now()))); }""", r)
         rb = ben.evaluate("window.__tap.state().round")
-        ben.evaluate("(r) => { r.onsets.filter((_, i) => i % 2 === 0).forEach(t => setTimeout(() => window.__tap.tapAt(t), Math.max(0, t - performance.now()))); }", rb)
+        ben.evaluate("(r) => { r.onsets.filter((_, i) => i % 2 === 0).forEach(t => setTimeout(() => window.__tap.tapAt(t + 140), Math.max(0, t + 140 - performance.now()))); }", rb)   # 2.9.1: no count-off taps, 140 ms lag
         # board and devices agree on when the first note is (within 25 ms)
         bt = board.evaluate("performance.timeOrigin")
         at, btn_ = ana.evaluate("performance.timeOrigin"), ben.evaluate("performance.timeOrigin")
@@ -112,6 +112,7 @@ def main():
         ra, rbr = ana.evaluate("window.__tap.state().result"), ben.evaluate("window.__tap.state().result")
         check("perfect student scores 100% (delay tuned out)", ra and ra["pct"] == 100 and ra["perfect"] == ra["n"] and abs(ra["cal"] - 110) <= 5, ra)
         check("half the notes ≈ half the score", rbr and 40 <= rbr["pct"] <= 60 and rbr["miss"] >= rbr["n"] // 2 - 1, rbr)
+        check("steady lag forgiven without count-off taps", rbr and rbr["countCal"] is None and abs(rbr["cal"] - 140) <= 10 and rbr["good"] == 0, rbr)
         check("result screen on the device", "YOUR SCORE" in ana.inner_text("main").upper() and "100%" in ana.inner_text("main"))
         if shots: ana.screenshot(path=shots + "/tap_result.png")
         txt = board.inner_text("#rtCard")

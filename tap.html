@@ -57,8 +57,8 @@
 <body>
 <div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Tap the <span>Rhythm</span></h1><div class="who" id="who"></div><i class="conn" id="conn"></i></div>
 <main id="main"></main>
-<script src="ptnet.js?v=2.8.0"></script>
-<script src="rtap.js?v=2.8.0"></script>
+<script src="ptnet.js?v=2.9.1"></script>
+<script src="rtap.js?v=2.9.1"></script>
 <script>
 (function () {
   "use strict";
@@ -179,10 +179,11 @@
     clearInterval(tickT);
     var r = round; round = null;
     var countTaps = taps.filter(function (t) { return t < r.t0 + (r.off - 0.5) * r.spb; });
-    var cal = RT.calibrate(r.clicks, countTaps, r.spb);
-    if (cal === null) cal = load(CAL_KEY) || 0; else save(CAL_KEY, cal);
-    var res = RT.score(r.onsets, taps.map(function (t) { return t - cal; }));
-    result = res; result.cal = cal;
+    var cal = RT.calibrate(r.clicks, countTaps, r.spb);                 // from the count-off taps (null if not tapped)
+    // start from the count-off measurement, else this device's last one; then forgive a steady lag up to 0.3 beat (max 200 ms)
+    var res = RT.scoreAligned(r.onsets, taps, cal !== null ? cal : (+load(CAL_KEY) || 0), Math.min(200, r.spb * 0.3));
+    if (res.perfect + res.good >= 3) save(CAL_KEY, res.shift);          // this device's lag, for the record
+    result = res; result.cal = res.shift; result.countCal = cal; result.countTaps = countTaps.length;
     send({ type: "result", round: r.id, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra });
     phase = "result"; draw();
   }
@@ -231,7 +232,9 @@
         r.offs.length > 2 && avgOff(r.offs) < -40 ? "You were a little early. Wait for the click." : "Nice and steady!";
       main.innerHTML = '<div class="res"><div class="h">Your score</div><div class="pct">' + r.pct + "%</div>" +
         '<div class="row"><div>' + r.perfect + "<span>Perfect</span></div><div>" + r.good + "<span>Good</span></div><div>" + r.miss +
-        "<span>Missed</span></div><div>" + r.extra + '<span>Extra taps</span></div></div><div class="tip">' + tip + "</div></div>" +
+        "<span>Missed</span></div><div>" + r.extra + '<span>Extra taps</span></div></div><div class="tip">' + tip + "</div>" +
+        '<div class="tip" style="font-size:12px;opacity:.7">Device timing ' + (r.cal >= 0 ? "+" : "") + Math.round(r.cal) + " ms" +
+        (r.countCal === null ? " · count-off not tapped" : " · count-off " + (r.countCal >= 0 ? "+" : "") + r.countCal + " ms") + "</div></div>" +
         '<div class="status" id="status">Want another try? Watch the board.</div>' + padHtml;
     }
     var pad = $("pad");

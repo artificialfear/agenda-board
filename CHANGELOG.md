@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.9.1 — 2026-11-13
+- Tap along scoring fix (Mat: a perfect performance scored 47%). A steady lag (touchscreen, network clock, count-off not tapped
+  or measured off) turned Perfects into Goods and sixteenths into Miss + extra. RTAP.scoreAligned tries every steady shift
+  (5 ms steps) within ±min(200 ms, 0.3 beat) around the count-off measurement (else this device's last lag) and keeps the best;
+  uneven playing still scores low, offbeat playing can't reach Perfect. Result shows "Device timing ±n ms" for checking.
+
 ## 2.9.0 — 2026-11-13
 - **🔈 Speaker delay** (Mat: Bluetooth speaker plays late): under the metronome, "Speaker delay: n ms" opens − / + (10 ms), 0,
   and a **Tap test** (metronome plays; tap the gold button or space bar on each click you hear; 10 taps, first 2 skipped,

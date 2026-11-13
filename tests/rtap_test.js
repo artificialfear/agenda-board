@@ -28,4 +28,17 @@ a.equal(calibrate([0, 600, 1200, 1800], [80, 690, 1270, 1885], 600), 83);     //
 a.equal(calibrate([0, 600, 1200, 1800], [80, 1500], 600), null);    // 1500 is 300 from both clicks: too wild, so only 1 good tap
 a.equal(calibrate([0, 600], [], 600), null);
 a.equal(calibrate([0, 600, 1200], [-40, 560, 1170], 600), -40);
+// 2.9.1 aligned scoring: a steady lag is forgiven (even with no count-off), uneven taps aren't, and it can't slide onto other notes
+const { scoreAligned } = window.RTAP;
+const sixteenths = [0, 500, 750, 875, 1000, 1500, 1625, 1750, 2000];      // 120 bpm with sixteenths
+r = score(sixteenths, sixteenths.map(t => t + 110)); a.ok(r.pct < 60, 'plain score punishes a steady 110 ms lag: ' + r.pct);
+r = scoreAligned(sixteenths, sixteenths.map(t => t + 110), 0, 150);
+a.deepEqual([r.pct, r.perfect, r.shift], [100, 9, 110]);
+r = scoreAligned(sixteenths, sixteenths.map(t => t - 80), 40, 150); a.deepEqual([r.pct, r.shift], [100, -80]);
+const jitter = [0, 90, -100, 60, -70, 110, -90, 80, -60];                  // uneven playing stays uneven
+r = scoreAligned(sixteenths, sixteenths.map((t, i) => t + jitter[i]), 0, 150); a.ok(r.pct < 75, 'uneven ' + r.pct);
+// quarters played on the "+" at 120 bpm (range = 0.3 beat = 150): never Perfect, at best Good
+r = scoreAligned([0, 500, 1000, 1500], [250, 750, 1250, 1750], 0, 150); a.ok(r.perfect === 0 && r.pct <= 60, 'offbeat ' + r.pct);
+r = scoreAligned([0, 750, 1500, 2250], [375, 1125, 1875, 2625], 0, 200); a.equal(r.pct, 0);   // 80 bpm: off by an eighth = all missed
+r = scoreAligned([0, 250, 500], [], 0, 150); a.equal(r.pct, 0);
 console.log('rtap scoring: ok');
