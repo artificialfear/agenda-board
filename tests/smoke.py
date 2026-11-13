@@ -562,6 +562,48 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'rhythm moving line':34s}" + ("" if ok else f" {p0} {p1} {p2} {p3} {p4} {p5} {p6}"))
         failures += 0 if ok else 1
         ctx.close()
+        # 2.9.0: Bluetooth speaker delay: the line (and dots) wait for the sound; the tap test measures it
+        def line_at(delay_ms, at_ms):
+            c = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+            c.add_init_script(init.replace("closingUrl:", "audioDelay: %d, closingUrl:" % delay_ms) + ";localStorage.setItem('agendaBoard.metro', JSON.stringify({bpm: 200, beats: 4}))")
+            c.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body=slide_html))
+            c.route("https://script.google.com/**", rhythm_script)
+            pg = c.new_page()
+            pg.goto(f"http://127.0.0.1:{PORT}/index.html?test=2026-11-06T08:10:00&speed=1"); pg.wait_for_timeout(300)
+            pg.click("#btnRhythm"); pg.wait_for_timeout(700)
+            out = [pg.evaluate("window.__agendaBoard.metro()")]
+            pg.click("#mGo")
+            last = 0
+            for t in at_ms:
+                pg.wait_for_timeout(t - last); last = t
+                out.append(pg.evaluate("window.__agendaBoard.rhythm().play.on"))
+            return c, pg, out
+        c, _, o0 = line_at(0, [1600]); c.close()
+        c, _, o3 = line_at(300, [1600, 2100]); c.close()
+        ok = o0[0]["delay"] == 0 and o0[1] and o3[0]["delay"] == 300 and o3[0]["delayText"] == "300" and not o3[1] and o3[2]
+        print(("PASS" if ok else "FAIL"), f"{'speaker delay holds the line':34s}" + ("" if ok else f" {o0} {o3}"))
+        failures += 0 if ok else 1
+        c, pg, _ = line_at(0, [])
+        pg.click("#mGo"); pg.wait_for_timeout(100)                                     # stop the count-off from line_at
+        pg.click("#mDelay"); pg.wait_for_timeout(100)
+        for _ in range(3): pg.click("#dMore")
+        m1 = pg.evaluate("window.__agendaBoard.metro()")
+        pg.click("#dZero")
+        if shots_dir: pg.screenshot(path=str(shots_dir / "speaker_delay.png"))
+        pg.dispatch_event("#dTap", "pointerdown"); pg.wait_for_timeout(150)          # starts the test (metronome on)
+        pg.evaluate("""() => { const done = new Set();
+          const tick = () => { const m = window.__agendaBoard.metro(); if (!m.test) return;
+            m.clicks.forEach(c => { if (done.has(c)) return; done.add(c);
+              setTimeout(() => document.getElementById('dTap').dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})), Math.max(0, c + 170 - performance.now())); });
+            setTimeout(tick, 100); }; tick(); }""")
+        pg.wait_for_timeout(4500)
+        m2 = pg.evaluate("window.__agendaBoard.metro()")
+        saved = pg.evaluate("JSON.parse(localStorage.getItem('agendaBoard.settings')).audioDelay")
+        ok = m1["delay"] == 30 and not m2["test"] and not m2["on"] and 140 <= m2["delay"] <= 200 and saved == m2["delay"] and "Measured" in pg.inner_text("#dHelp")
+        print(("PASS" if ok else "FAIL"), f"{'speaker delay tap test':34s}" + ("" if ok else f" {m1['delay']} {m2} {saved}"))
+        failures += 0 if ok else 1
+        if shots_dir: pg.screenshot(path=str(shots_dir / "speaker_delay_done.png"))
+        c.close()
         # without a closing link there is no counts button
         ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
         ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))

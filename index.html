@@ -234,6 +234,20 @@
   #rhythm .m-cnt.on { background: #c9a227; color: #141c30; }
   #rhythm .m-cnt:disabled { opacity: .55; cursor: default; }
   #rhythm .m-sep.c { display: none; }
+  #rhythm .m-dly { border: 0; background: none; color: #c9d0de; cursor: pointer; font: 2.1vh "Segoe UI", Arial, sans-serif; opacity: .85; padding: .4vh 1vw; }
+  #rhythm .m-dly b { color: #c9a227; font-weight: 600; }
+  #rhythm .m-dbox { display: none; flex-direction: column; align-items: center; gap: 1.2vh; background: #2a3858; border: 1px solid #c9a227;
+    border-radius: 2vh; padding: 1.6vh 1.6vw; max-width: 60vw; }
+  #rhythm .m-dbox.open { display: flex; }
+  #rhythm .d-row { display: flex; align-items: center; gap: 1vw; }
+  #rhythm .d-ms { display: flex; align-items: baseline; gap: .4vw; min-width: 12vh; justify-content: center; }
+  #rhythm .d-ms span { font-size: 5vh; font-variant-numeric: tabular-nums; } #rhythm .d-ms small { font-size: 2vh; color: #c9d0de; }
+  #rhythm .d-btn { border: 1px solid #c9a227; border-radius: 999px; background: #141c30; color: #c9a227; padding: 1vh 1.4vw; cursor: pointer;
+    font: 600 2.4vh "Oswald", sans-serif; }
+  #rhythm .d-help { font: 2vh/1.4 "Segoe UI", Arial, sans-serif; color: #dfe4ee; text-align: center; }
+  #rhythm .d-tap { border: 0; border-radius: 2vh; background: #c9a227; color: #141c30; cursor: pointer; font: 600 3.4vh "Oswald", sans-serif;
+    padding: 2vh 4vw; min-width: 30vh; letter-spacing: .04em; }
+  #rhythm .d-tap.hit { filter: brightness(1.25); transform: scale(.98); }
   #scores { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center;
     background: rgba(10,14,26,.55); }
   #scores.open { display: flex; }
@@ -451,6 +465,15 @@
       <div class="m-sep c"></div>
       <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
+    <!-- 2.9.0: Bluetooth speaker delay. The sound can't come sooner, so the dots, count-off numbers and moving line wait for it. -->
+    <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button>
+    <div class="m-dbox" id="mDelayBox">
+      <div class="d-row"><button class="m-b" id="dLess" aria-label="Less delay">−</button><div class="d-ms"><span id="dMs">0</span><small>ms</small></div>
+        <button class="m-b" id="dMore" aria-label="More delay">+</button><button class="d-btn" id="dZero">0</button><button class="d-btn" id="dDone">Done</button></div>
+      <div class="d-help" id="dHelp">Bluetooth speakers play late. Set how late, and the dots, count-off and moving line wait for the sound.
+        Easiest: press <b>Tap test</b>, then tap the big button on every click you <i>hear</i>.</div>
+      <button class="d-tap" id="dTap">Tap test</button>
+    </div>
   </div>
   <div class="r-hint">Tap anywhere else to go back to the agenda</div>
   <div class="r-catch"></div>
@@ -638,7 +661,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.8.0"></script>
+<script src="rhythmtime.js?v=2.9.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1322,12 +1345,13 @@
     while (metro.next < audio.currentTime + 0.12) {
       metroClick(metro.next, metro.beat === 0);
       metro.marks.push({ t: metro.next, beat: metro.beat, count: metro.count });
+      if (dly.test) dly.clicks.push(performance.now() + (metro.next - audio.currentTime) * 1000);   // when the click leaves the computer
       metro.next += spb; metro.count++; metro.beat = (metro.beat + 1) % mPrefs.beats;
     }
   }
   function metroDraw() {
     if (!metro.on) return;
-    var now_ = audio.currentTime, cur = null;
+    var now_ = audio.currentTime - delaySec(), cur = null;      // 2.9.0: what the room hears right now (Bluetooth plays late)
     while (metro.marks.length && metro.marks[0].t <= now_) cur = metro.marks.shift();
     if (cur) {
       Array.prototype.forEach.call(document.getElementById("mDots").children, function (e, i) { e.classList.toggle("on", i === cur.beat); });
@@ -1345,8 +1369,8 @@
     metro.t0 = metro.next; metro.off = mPrefs.beats; metro.spb = 60 / mPrefs.bpm;      // the rhythm starts after one bar
     metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
     // 2.8.0: students tapping along (rtap.js) get the round on the page clock (performance.now), when the click is heard
-    if (window.rtapStart && rc.tl) {
-      var lat = (audio.outputLatency || audio.baseLatency || 0) * 1000;
+    if (window.rtapStart && rc.tl && !dly.test) {
+      var lat = +settings.audioDelay > 0 ? +settings.audioDelay : (audio.outputLatency || audio.baseLatency || 0) * 1000;
       window.rtapStart({ t0: performance.now() + (metro.t0 - audio.currentTime) * 1000 + lat, spb: metro.spb * 1000, off: metro.off, tl: rc.tl });
     }
     requestAnimationFrame(metroDraw); metroPaint();
@@ -1377,6 +1401,61 @@
     if (rTitle.classList.contains("count")) { rTitle.classList.remove("count"); rTitle.textContent = titleText; }
     metroPaint();
   }
+  // ---------- 2.9.0 (Mat 11/13): speaker delay (Bluetooth) ----------
+  // Saved with the board's settings (this device only; Export copies it). Tap test: the metronome plays, Mat taps the big button on
+  // each click he hears; delay = median of (tap − when the click left the computer), first 2 taps skipped, 8 kept.
+  var dly = { test: false, clicks: [], taps: [] };
+  function delaySec() { return Math.max(0, Math.min(1000, +settings.audioDelay || 0)) / 1000; }
+  function dlyPaint(note) {
+    var ms = Math.round(delaySec() * 1000);
+    document.getElementById("mDelayMs").textContent = ms;
+    document.getElementById("dMs").textContent = ms;
+    var t = document.getElementById("dTap");
+    t.textContent = dly.test ? "TAP on each click (" + Math.max(0, 10 - dly.taps.length) + " to go)" : "Tap test";
+    if (note) document.getElementById("dHelp").innerHTML = note;
+  }
+  function dlySet(ms) {
+    settings.audioDelay = Math.max(0, Math.min(1000, Math.round(ms / 10) * 10));
+    save(STORE_KEY, settings); dlyPaint();
+  }
+  function dlyTap(t) {
+    if (!dly.test) return;
+    dly.taps.push(t);
+    var b = document.getElementById("dTap"); b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 90);
+    if (dly.taps.length < 10) { dlyPaint(); return; }
+    var spb = 60000 / mPrefs.bpm, ds = [];
+    dly.taps.slice(2).forEach(function (tp) {                 // tap − the click before it (sound arrives after the click leaves)
+      var best = null;
+      dly.clicks.forEach(function (c) { var d = tp - c; if (d > -spb * 0.3 && d < spb * 0.95 && (best === null || Math.abs(d) < Math.abs(best))) best = d; });
+      if (best !== null) ds.push(best);
+    });
+    dly.test = false; metroStop();
+    if (ds.length < 5) { dlyPaint("Those taps were too uneven to measure. Try again, tapping right on each click you hear."); return; }
+    ds.sort(function (a, b) { return a - b; });
+    var med = ds[ds.length >> 1];
+    dlySet(Math.max(0, med));
+    dlyPaint("Measured <b>" + Math.round(delaySec() * 1000) + " ms</b> and saved. Press ▶ Count off and watch the line: fine-tune with − / + if it still looks early or late.");
+  }
+  document.getElementById("mDelay").onclick = function () { document.getElementById("mDelayBox").classList.toggle("open"); dlyPaint(); };
+  document.getElementById("dLess").onclick = function () { dlySet(delaySec() * 1000 - 10); };
+  document.getElementById("dMore").onclick = function () { dlySet(delaySec() * 1000 + 10); };
+  document.getElementById("dZero").onclick = function () { dlySet(0); };
+  document.getElementById("dDone").onclick = function () { dly.test = false; document.getElementById("mDelayBox").classList.remove("open"); dlyPaint(); };
+  document.getElementById("dTap").addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    var t = e.timeStamp && Math.abs(performance.now() - e.timeStamp) < 1000 ? e.timeStamp : performance.now();
+    if (dly.test) { dlyTap(t); return; }
+    dly.test = true; dly.clicks = []; dly.taps = [];
+    if (metro.on) metroStop();
+    metroStart();
+    dlyPaint("Listen to the speaker and tap the gold button exactly on each click you hear (10 taps).");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!dly.test || e.repeat || (e.key !== " " && e.key !== "Enter")) return;
+    e.preventDefault(); dlyTap(e.timeStamp && Math.abs(performance.now() - e.timeStamp) < 1000 ? e.timeStamp : performance.now());
+  }, true);
+  dlyPaint();
+
   function metroSet(bpm, beats) {
     var was = metro.on; metroStop();
     if (bpm) mPrefs.bpm = Math.max(40, Math.min(200, bpm));
@@ -1868,7 +1947,8 @@
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
       src: bookFrame.getAttribute("src") || "" }; },
-    metro: function () { return { on: metro.on, bpm: mPrefs.bpm, beats: mPrefs.beats, title: rTitle.textContent,
+    metro: function () { return { on: metro.on, bpm: mPrefs.bpm, beats: mPrefs.beats, title: rTitle.textContent, delay: +settings.audioDelay || 0,
+      test: dly.test, delayText: document.getElementById("mDelayMs").textContent, clicks: dly.clicks.slice(),
       dot: Array.prototype.map.call(document.getElementById("mDots").children, function (e) { return e.classList.contains("on") ? 1 : 0; }).join("") }; },
     rhythm: function () { return { can: document.body.classList.contains("can-rhythm"), open: rhythmEl.classList.contains("open"),
       src: rFrame.getAttribute("src") || "", view: [rView.offsetWidth, rView.offsetHeight], frame: [rFrame.offsetWidth, rFrame.offsetHeight,
@@ -1891,7 +1971,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.8.0";
+  var BUILD = "2.9.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -1920,9 +2000,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.8.0"></script>
-<script src="ptest.js?v=2.8.0"></script>
-<script src="lunch.js?v=2.8.0"></script>
-<script src="rtap.js?v=2.8.0"></script>
+<script src="ptnet.js?v=2.9.0"></script>
+<script src="ptest.js?v=2.9.0"></script>
+<script src="lunch.js?v=2.9.0"></script>
+<script src="rtap.js?v=2.9.0"></script>
 </body>
 </html>

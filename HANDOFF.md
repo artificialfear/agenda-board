@@ -55,6 +55,10 @@ Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
   onsets, end}; xAt(tl, t); countAt(tl, t). index.html: metroStart remembers t0/off/spb; metroDraw → playDraw(clicks since the
   downbeat after the count-off) moves #rPlay inside #rView and marks the count span .now. Once per Count off.
 
+## 2.9.0 Speaker delay (11/13, Mat; live)
+- settings.audioDelay (ms, this board only). delaySec(); metroDraw shifts every visual by it; rtapStart t0 uses it instead of
+  outputLatency when set. Tap test: dly {test, clicks (perf ms the click left), taps}. Tests: smoke "speaker delay …" (2).
+
 ## 2.8.0 Tap along (11/13, Mat; live, NOT yet tried on the school network)
 - rtap.js (board card + RTAP.score / RTAP.calibrate, also loaded by tap.html for scoring) + tap.html (student page).
   Mat's choices 11/13: school Chromebooks + iPads; pick name from the roster; board shows Top 5 + class average; not saved.

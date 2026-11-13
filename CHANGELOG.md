@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.9.0 — 2026-11-13
+- **🔈 Speaker delay** (Mat: Bluetooth speaker plays late): under the metronome, "Speaker delay: n ms" opens − / + (10 ms), 0,
+  and a **Tap test** (metronome plays; tap the gold button or space bar on each click you hear; 10 taps, first 2 skipped,
+  median of tap − click-sent). The beat dots, count-off numbers and moving line all wait that long (metroDraw uses
+  audio.currentTime − delay). Tap along uses it as the board's sound delay too. Saved in the board's settings (audioDelay).
+
 ## 2.8.0 — 2026-11-13
 - **📱 Tap along** (Mat): students tap the Rhythm of the Day on school Chromebooks / iPads for a score.
   - Rhythm view → 📱 Tap along: card top-right with QR + 4-letter code (tap.html?c=CODE). Students pick their name from the
