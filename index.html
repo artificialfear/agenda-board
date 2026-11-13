@@ -237,6 +237,24 @@
   #rhythm .m-dly { border: 0; background: none; color: #c9d0de; cursor: pointer; font: 2.1vh "Segoe UI", Arial, sans-serif; opacity: .85; padding: .4vh 1vw; }
   #rhythm .m-dly b { color: #c9a227; font-weight: 600; }
   #rhythm .m-opts { display: flex; gap: 2vw; }
+  /* 2.11.0: Hear it, speed ladder, class problem spots */
+  #rhythm .m-hear { display: none; border: 1px solid #c9a227; border-radius: 999px; padding: 1.4vh 2vw; background: #141c30; color: #c9a227; cursor: pointer;
+    font: 600 3vh "Oswald", sans-serif; letter-spacing: .03em; white-space: nowrap; }
+  #rhythm.has-counts .m-hear { display: block; }
+  #rhythm .m-hear.stop { background: #c9a227; color: #141c30; }
+  #rhythm.has-counts .m-new#mLadder { display: inline-block; }
+  #rhythm .l-lbl { font: 2.2vh "Segoe UI", Arial, sans-serif; color: #dfe4ee; }
+  #rhythm .l-steps { display: flex; gap: .5vw; }
+  #rhythm .l-steps button { border: 1px solid #34405e; border-radius: 1vh; background: #141c30; color: #fff; padding: .8vh 1vw; cursor: pointer;
+    font: 600 2.6vh "Oswald", sans-serif; }
+  #rhythm .l-steps button.sel { border-color: #c9a227; color: #c9a227; }
+  #rhythm .r-counts.heat span { visibility: visible; }
+  #rhythm .r-counts span.hg, #rhythm .r-counts span.hy, #rhythm .r-counts span.hr { border-radius: .8vh; padding: 0 .3em; }
+  #rhythm .r-counts span.hg { color: #3ddc84; }
+  #rhythm .r-counts span.hy { color: #ffd166; }
+  #rhythm .r-counts span.hr { color: #fff; background: #d9443a; }
+  #rhythm .r-counts span[data-pct]::after { content: attr(data-pct); display: block; text-align: center; font: 600 .42em "Segoe UI", Arial, sans-serif; opacity: .9; }
+  #rhythm .r-counts span.hg::after { visibility: hidden; }      /* only the trouble spots get a number */
   /* 2.10.0: a practice rhythm drawn over the slide's rhythm card (same spot, same size) */
   #rhythm .r-alt { position: absolute; display: none; background: #fff; border-radius: 6px; z-index: 1; overflow: hidden; }
   #rhythm .r-alt.on { display: block; }
@@ -470,14 +488,24 @@
       </div>
       <div class="m-sep"></div>
       <button class="m-go" id="mGo">▶ Count off</button>
+      <button class="m-hear" id="mHear">🔊 Hear it</button>
       <div class="m-sep c"></div>
       <button class="m-cnt" id="mCounts">Show counts</button>
     </div>
     <!-- 2.9.0: Bluetooth speaker delay. The sound can't come sooner, so the dots, count-off numbers and moving line wait for it. -->
     <div class="m-opts"><button class="m-dly m-new" id="mNew" aria-label="New rhythm">🎲 New rhythm</button>
       <button class="m-dly m-new" id="mToday" aria-label="Back to today's rhythm">↩ Today's rhythm</button>
+      <button class="m-dly m-new" id="mLadder" aria-label="Speed ladder">🪜 Speed ladder</button>
       <button class="m-dly" id="mLine" role="switch" aria-label="Moving line">〰 Moving line: <b id="mLineOn">On</b></button>
       <button class="m-dly" id="mDelay" aria-label="Speaker delay">🔈 Speaker delay: <b id="mDelayMs">0</b> ms</button></div>
+    <div class="m-dbox" id="mLadderBox">
+      <div class="d-row"><span class="l-lbl">Faster by</span><span class="l-steps" id="lSteps"><button data-s="2">+2</button><button data-s="4">+4</button>
+        <button data-s="6">+6</button><button data-s="8">+8</button></span>
+        <span class="l-lbl">up to</span><button class="m-b" id="lLess" aria-label="Lower target">−</button><div class="d-ms"><span id="lTarget">100</span><small>BPM</small></div>
+        <button class="m-b" id="lMore" aria-label="Higher target">+</button></div>
+      <div class="d-help" id="lHelp"></div>
+      <div class="d-row"><button class="d-tap" id="lGo">▶ Start the ladder</button><button class="d-btn" id="lDone">Done</button></div>
+    </div>
     <div class="m-dbox" id="mDelayBox">
       <div class="d-row"><button class="m-b" id="dLess" aria-label="Less delay">−</button><div class="d-ms"><span id="dMs">0</span><small>ms</small></div>
         <button class="m-b" id="dMore" aria-label="More delay">+</button><button class="d-btn" id="dZero">0</button><button class="d-btn" id="dDone">Done</button></div>
@@ -672,7 +700,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.10.0"></script>
+<script src="rhythmtime.js?v=2.11.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1258,7 +1286,7 @@
   }
   function countsFetch(blk) {
     var my = ++rc.seq;
-    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; rc.alt = null; altPaint(); countsPaint();
+    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; rc.alt = null; rc.heat = null; altPaint(); countsPaint();
     Promise.all([scoresCall({ a: "rhythm", block: blk }), countsBookGet()]).then(function (two) {
       if (my !== rc.seq) return;
       var j = two[0], line = (two[1].lines || {})[j.name];
@@ -1286,6 +1314,7 @@
     rCntBtn.textContent = rc.shown ? "Hide counts" : (!d && rc.loading ? "Getting counts…" : "Show counts");
     rCntBtn.classList.toggle("on", rc.shown);
     rCountsEl.classList.toggle("show", rc.shown);
+    rCountsEl.classList.remove("heat");
     rCountsEl.innerHTML = ""; playIdx = -1;
     if (!rGeo) return;
     rCountsEl.style.width = rGeo.w + "px";
@@ -1300,11 +1329,17 @@
     var gap = Infinity;
     for (var i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] > 1) gap = Math.min(gap, xs[i] - xs[i - 1]);
     var vh = window.innerHeight / 100, font = Math.max(2.6 * vh, Math.min(6 * vh, gap * 0.95));
+    var heat = rc.heat && rc.heat.name === d.name && rc.heat.hit.length === d.counts.filter(function (c) { return c[2] === "n"; }).length ? rc.heat : null, oi = 0;
+    rCountsEl.classList.toggle("heat", !!heat);
     rCountsEl.style.fontSize = Math.round(font) + "px";
     d.counts.forEach(function (c, k) {
       var e = document.createElement("span");
       e.textContent = c[1]; e.className = c[2].charAt(0) === "h" ? "h" : c[2];
       e.style.left = Math.round(xs[k]) + "px";
+      if (heat && c[2] === "n") {                                  // 2.11.0: class problem spots (share of students who hit this note)
+        var f = heat.hit[oi++];
+        if (f != null) { e.classList.add(f >= 0.8 ? "hg" : f >= 0.5 ? "hy" : "hr"); e.setAttribute("data-pct", Math.round(f * 100) + "%"); }
+      }
       rCountsEl.appendChild(e);
     });
   }
@@ -1328,6 +1363,7 @@
   }
   function altUse(d) {
     if (metro.on) metroStop();
+    rc.heat = null;
     rc.data = d;
     rc.tl = d && d.counts && window.RhythmTime ? window.RhythmTime.rhythmTimeline(d.counts, d.meter) : null;
     if (rc.tl && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
@@ -1368,6 +1404,7 @@
 
   // ---------- Metronome: one bar of count-off (big numbers + accented click), then a steady click ----------
   var METRO_KEY = "agendaBoard.metro";
+  var lad = { on: false, pass: 0, total: 0, start: 0, base: "" };      // 2.11.0 speed ladder (see ladStart)
   var mPrefs = Object.assign({ bpm: 80, beats: 4 }, load(METRO_KEY) || {});
   var metro = { on: false, next: 0, beat: 0, count: 0, timer: null, marks: [] };
   var rTitle = document.getElementById("rTitle"), titleText = "";
@@ -1381,17 +1418,37 @@
       dots.innerHTML = ""; for (var i = 0; i < mPrefs.beats; i++) { var e = document.createElement("i"); if (!i) e.className = "one"; dots.appendChild(e); }
     }
     var go = document.getElementById("mGo");
-    go.textContent = metro.on ? "■ Stop" : "▶ Count off"; go.classList.toggle("stop", metro.on);
+    go.textContent = metro.on && !metro.hear ? "■ Stop" : "▶ Count off"; go.classList.toggle("stop", metro.on && !metro.hear);
+    var hb = document.getElementById("mHear");
+    hb.textContent = metro.on && metro.hear ? "■ Stop" : "🔊 Hear it"; hb.classList.toggle("stop", metro.on && metro.hear);
+    var lg = document.getElementById("lGo"); if (lg) lg.textContent = lad.on ? "■ Stop the ladder" : "▶ Start the ladder";
   }
   function metroClick(t, accent) {
-    var ctx = audio, o = ctx.createOscillator(), g = ctx.createGain();
+    var ctx = audio, o = ctx.createOscillator(), g = ctx.createGain(), q = metro.hear && metro.count >= metro.off ? 0.4 : 1;   // softer under "Hear it"
     o.type = "square"; o.frequency.value = accent ? 1760 : 1175;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.22, t + 0.002);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime((accent ? 0.35 : 0.22) * q, t + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
     o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.06);
   }
+  // 2.11.0 (Mat 11/13): "Hear it" plays the rhythm itself on a woodblock-like "tock" (pitch-dropping sine + a short bright click)
+  function hearTock(t) {
+    var ctx = audio, o = ctx.createOscillator(), g = ctx.createGain(), o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(950, t); o.frequency.exponentialRampToValueAtTime(620, t + 0.05);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o2.type = "triangle"; o2.frequency.value = 2400;
+    g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.25, t + 0.001); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(g); g.connect(ctx.destination); o2.connect(g2); g2.connect(ctx.destination);
+    o.start(t); o.stop(t + 0.14); o2.start(t); o2.stop(t + 0.04);
+    metro.tocks = (metro.tocks || 0) + 1;                              // for the tests: sounds actually made
+  }
   function metroSchedule() {
     var spb = 60 / mPrefs.bpm;
+    if (metro.hear && rc.tl) {
+      var on = rc.tl.onsets;
+      while (metro.hi < on.length && metro.t0 + (metro.off + on[metro.hi]) * metro.spb < audio.currentTime + 0.12) {
+        hearTock(metro.t0 + (metro.off + on[metro.hi]) * metro.spb); metro.hi++;
+      }
+    }
     while (metro.next < audio.currentTime + 0.12) {
       if (metro.stopAt && metro.count >= metro.stopAt) break;            // 2.9.2: no clicks after the rhythm's last beat
       metroClick(metro.next, metro.beat === 0);
@@ -1412,21 +1469,23 @@
     var tNow = (now_ - metro.t0) / metro.spb - metro.off;
     playDraw(tNow);
     // 2.9.2 (Mat 11/13): the metronome stops once the rhythm is over (heard time, so the line finishes first)
-    if (metro.stopAt && tNow + metro.off >= metro.stopAt + 0.3) { metro.finished = true; metroStop(); return; }
+    if (metro.stopAt && tNow + metro.off >= metro.stopAt + 0.3) { metro.finished = true; metroStop(); ladNext(); return; }
     requestAnimationFrame(metroDraw);
   }
-  function metroStart() {
+  function metroStart(mode) {
     tUnlockAudio(); if (!audio) return;
-    titleText = rTitle.textContent;
+    metro.hear = mode === "hear" && !!rc.tl; metro.hi = 0; metro.tocks = 0;
+    titleText = lad.on ? lad.base + " · 🪜 " + mPrefs.bpm + " BPM (" + lad.pass + " of " + lad.total + ")" : rTitle.textContent;
     metro.on = true; metro.beat = 0; metro.count = 0; metro.marks = [];
     metro.next = audio.currentTime + 0.25;
     metro.t0 = metro.next; metro.off = mPrefs.beats; metro.spb = 60 / mPrefs.bpm;      // the rhythm starts after one bar
     metro.finished = false; metro.stopAt = rc.tl && !dly.test ? metro.off + rc.tl.length : 0;   // 0 = keep clicking (no counts / tap test)
     metroSchedule(); metro.timer = setInterval(metroSchedule, 25);
     // 2.8.0: students tapping along (rtap.js) get the round on the page clock (performance.now), when the click is heard
-    if (window.rtapStart && rc.tl && !dly.test) {
+    if (window.rtapStart && rc.tl && !dly.test && !metro.hear) {
       var lat = +settings.audioDelay > 0 ? +settings.audioDelay : (audio.outputLatency || audio.baseLatency || 0) * 1000;
-      window.rtapStart({ t0: performance.now() + (metro.t0 - audio.currentTime) * 1000 + lat, spb: metro.spb * 1000, off: metro.off, tl: rc.tl });
+      window.rtapStart({ t0: performance.now() + (metro.t0 - audio.currentTime) * 1000 + lat, spb: metro.spb * 1000, off: metro.off, tl: rc.tl,
+        name: rc.data && rc.data.name });
     }
     requestAnimationFrame(metroDraw); metroPaint();
   }
@@ -1450,6 +1509,7 @@
   function metroStop() {
     playDraw(-1);
     if (window.rtapStop && !metro.finished) window.rtapStop();      // a rhythm that played to the end isn't cancelled
+    if (!metro.finished && lad.on) ladEnd("Ladder stopped.");
     if (!metro.on) return;
     metro.on = false; clearInterval(metro.timer); metro.marks = [];
     Array.prototype.forEach.call(document.getElementById("mDots").children, function (e) { e.classList.remove("on"); });
@@ -1520,6 +1580,52 @@
   }, true);
   dlyPaint();
 
+  // ---------- 2.11.0 (Mat 11/13): speed ladder ----------
+  // Plays the rhythm, then again a few BPM faster (fresh count-off each pass), up to the target; then the tempo goes back.
+  // Step + target saved with the metronome prefs. Any other stop (Stop, tempo change, closing the view) ends it.
+  function ladStep() { return [2, 4, 6, 8].indexOf(+mPrefs.ladStep) >= 0 ? +mPrefs.ladStep : 4; }
+  function ladTarget() { var t = +mPrefs.ladTarget || 0; return Math.max(Math.min(t || mPrefs.bpm + 20, 200), Math.min(200, mPrefs.bpm + ladStep())); }
+  function ladPasses(from, to, step) { return Math.ceil((to - from) / step) + 1; }
+  function ladPaint(note) {
+    var step = ladStep(), tg = lad.on ? lad.target : ladTarget(), from = lad.on ? lad.start : mPrefs.bpm;
+    document.getElementById("lTarget").textContent = tg;
+    Array.prototype.forEach.call(document.querySelectorAll("#lSteps button"), function (b) { b.classList.toggle("sel", +b.getAttribute("data-s") === step); });
+    document.getElementById("lHelp").innerHTML = note || (lad.on ? "Pass <b>" + lad.pass + " of " + lad.total + "</b> at <b>" + mPrefs.bpm + " BPM</b>." :
+      "From <b>" + from + "</b> to <b>" + tg + " BPM</b>: " + ladPasses(from, tg, step) + " passes, each with its own count-off. The tempo goes back to " + from + " at the end.");
+    metroPaint();
+  }
+  function ladStart() {
+    if (!rc.tl) return;
+    if (metro.on) metroStop();
+    lad.on = true; lad.start = mPrefs.bpm; lad.target = ladTarget(); lad.stepBy = ladStep(); lad.pass = 1;
+    lad.total = ladPasses(lad.start, lad.target, lad.stepBy);
+    lad.base = rTitle.textContent;
+    metroStart("ladder"); ladPaint();
+  }
+  function ladNext() {
+    if (!lad.on) return;
+    if (mPrefs.bpm >= lad.target) { ladEnd("Ladder done: <b>" + lad.start + " → " + lad.target + " BPM</b>. Nice!"); return; }
+    mPrefs.bpm = Math.min(lad.target, mPrefs.bpm + lad.stepBy); lad.pass++;
+    setTimeout(function () { if (lad.on && !metro.on) { metroStart("ladder"); ladPaint(); } }, 600);
+    ladPaint();
+  }
+  function ladEnd(note) {
+    if (!lad.on) return;
+    lad.on = false; mPrefs.bpm = lad.start; rTitle.textContent = lad.base; titleText = lad.base;
+    ladPaint(note);
+  }
+  document.getElementById("mLadder").onclick = function () { document.getElementById("mLadderBox").classList.toggle("open"); ladPaint(); };
+  document.getElementById("lDone").onclick = function () { if (lad.on) metroStop(); document.getElementById("mLadderBox").classList.remove("open"); };
+  document.getElementById("lGo").onclick = function () { if (lad.on) metroStop(); else ladStart(); };
+  Array.prototype.forEach.call(document.querySelectorAll("#lSteps button"), function (b) {
+    b.onclick = function () { if (lad.on) return; mPrefs.ladStep = +b.getAttribute("data-s"); save(METRO_KEY, mPrefs); ladPaint(); };
+  });
+  document.getElementById("lLess").onclick = function () { if (lad.on) return; mPrefs.ladTarget = Math.max(mPrefs.bpm + ladStep(), ladTarget() - 2); save(METRO_KEY, mPrefs); ladPaint(); };
+  document.getElementById("lMore").onclick = function () { if (lad.on) return; mPrefs.ladTarget = Math.min(200, ladTarget() + 2); save(METRO_KEY, mPrefs); ladPaint(); };
+
+  // ---------- 2.11.0: class problem spots (from rtap.js after a tap-along round) ----------
+  window.rhythmHeat = function (h) { rc.heat = h; countsPaint(); };
+
   function metroSet(bpm, beats) {
     var was = metro.on; metroStop();
     if (bpm) mPrefs.bpm = Math.max(40, Math.min(200, bpm));
@@ -1534,6 +1640,7 @@
     var b = e.target.getAttribute && e.target.getAttribute("data-b"); if (b) metroSet(0, +b);
   });
   document.getElementById("mGo").onclick = function () { metro.on ? metroStop() : metroStart(); };
+  document.getElementById("mHear").onclick = function () { metro.on ? metroStop() : metroStart("hear"); };
   metroPaint();
   rFrame.addEventListener("load", function () { rLoad.style.display = "none"; });
   rhythmEl.addEventListener("click", rhythmClose);
@@ -2022,6 +2129,9 @@
         dim: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.className === "h"; }).length,
         lefts: Array.prototype.map.call(rCountsEl.children, function (e) { return parseInt(e.style.left, 10); }),
         font: parseInt(rCountsEl.style.fontSize, 10) || 0, name: rc.data && rc.data.name || "", alt: rc.alt,
+        heat: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.hasAttribute("data-pct"); })
+          .map(function (e) { return [e.textContent, e.getAttribute("data-pct"), e.className.replace(/.*\b(h[gyr])\b.*/, "$1")]; }),
+        ladder: { on: lad.on, pass: lad.pass, total: lad.total, bpm: mPrefs.bpm }, hear: !!metro.hear, tocks: metro.tocks || 0,
         altBox: rAlt.classList.contains("on") ? [rAlt.offsetLeft, rAlt.offsetTop, rAlt.offsetWidth, rAlt.offsetHeight] : null },
       play: { on: rPlay.classList.contains("on"), left: parseInt(rPlay.style.left, 10) || 0, now: playIdx,
         beats: mPrefs.beats, tl: rc.tl ? { beats: rc.tl.beats, length: rc.tl.length, onsets: rc.tl.onsets.length } : null } }; },
@@ -2036,7 +2146,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.10.0";
+  var BUILD = "2.11.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2065,9 +2175,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.10.0"></script>
-<script src="ptest.js?v=2.10.0"></script>
-<script src="lunch.js?v=2.10.0"></script>
-<script src="rtap.js?v=2.10.0"></script>
+<script src="ptnet.js?v=2.11.0"></script>
+<script src="ptest.js?v=2.11.0"></script>
+<script src="lunch.js?v=2.11.0"></script>
+<script src="rtap.js?v=2.11.0"></script>
 </body>
 </html>

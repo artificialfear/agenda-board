@@ -25,7 +25,7 @@
       return { good: good, perfect: perfect };
     });
     var lo = onsetsMs[0] - GOOD, hi = onsetsMs[n - 1] + GOOD;
-    var taken = [], res = { perfect: 0, good: 0, miss: 0, extra: 0, n: n, offs: [] };
+    var taken = [], res = { perfect: 0, good: 0, miss: 0, extra: 0, n: n, offs: [], notes: onsetsMs.map(function () { return 0; }) };
     tapsMs.slice().sort(function (a, b) { return a - b; }).forEach(function (t) {
       if (t < lo || t > hi) return;                                  // count-off taps / after the end: not scored
       var best = -1, bd = Infinity;
@@ -36,6 +36,7 @@
       }
       if (best < 0) { res.extra++; return; }
       taken[best] = true; res.offs.push(Math.round(t - onsetsMs[best]));
+      res.notes[best] = bd <= win[best].perfect ? 2 : 1;               // 2.11.0: per note, for the class problem-spot map
       if (bd <= win[best].perfect) res.perfect++; else res.good++;
     });
     res.miss = n - res.perfect - res.good;
@@ -220,8 +221,9 @@
     }
     if (d.type === "leave") { c.sid = null; paint(); return; }
     if (d.type === "result" && c.sid && round && d.round === round.id) {
-      results[c.sid] = { n: c.sn, pct: Math.max(0, Math.min(100, Math.round(+d.pct || 0))), p: +d.p || 0, g: +d.g || 0, m: +d.m || 0, x: +d.x || 0 };
-      paint();
+      results[c.sid] = { n: c.sn, pct: Math.max(0, Math.min(100, Math.round(+d.pct || 0))), p: +d.p || 0, g: +d.g || 0, m: +d.m || 0, x: +d.x || 0,
+        h: Array.isArray(d.h) && d.h.length === round.onsets.length ? d.h.map(function (v) { return +v > 0 ? 1 : 0; }) : null };
+      heatSend(); paint();
     }
   }
 
@@ -232,7 +234,8 @@
   }
   window.rtapStart = function (r) {
     if (!on || !r || !r.tl) return;
-    round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length };
+    round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length, name: r.name || "" };
+    if (window.rhythmHeat) window.rhythmHeat(null);
     round.endsAt = r.t0 + (r.off + r.tl.length) * r.spb;
     results = {}; lastRound = round.id; view = "round";
     conns.forEach(function (c) { if (c.hi) send(c, roundMsg()); });
@@ -241,6 +244,15 @@
       Math.max(0, round.endsAt - performance.now()) + 1500);
     paint();
   };
+  // 2.11.0 (Mat 11/13): problem spots. For each note, the share of students who hit it (Perfect or Good) → index.html colors
+  // that note's count under the rhythm (green / yellow / red). Only results that carry per-note hits count.
+  function heatSend() {
+    if (!window.rhythmHeat || !round) return;
+    var rs = Object.keys(results).map(function (k) { return results[k].h; }).filter(Boolean);
+    if (!rs.length) { window.rhythmHeat(null); return; }
+    window.rhythmHeat({ name: round.name, n: rs.length, hit: round.onsets.map(function (_, i) {
+      return rs.reduce(function (s, h) { return s + h[i]; }, 0) / rs.length; }) });
+  }
   window.rtapStop = function () {
     if (!round) return;
     if (performance.now() < round.endsAt) {               // stopped before the end: the round doesn't count
@@ -272,7 +284,8 @@
       card.innerHTML = head + "<ol>" +
         list.slice(0, 5).map(function (r, i) { return "<li><i>" + (i + 1) + "</i>" + esc(r.n) + "<b>" + r.pct + "%</b></li>"; }).join("") +
         (list.length ? "" : '<li class="rt-wait">Waiting for scores…</li>') + "</ol>" +
-        '<div class="rt-avg">Class average <b>' + (list.length ? avg + "%" : "–") + "</b> · " + list.length + " of " + n + " scored</div>";
+        '<div class="rt-avg">Class average <b>' + (list.length ? avg + "%" : "–") + "</b> · " + list.length + " of " + n + " scored</div>" +
+        (list.some(function (r) { return r.h; }) ? '<div class="rt-wait" style="margin-top:.5vh">Problem spots: colored counts under the rhythm</div>' : "");
     } else {
       var qr = window.qrcode && code ? NET.qrSvg(tapUrl()) : "";
       card.innerHTML = head + '<div class="rt-join"><div class="rt-qr">' + qr + '</div><div><div class="rt-wait">Scan, or open the tap page and type</div>' +
@@ -282,7 +295,7 @@
             (view === "round" ? " · tapping now!" : " · press ▶ Count off") : "Connecting…") + "</div>");
     }
     fit();
-    var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); paint(); };
+    var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); if (window.rhythmHeat) window.rhythmHeat(null); paint(); };
     var q = $("rtShowQr"); if (q) q.onclick = function () { view = "join"; paint(); };
   }
   // never over the rhythm: if the card is taller than the space above it (a taller screen puts the rhythm higher), shrink it

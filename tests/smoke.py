@@ -580,6 +580,30 @@ def main():
               and n4["counts"]["name"] == "8th_4-4_004.png" and n4["counts"]["alt"] is None)
         print(("PASS" if ok else "FAIL"), f"{'new rhythm for practice':34s}" + ("" if ok else f" {n1['counts']} {img_ok} {view} {n2['counts']['name']} {pn} {n3['counts']} {n4['counts']['name']}"))
         failures += 0 if ok else 1
+        # 2.11.0: 🔊 Hear it plays the rhythm (tocks on the notes), then stops by itself
+        page.click("#mHear"); page.wait_for_timeout(2500)
+        h1 = page.evaluate("window.__agendaBoard.rhythm()"); ht = page.inner_text("#mHear"); gt = page.inner_text("#mGo")
+        page.wait_for_timeout(4500); h2 = page.evaluate("window.__agendaBoard.rhythm()"); hm = page.evaluate("window.__agendaBoard.metro()")
+        ok = (h1["play"]["on"] and h1["counts"]["hear"] and 0 < h1["counts"]["tocks"] < h1["play"]["tl"]["onsets"] and "Stop" in ht and "Count off" in gt
+              and h2["counts"]["tocks"] == h2["play"]["tl"]["onsets"] and not hm["on"] and "Hear it" in page.inner_text("#mHear"))
+        print(("PASS" if ok else "FAIL"), f"{'hear it':34s}" + ("" if ok else f" {h1['counts']} {ht} {gt} {h2['counts']} {hm}"))
+        failures += 0 if ok else 1
+        # 2.11.0: 🪜 speed ladder 188 → 196 by 8: two passes, each with a count-off; the tempo goes back to 188
+        page.evaluate("window.__agendaBoard && 0"); page.click("#mFaster")                 # 200 is the max: use 188
+        for _ in range(3): page.click("#mSlower")
+        page.click("#mLadder"); page.click("#lSteps button[data-s='8']")
+        for _ in range(12): page.click("#lLess")
+        lh = page.inner_text("#lHelp")
+        page.click("#lGo"); page.wait_for_timeout(2500); l1 = page.evaluate("window.__agendaBoard.rhythm().counts.ladder"); t1 = page.inner_text("#rTitle")
+        page.wait_for_timeout(5800); l2 = page.evaluate("window.__agendaBoard.rhythm().counts.ladder"); t2 = page.inner_text("#rTitle")
+        if shots_dir: page.screenshot(path=str(shots_dir / "rhythm_ladder.png"))
+        page.wait_for_timeout(6500); l3 = page.evaluate("window.__agendaBoard.rhythm().counts.ladder"); m3 = page.evaluate("window.__agendaBoard.metro()")
+        lh3 = page.inner_text("#lHelp")
+        ok = ("188" in lh and "196" in lh and "2 passes" in lh and l1 == {"on": True, "pass": 1, "total": 2, "bpm": 188} and "188 BPM (1 OF 2)" in t1.upper()
+              and l2["pass"] == 2 and l2["bpm"] == 196 and not l3["on"] and l3["bpm"] == 188 and not m3["on"] and "Ladder done" in lh3)
+        print(("PASS" if ok else "FAIL"), f"{'speed ladder':34s}" + ("" if ok else f" {lh} {l1} {t1} {l2} {t2} {l3} {m3} {lh3}"))
+        failures += 0 if ok else 1
+        page.click("#lDone")
         # 2.9.2: Moving line Off (saved): the metronome still counts off and plays, no line
         page.click("#mLine"); page.wait_for_timeout(100)
         lbl = page.inner_text("#mLine")

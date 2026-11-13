@@ -57,8 +57,8 @@
 <body>
 <div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Tap the <span>Rhythm</span></h1><div class="who" id="who"></div><i class="conn" id="conn"></i></div>
 <main id="main"></main>
-<script src="ptnet.js?v=2.10.0"></script>
-<script src="rtap.js?v=2.10.0"></script>
+<script src="ptnet.js?v=2.11.0"></script>
+<script src="rtap.js?v=2.11.0"></script>
 <script>
 (function () {
   "use strict";
@@ -184,7 +184,7 @@
     var res = RT.scoreAligned(r.onsets, taps, cal !== null ? cal : (+load(CAL_KEY) || 0), Math.min(200, r.spb * 0.3));
     if (res.perfect + res.good >= 3) save(CAL_KEY, res.shift);          // this device's lag, for the record
     result = res; result.cal = res.shift; result.countCal = cal; result.countTaps = countTaps.length;
-    send({ type: "result", round: r.id, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra });
+    send({ type: "result", round: r.id, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra, h: res.notes });
     phase = "result"; draw();
   }
   function tap(t) {

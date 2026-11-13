@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.11.0 — 2026-11-13 (Mat)
+- **🔊 Hear it** (next to Count off): count-off, then the board plays the rhythm itself (woodblock "tock" on every note,
+  hearTock) with softer clicks and the moving line; stops at the end. No tap-along round.
+- **🪜 Speed ladder** (under the metronome): faster by +2/+4/+6/+8 up to a target (saved in agendaBoard.metro ladStep/ladTarget);
+  each pass gets its own count-off, title shows "🪜 n BPM (pass of total)", tempo goes back at the end; any other stop ends it.
+- **Class problem spots** after a tap-along round: devices send per-note hits (RTAP.score notes: 2/1/0); the board colors each
+  note's count green ≥80% / yellow ≥50% / red (with the %), even with counts hidden; cleared by a new round, New rhythm, Turn off.
+
 ## 2.10.0 — 2026-11-13 (Mat)
 - **🎲 New rhythm** in the Rhythm of the Day view: another picture from the same set and meter (rhythm-pictures/ on this site,
   with its counts) drawn over the slide's rhythm card (#rAlt, RHYTHM_IMG_EMU y/h added); counts, moving line, metronome
