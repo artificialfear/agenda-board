@@ -133,6 +133,13 @@ def main():
         check("board Top 5 + class average", "TOP 5" in txt.upper() and "Ana R." in txt and "100%" in txt and "Class average" in txt and "2 of 2 scored" in txt
               and txt.index("Ana R.") < txt.index("Ben K."), txt)
         check("board never shows scores but Top 5/average", board.evaluate("window.__rtap.state().view") == "results")
+        # 2.12.2: ties: percent, then Perfect count, then closest to the beat; exactly equal = shared place (1, 1, 3)
+        check("devices send how close they were", isinstance(st0 := board.evaluate("window.__rtap.state().results.a1.a"), int) and st0 <= 5, st0)
+        rk = board.evaluate("""window.__rtap.rank({
+          a: {n: 'Ann', pct: 100, p: 9, a: 31}, b: {n: 'Bo', pct: 100, p: 9, a: 12}, c: {n: 'Cal', pct: 90, p: 7, a: 5},
+          d: {n: 'Di', pct: 90, p: 7, a: 5}, e: {n: 'Ed', pct: 80, p: 6, a: null}, f: {n: 'Flo', pct: 80, p: 6, a: 40}, g: {n: 'Gus', pct: 70, p: 7, a: 9} })""")
+        check("tie-break by accuracy, shared places", [r[:2] for r in rk] == [["Bo", 1], ["Ann", 2], ["Cal", 3], ["Di", 3], ["Flo", 5], ["Ed", 6], ["Gus", 7]]
+              and "±12 ms" in rk[0][2] and rk[6][2] == "", rk)
         check("card above the rhythm (results)", board.evaluate(GAP) >= 0, board.evaluate(GAP))
         # 2.11.0: class problem spots: every note colored by how many hit it (Ana all, Ben every other one → 100% / 50%)
         hm = board.evaluate("window.__agendaBoard.rhythm().counts.heat")

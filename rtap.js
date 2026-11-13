@@ -125,6 +125,7 @@
     "#rtBig li { display: flex; align-items: baseline; gap: 2.4vw; font: 600 7.4vh/1.35 'Oswald', 'Arial Narrow', Arial, sans-serif; }",
     "#rtBig li i { font-style: normal; color: #c9a227; width: 5vh; text-align: right; }",
     "#rtBig li b { margin-left: auto; color: #c9a227; font-weight: 600; font-variant-numeric: tabular-nums; }",
+    "#rtBig li small.ms, #rtCard li small.ms { font-size: .45em; color: #c9d0de; font-weight: 400; font-family: 'Segoe UI', Arial, sans-serif; }",
     "#rtBig li:first-child { color: #ffe08a; }",
     "#rtBig .b-avg { margin-top: 2.4vh; padding-top: 2vh; border-top: 2px solid #34405e; text-align: center; font: 600 4.6vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
     "#rtBig .b-avg b { color: #c9a227; font-weight: 600; }",
@@ -238,7 +239,8 @@
     if (d.type === "leave") { c.sid = null; paint(); return; }
     if (d.type === "result" && c.sid && round && d.round === round.id) {
       results[c.sid] = { n: c.sn, pct: Math.max(0, Math.min(100, Math.round(+d.pct || 0))), p: +d.p || 0, g: +d.g || 0, m: +d.m || 0, x: +d.x || 0,
-        h: Array.isArray(d.h) && d.h.length === round.onsets.length ? d.h.map(function (v) { return +v > 0 ? 1 : 0; }) : null };
+        h: Array.isArray(d.h) && d.h.length === round.onsets.length ? d.h.map(function (v) { return +v > 0 ? 1 : 0; }) : null,
+        a: d.a != null && isFinite(+d.a) ? Math.max(0, Math.round(+d.a)) : null };      // 2.12.2: average ms off the beat (tie-break)
       heatSend(); paint();
     }
   }
@@ -286,13 +288,28 @@
   var BIG_MS = 5000, big = document.createElement("div"), bigT = null, bigFor = null;
   big.id = "rtBig"; big.setAttribute("role", "dialog"); big.setAttribute("aria-label", "Tap along leaderboard");
   document.body.appendChild(big);
+  // 2.12.2 (Mat 11/13): ranking. Percent, then Perfect count, then closest to the beat (average ms off, smaller wins; a device
+  // that didn't send it goes after). Exactly equal on all three = the same place, and the next place skips (1, 1, 3).
+  function rankCmp(a, b) {
+    return b.pct - a.pct || b.p - a.p || (a.a == null ? 1e9 : a.a) - (b.a == null ? 1e9 : b.a);
+  }
+  function ranked() {
+    var list = Object.keys(results).map(function (k) { return results[k]; }).sort(rankCmp);
+    list.forEach(function (r, i) { r.rank = i && rankCmp(list[i - 1], r) === 0 ? list[i - 1].rank : i + 1; });
+    return list;
+  }
+  // "±12 ms" next to a percent only where it decided something: someone else has the same percent
+  function msTag(r) {
+    var tie = r.a != null && Object.keys(results).some(function (k) { var o = results[k]; return o !== r && o.pct === r.pct; });
+    return tie ? ' <small class="ms">±' + r.a + " ms</small>" : "";
+  }
   function bigList() {
-    return Object.keys(results).map(function (k) { return results[k]; }).sort(function (a, b) { return b.pct - a.pct || b.p - a.p; });
+    return ranked();
   }
   function bigPaint() {
     var list = bigList(), avg = list.length ? Math.round(list.reduce(function (s, r) { return s + r.pct; }, 0) / list.length) : 0;
     big.innerHTML = '<div class="b-card"><h2>🏆 Top 5</h2>' + (list.length ? "<ol>" + list.slice(0, 5).map(function (r, i) {
-      return "<li><i>" + (i + 1) + "</i>" + esc(r.n) + "<b>" + r.pct + "%</b></li>"; }).join("") + "</ol>" +
+      return "<li><i>" + r.rank + "</i>" + esc(r.n) + "<b>" + r.pct + "%" + msTag(r) + "</b></li>"; }).join("") + "</ol>" +
       '<div class="b-avg">Class average <b>' + avg + "%</b> · " + list.length + " scored</div>" : '<div class="b-wait">Waiting for scores…</div>') + "</div>";
   }
   function bigShow(id, tries) {
@@ -328,11 +345,10 @@
     var head = '<h3><span>' + (res ? "🏆 Top 5" : "📱 Tap along") + "</span>" + (res ? '<button id="rtShowQr">QR</button>' : "") +
       '<button id="rtOff">Turn off</button></h3>';
     if (res) {
-      var list = Object.keys(results).map(function (k) { return results[k]; })
-        .sort(function (a, b) { return b.pct - a.pct || b.p - a.p; });
+      var list = ranked();
       var avg = list.length ? Math.round(list.reduce(function (s, r) { return s + r.pct; }, 0) / list.length) : 0;
       card.innerHTML = head + "<ol>" +
-        list.slice(0, 5).map(function (r, i) { return "<li><i>" + (i + 1) + "</i>" + esc(r.n) + "<b>" + r.pct + "%</b></li>"; }).join("") +
+        list.slice(0, 5).map(function (r) { return "<li><i>" + r.rank + "</i>" + esc(r.n) + "<b>" + r.pct + "%" + msTag(r) + "</b></li>"; }).join("") +
         (list.length ? "" : '<li class="rt-wait">Waiting for scores…</li>') + "</ol>" +
         '<div class="rt-avg">Class average <b>' + (list.length ? avg + "%" : "–") + "</b> · " + list.length + " of " + n + " scored</div>" +
         (list.some(function (r) { return r.h; }) ? '<div class="rt-wait" style="margin-top:.5vh">Problem spots: colored counts under the rhythm</div>' : "");
@@ -369,7 +385,8 @@
     .observe(rv, { attributes: true, attributeFilter: ["class"] });
   setInterval(function () { if (on && view === "join") paint(); }, 5000);
 
-  window.__rtap = { state: function () {
+  window.__rtap = { rank: function (rs) { var keep = results; results = rs; var l = ranked().map(function (r) { return [r.n, r.rank, msTag(r)]; }); results = keep; return l; },
+    state: function () {
     return { on: on, status: status, code: code, block: block, roster: roster.length, players: players().map(function (c) { return c.sn; }),
       view: view, round: round ? round.id : null, results: results, big: big.classList.contains("show") };
   } };

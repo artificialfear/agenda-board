@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.12.2 — 2026-11-13 (Mat)
+- Tap along ranking: percent, then Perfect count, then closest to the beat (devices now send `a` = average ms off; smaller wins,
+  missing goes after). Exactly equal = shared place, next place skips (1, 1, 3). "±n ms" shows next to a percent someone else
+  also has (card + big board). Older tap pages still score; they rank after equal students who sent accuracy.
+
 ## 2.12.1 — 2026-11-13 (Mat)
 - Closing scores window: much bigger numbers (full-screen closing time: 11–12vh, was 5–8vh; opened by hand: 64–68px in a
   1500px card, was 30–32px in 980px), saved numbers white instead of grey.

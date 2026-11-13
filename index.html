@@ -701,7 +701,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.12.1"></script>
+<script src="rhythmtime.js?v=2.12.2"></script>
 <script>
 (function () {
   "use strict";
@@ -2148,7 +2148,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.12.1";
+  var BUILD = "2.12.2";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2177,9 +2177,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.12.1"></script>
-<script src="ptest.js?v=2.12.1"></script>
-<script src="lunch.js?v=2.12.1"></script>
-<script src="rtap.js?v=2.12.1"></script>
+<script src="ptnet.js?v=2.12.2"></script>
+<script src="ptest.js?v=2.12.2"></script>
+<script src="lunch.js?v=2.12.2"></script>
+<script src="rtap.js?v=2.12.2"></script>
 </body>
 </html>
