@@ -264,8 +264,33 @@
   #rhythm .r-alt { position: absolute; display: none; background: #fff; border-radius: 6px; z-index: 1; overflow: hidden; }
   #rhythm .r-alt.on { display: block; }
   #rhythm .r-alt img { position: absolute; display: block; }
+  /* 2.17.0 (Mat 11/14): two-part rhythms. Both parts stacked in place of the slide's card + counts; same moment = same x */
+  #rhythm .r-duo { display: none; flex-direction: column; gap: 1.4vh; margin-bottom: 1vh; }
+  #rhythm.duo .r-view, #rhythm.duo .r-counts { display: none !important; }
+  #rhythm.duo .r-duo { display: flex; }
+  #rhythm .d-part { display: flex; align-items: flex-start; gap: 1.2vw; transition: opacity .2s; }
+  #rhythm .d-part.dim { opacity: .38; }
+  #rhythm .d-tag { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 8vh; height: 8vh;
+    margin-top: 1vh; border-radius: 50%; background: #c9a227; color: #141c30; font: 600 4.4vh/1 "Oswald", "Arial Narrow", Arial, sans-serif; }
+  #rhythm .d-tag small { font-size: 1.5vh; letter-spacing: .08em; }
+  #rhythm .d-col { position: relative; }
+  #rhythm .d-card { position: relative; background: #fff; border-radius: 12px; overflow: hidden; }
+  #rhythm .d-card img { display: block; width: 100%; height: auto; }
+  #rhythm .d-play { position: absolute; top: 4%; bottom: 4%; width: 6px; margin-left: -3px; border-radius: 3px; background: #c9a227;
+    box-shadow: 0 0 14px 3px rgba(201,162,39,.75); display: none; pointer-events: none; }
+  #rhythm .d-play.on { display: block; }
+  #rhythm .d-cnt { position: relative; height: 5.6vh; font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600; color: #fff; }
+  #rhythm .d-cnt span { position: absolute; top: .3vh; transform: translateX(-50%); white-space: nowrap; line-height: 1.2; }
+  #rhythm .d-cnt span.h { color: #6f7a93; }
+  #rhythm .d-cnt span.now { color: #c9a227; transform: translateX(-50%) scale(1.25); }
+  #rhythm .d-cnt span.hg, #rhythm .d-cnt span.hy, #rhythm .d-cnt span.hr { border-radius: .8vh; padding: 0 .3em; }
+  #rhythm .d-cnt span.hg { color: #3ddc84; } #rhythm .d-cnt span.hy { color: #ffd166; }
+  #rhythm .d-cnt span.hr { color: #fff; background: #d9443a; }
+  #rhythm .m-new#mDuo.on { background: #c9a227; color: #141c30; border-radius: 999px; opacity: 1; }
+  #rhythm .m-focus { display: none; align-items: center; gap: .6vw; }
+  #rhythm.duo .m-focus { display: flex; }
   #rhythm .m-new { display: none; color: #c9a227; }
-  #rhythm.has-counts .m-new#mNew { display: inline-block; }
+  #rhythm.has-counts .m-new#mNew, #rhythm.has-counts .m-new#mDuo { display: inline-block; }
   #rhythm.has-counts.alt .m-new#mToday { display: inline-block; }
   #rhythm .m-dbox { display: none; flex-direction: column; align-items: center; gap: 1.2vh; background: #2a3858; border: 1px solid #c9a227;
     border-radius: 2vh; padding: 1.6vh 1.6vw; max-width: 60vw; }
@@ -481,6 +506,7 @@
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
   <div class="r-title" id="rTitle">RHYTHM OF THE DAY</div>
   <div class="r-view" id="rView"><div class="r-load" id="rLoad">Loading…</div><iframe id="rFrame" title="Rhythm of the day" tabindex="-1"></iframe><div class="r-alt" id="rAlt"><img id="rAltImg" alt="Practice rhythm"></div><div class="r-play" id="rPlay"></div></div>
+  <div class="r-duo" id="rDuo"></div>
   <div class="r-counts" id="rCounts" aria-live="polite"></div>
   <div class="r-metro" id="metro">
     <div class="m-dots" id="mDots"></div>
@@ -506,6 +532,9 @@
       <span class="l-lbl">Time</span><span class="l-steps" id="pTime">
         <button data-v="2/4">2/4</button><button data-v="3/4">3/4</button><button data-v="4/4">4/4</button><button data-v="6/8" title="8th grade only">6/8</button></span>
       <button class="m-dly m-new" id="mNew" aria-label="New rhythm">🎲 New rhythm</button>
+      <button class="m-dly m-new" id="mDuo" role="switch" aria-checked="false" aria-label="Two-part rhythm">👥 2-part</button>
+      <span class="m-focus" id="mFocus"><span class="l-lbl">Hear</span><span class="l-steps" id="pFocus"><button data-f="0" class="sel">Both</button>
+        <button data-f="1">Part 1</button><button data-f="2">Part 2</button></span></span>
       <button class="m-dly m-new" id="mToday" aria-label="Back to today's rhythm">↩ Today's rhythm</button></div>
     <div class="m-opts">
       <button class="m-dly m-new" id="mLadder" aria-label="Speed ladder">🪜 Speed ladder</button>
@@ -713,7 +742,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.16.0"></script>
+<script src="rhythmtime.js?v=2.17.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1278,6 +1307,7 @@
     rFrame.style.width = Math.round(SLIDE_EMU.w * s) + "px"; rFrame.style.height = Math.round(SLIDE_EMU.h * s) + "px";
     rFrame.style.left = Math.round(-x0 * s) + "px"; rFrame.style.top = Math.round(-y0 * s) + "px";
     rGeo = { s: s, x0: x0, y0: y0, w: Math.round(w * s) };
+    duoLayout();
     altPlace();
     countsPaint();
     return s;
@@ -1289,7 +1319,8 @@
   // The rhythm image sits at this spot on every agenda slide (Code.gs daily:rhythm); x in the counts = fraction of its width.
   var RHYTHM_IMG_EMU = { x: 603940, w: 4690000, y: 1286476, h: 536000 };     // y/h: 25.01% / 10.42% of the slide
   var rGeo = null, rCountsEl = document.getElementById("rCounts"), rCntBtn = document.getElementById("mCounts");
-  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0, tl: null, today: null, alt: null };
+  var rc = { block: null, data: null, err: "", loading: false, shown: false, seq: 0, tl: null, today: null, alt: null,
+    duo: null, focus: 0 };       // 2.17.0: duo = the two-part rhythm on screen; focus = which part 🔊 Hear it plays (0 = both)
   var countsBook = null;
   function countsBookGet() {
     if (!countsBook) countsBook = fetch("rhythm-counts.json").then(function (r) {
@@ -1299,7 +1330,7 @@
   }
   function countsFetch(blk) {
     var my = ++rc.seq;
-    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; rc.alt = null; rc.heat = null; altPaint(); countsPaint();
+    rc.block = blk; rc.loading = true; rc.err = ""; rc.tl = null; rc.alt = null; rc.duo = null; rc.heat = null; altPaint(); countsPaint();
     Promise.all([scoresCall({ a: "rhythm", block: blk }), countsBookGet()]).then(function (two) {
       if (my !== rc.seq) return;
       var j = two[0], line = (two[1].lines || {})[j.name];
@@ -1308,7 +1339,7 @@
       // the picture in Drive must be the one these counts were made with (same size); else say so instead of wrong counts
       j.stale = !!(line && line.b && j.bytes && line.b !== j.bytes);
       if (j.stale) j.counts = null;
-      rc.data = j; rc.today = j; rc.alt = null; altPaint(); rc.loading = false;
+      rc.data = j; rc.today = j; rc.alt = null; rc.duo = null; altPaint(); rc.loading = false;
       // 2.7.0: the moving line's timeline; the metronome's beats follow the rhythm's meter (6/8 → 6)
       rc.tl = j.counts && window.RhythmTime ? window.RhythmTime.rhythmTimeline(j.counts, j.meter) : null;
       if (rc.tl && !metro.on && mPrefs.beats !== rc.tl.beats && [2, 3, 4, 6].indexOf(rc.tl.beats) >= 0) metroSet(0, rc.tl.beats);
@@ -1321,11 +1352,14 @@
   // 2.15.0: the students' Tap along screens show the same rhythm (picture, counts if shown here, moving line on/off)
   function rtapRhythmSend() {
     if (!window.rtapRhythm) return;
-    var d = rc.data && rc.data.block === rc.block && rc.data.counts ? rc.data : null;
-    window.rtapRhythm(d ? { pic: d.name, meter: d.meter, counts: d.counts, cnt: rc.shown, line: (mPrefs || {}).line !== false } : null);
+    var d = rc.data && rc.data.block === rc.block && rc.data.counts ? rc.data : null, du = d && rc.duo;
+    window.rtapRhythm(!d ? null : du ? { pic: du.parts[0].img, pic2: du.parts[1].img, dir: "rhythm-duos", duo: du.name, meter: du.meter,
+      counts: du.parts[0].counts, counts2: du.parts[1].counts, cnt: rc.shown, line: (mPrefs || {}).line !== false }
+      : { pic: d.name, meter: d.meter, counts: d.counts, cnt: rc.shown, line: (mPrefs || {}).line !== false });
   }
   function countsPaint() {
     rtapRhythmSend();
+    if (rc.duo) duoCounts();
     var has = !!settings.closingUrl;
     rhythmEl.classList.toggle("has-counts", has);
     if (!has) return;
@@ -1377,10 +1411,14 @@
   }
   function altPaint() {
     pickPaint();
-    rAlt.classList.toggle("on", !!rc.alt);
+    rAlt.classList.toggle("on", !!rc.alt && !rc.duo);
     rhythmEl.classList.toggle("alt", !!rc.alt);
-    if (rc.alt) rAltImg.src = "rhythm-pictures/" + rc.alt;
+    rhythmEl.classList.toggle("duo", !!rc.duo);
+    var db = document.getElementById("mDuo"); db.classList.toggle("on", !!rc.duo); db.setAttribute("aria-checked", rc.duo ? "true" : "false");
+    if (rc.alt && !rc.duo) rAltImg.src = "rhythm-pictures/" + rc.alt;
+    duoBuild();
     altPlace();
+    if (window.rtapFit) window.rtapFit();
   }
   function altUse(d) {
     if (metro.on) metroStop();
@@ -1393,7 +1431,7 @@
   // 2.13.0 (Mat 11/13): Level (6 Beg / 6 Int / 7th / 8th = the four rhythm sets) and Time (2/4 3/4 4/4, 6/8 = 8th only).
   // Picking either shows a random rhythm from that set + meter; 🎲 New rhythm stays in whatever is picked.
   function curKind() {
-    var m = String(rc.data && rc.data.name || "").match(/^([^_]+)_(\d)-(\d)_/);
+    var m = String(rc.data && rc.data.name || "").replace(/^duo_/, "").match(/^([^_]+)_(\d)-(\d)_/);
     return m ? { set: m[1], meter: m[2] + "/" + m[3] } : null;
   }
   function pickPaint() {
@@ -1412,21 +1450,118 @@
   Array.prototype.forEach.call(document.querySelectorAll("#pTime button"), function (b) {
     b.onclick = function () { var k = curKind(); if (!k || b.disabled) return; altNew(k.set, b.getAttribute("data-v")); };
   });
-  function altNew(set, meter) {
+  function altNew(set, meter, single) {
     var base = rc.today; if (!base || !base.name) return;
     var k = curKind(); if (!k) return;
     set = typeof set === "string" ? set : k.set; meter = typeof meter === "string" ? meter : k.meter;
+    if (rc.duo && !single) { duoNew(set, meter); return; }
     countsBookGet().then(function (book) {
       var pre = set + "_" + meter.replace("/", "-") + "_", cur = rc.data && rc.data.name;
       var names = Object.keys(book.lines || {}).filter(function (n) { return n.indexOf(pre) === 0 && n !== cur && n !== base.name; });
       if (!names.length) return;
       var n = names[Math.floor(Math.random() * names.length)], line = book.lines[n];
-      rc.alt = n;
+      rc.alt = n; rc.duo = null;
       altUse({ block: base.block, set: base.set, name: n, counts: line.c, meter: line.m, stale: false, alt: true });
     });
   }
   document.getElementById("mNew").onclick = function () { altNew(); };
-  document.getElementById("mToday").onclick = function () { rc.alt = null; altUse(rc.today); };
+  document.getElementById("mToday").onclick = function () { rc.alt = null; rc.duo = null; altUse(rc.today); };
+  // ---------- 2.17.0 (Mat 11/14): 👥 two-part rhythms (rhythm-duos/ + rhythm-duos.json, made by tools/rhythm/gen-duo.js) ----------
+  // Half the class plays Part 1, half Part 2, together. Both parts show stacked where the slide's rhythm was, each with its own
+  // counts; the moving line runs through both. 🔊 Hear it plays Both (Part 2 on a lower woodblock) or one part. Level / Time /
+  // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
+  var duoBook = null;
+  function duoBookGet() {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.17.0").then(function (r) {
+      if (!r.ok) throw new Error("two-part file missing"); return r.json();
+    }).catch(function (e) { duoBook = null; throw e; });
+    return duoBook;
+  }
+  function duoNew(set, meter) {
+    var base = rc.today; if (!base || !base.name) return;
+    if (meter === "6/8" && set !== "8th") meter = "4/4";
+    duoBookGet().then(function (book) {
+      var pre = "duo_" + set + "_" + meter.replace("/", "-") + "_", cur = rc.duo && rc.duo.name;
+      var names = Object.keys(book.lines || {}).filter(function (n) { return n.indexOf(pre) === 0 && n !== cur; });
+      if (!names.length) return;
+      duoUse(names[Math.floor(Math.random() * names.length)], book);
+    }).catch(function () {});
+  }
+  function duoUse(n, book) {
+    var line = book.lines[n], RT = window.RhythmTime; if (!line || !RT) return;
+    rc.duo = { name: n, meter: line.m, parts: [0, 1].map(function (k) {
+      return { img: n + "_" + (k + 1) + ".png", counts: line.p[k], tl: RT.rhythmTimeline(line.p[k], line.m) }; }) };
+    rc.duo.both = RT.mergeTimelines(rc.duo.parts[0].tl, rc.duo.parts[1].tl);     // one line position for both parts
+    rc.alt = n;
+    altUse({ block: rc.today.block, set: rc.today.set, name: n, counts: line.p[0], meter: line.m, stale: false, alt: true, duo: true });
+  }
+  var duoKey = "";
+  function duoBuild() {
+    var box = document.getElementById("rDuo"), d = rc.duo, key = d ? d.name : "";
+    if (key === duoKey) { duoFocus(); return; }
+    duoKey = key;
+    box.innerHTML = !d ? "" : d.parts.map(function (p, k) {
+      return '<div class="d-part" data-p="' + (k + 1) + '"><div class="d-tag"><small>PART</small>' + (k + 1) + '</div><div class="d-col">' +
+        '<div class="d-card"><img alt="Part ' + (k + 1) + '" src="rhythm-duos/' + p.img + '"><i class="d-play"></i></div><div class="d-cnt"></div></div></div>';
+    }).join("");
+    duoLayout(); duoCounts(); duoFocus();
+  }
+  function duoFocus() {
+    Array.prototype.forEach.call(document.querySelectorAll("#rDuo .d-part"), function (e) {
+      e.classList.toggle("dim", !!rc.focus && +e.getAttribute("data-p") !== rc.focus); });
+    Array.prototype.forEach.call(document.querySelectorAll("#pFocus button"), function (b) { b.classList.toggle("sel", +b.getAttribute("data-f") === rc.focus); });
+  }
+  // as wide as fits: both parts + their counts in about half the screen height
+  function duoLayout() {
+    var cols = document.querySelectorAll("#rDuo .d-col"); if (!cols.length) return;
+    var vh = window.innerHeight / 100, per = (window.innerHeight * 0.44 - 1.4 * vh) / 2 - 5.6 * vh;
+    var w = Math.max(300, Math.min(window.innerWidth * 0.94 - 9.2 * vh, per * 1400 / 160));
+    Array.prototype.forEach.call(cols, function (c) { c.style.width = Math.round(w) + "px"; });
+    var font = Math.max(2.4 * vh, Math.min(4.6 * vh, w * 0.026));
+    Array.prototype.forEach.call(document.querySelectorAll("#rDuo .d-cnt"), function (c) { c.style.fontSize = Math.round(font) + "px"; });
+  }
+  function duoCounts() {
+    var d = rc.duo; if (!d) return;
+    var boxes = document.querySelectorAll("#rDuo .d-cnt");
+    d.parts.forEach(function (p, k) {
+      var box = boxes[k]; if (!box) return;
+      var nn = p.counts.filter(function (c) { return c[2] === "n"; }).length;
+      var hit = rc.heat && rc.heat.name === d.name ? (k ? rc.heat.hit2 : rc.heat.hit) : null;
+      if (hit && hit.length !== nn) hit = null;
+      if (!rc.shown && !hit) { box.innerHTML = ""; return; }
+      var oi = 0;
+      box.innerHTML = p.counts.map(function (c, i) {
+        var cls = c[2].charAt(0) === "h" ? "h" : c[2], pct = "";
+        if (hit && c[2] === "n") { var f = hit[oi++]; if (f != null) { cls += f >= 0.8 ? " hg" : f >= 0.5 ? " hy" : " hr"; pct = ' data-pct="' + Math.round(f * 100) + '%"'; } }
+        return '<span data-i="' + i + '" class="' + cls + '"' + pct + ' style="left:' + (c[0] * 100).toFixed(2) + '%">' + c[1] + "</span>";
+      }).join("");
+    });
+    duoMarkAt = null;
+  }
+  var duoMarkAt = null;
+  function duoDraw(t) {
+    var RT = window.RhythmTime, d = rc.duo; if (!d || !RT) return;
+    var lines = document.querySelectorAll("#rDuo .d-play"), boxes = document.querySelectorAll("#rDuo .d-cnt"), marks = [];
+    var x = t !== null && mPrefs.line !== false ? RT.xAt(d.both, t) : null;
+    d.parts.forEach(function (p, k) {
+      var l = lines[k];
+      if (l) { l.classList.toggle("on", x !== null); if (x !== null) l.style.left = (x * 100).toFixed(2) + "%"; }
+      marks.push(t !== null ? RT.countAt(p.tl, t) : -1);
+    });
+    var key = marks.join(",");
+    if (key === duoMarkAt) return;
+    duoMarkAt = key;
+    Array.prototype.forEach.call(boxes, function (b, k) {
+      Array.prototype.forEach.call(b.children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === marks[k]); });
+    });
+  }
+  document.getElementById("mDuo").onclick = function () {
+    var k = curKind(); if (!k) return;
+    if (rc.duo) altNew(k.set, k.meter, true); else duoNew(k.set, k.meter);
+  };
+  Array.prototype.forEach.call(document.querySelectorAll("#pFocus button"), function (b) {
+    b.onclick = function () { rc.focus = +b.getAttribute("data-f"); duoFocus(); };
+  });
   rCntBtn.onclick = function () {
     rc.shown = !rc.shown;
     if (rc.shown && !rc.loading && !(rc.data && rc.data.block === rc.block && rc.data.counts)) countsFetch(rc.block);
@@ -1476,19 +1611,28 @@
     o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.06);
   }
   // 2.11.0 (Mat 11/13): "Hear it" plays the rhythm itself on a woodblock-like "tock" (pitch-dropping sine + a short bright click)
-  function hearTock(t) {
+  function hearTock(t, low) {
     var ctx = audio, o = ctx.createOscillator(), g = ctx.createGain(), o2 = ctx.createOscillator(), g2 = ctx.createGain();
-    o.type = "sine"; o.frequency.setValueAtTime(950, t); o.frequency.exponentialRampToValueAtTime(620, t + 0.05);
+    o.type = "sine"; o.frequency.setValueAtTime(low ? 620 : 950, t); o.frequency.exponentialRampToValueAtTime(low ? 390 : 620, t + 0.05);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    o2.type = "triangle"; o2.frequency.value = 2400;
+    o2.type = "triangle"; o2.frequency.value = low ? 1500 : 2400;
     g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.25, t + 0.001); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
     o.connect(g); g.connect(ctx.destination); o2.connect(g2); g2.connect(ctx.destination);
     o.start(t); o.stop(t + 0.14); o2.start(t); o2.stop(t + 0.04);
-    metro.tocks = (metro.tocks || 0) + 1;                              // for the tests: sounds actually made
+    metro.tocks = (metro.tocks || 0) + 1;
+    if (low) metro.tocks2 = (metro.tocks2 || 0) + 1;                              // for the tests: sounds actually made
   }
   function metroSchedule() {
     var spb = 60 / mPrefs.bpm;
-    if (metro.hear && rc.tl) {
+    if (metro.hear && rc.duo) {                                       // 2.17.0: both parts (Part 2 lower), or the one picked
+      rc.duo.parts.forEach(function (p, k) {
+        if (rc.focus && rc.focus !== k + 1) return;
+        var on = p.tl.onsets; metro.hk = metro.hk || [0, 0];
+        while (metro.hk[k] < on.length && metro.t0 + (metro.off + on[metro.hk[k]]) * metro.spb < audio.currentTime + 0.12) {
+          hearTock(metro.t0 + (metro.off + on[metro.hk[k]]) * metro.spb, k === 1); metro.hk[k]++;
+        }
+      });
+    } else if (metro.hear && rc.tl) {
       var on = rc.tl.onsets;
       while (metro.hi < on.length && metro.t0 + (metro.off + on[metro.hi]) * metro.spb < audio.currentTime + 0.12) {
         hearTock(metro.t0 + (metro.off + on[metro.hi]) * metro.spb); metro.hi++;
@@ -1519,7 +1663,7 @@
   }
   function metroStart(mode) {
     tUnlockAudio(); if (!audio) return;
-    metro.hear = mode === "hear" && !!rc.tl; metro.hi = 0; metro.tocks = 0;
+    metro.hear = mode === "hear" && !!rc.tl; metro.hi = 0; metro.hk = [0, 0]; metro.tocks = 0; metro.tocks2 = 0;
     titleText = lad.on ? lad.base + " · 🪜 " + mPrefs.bpm + " BPM (" + lad.pass + " of " + lad.total + ")" : rTitle.textContent;
     metro.on = true; metro.beat = 0; metro.count = 0; metro.marks = [];
     metro.next = audio.currentTime + 0.25;
@@ -1530,7 +1674,7 @@
     if (window.rtapStart && rc.tl && !dly.test && !metro.hear) {
       var lat = +settings.audioDelay > 0 ? +settings.audioDelay : (audio.outputLatency || audio.baseLatency || 0) * 1000;
       window.rtapStart({ t0: performance.now() + (metro.t0 - audio.currentTime) * 1000 + lat, spb: metro.spb * 1000, off: metro.off, tl: rc.tl,
-        name: rc.data && rc.data.name });
+        tl2: rc.duo ? rc.duo.parts[1].tl : null, name: rc.data && rc.data.name });
     }
     requestAnimationFrame(metroDraw); metroPaint();
   }
@@ -1538,6 +1682,7 @@
   // t = clicks since that downbeat. Needs the counts (Show counts data), so it only runs where counts exist.
   var rPlay = document.getElementById("rPlay"), playIdx = -1;
   function playDraw(t) {
+    if (rc.duo) { duoDraw(t); rPlay.classList.remove("on"); return; }
     var RT = window.RhythmTime, tl = rc.tl, x = tl && rGeo && RT && mPrefs.line !== false ? RT.xAt(tl, t) : null;
     if (x === null) { rPlay.classList.remove("on"); playMark(-1); return; }
     rPlay.style.left = Math.round((RHYTHM_IMG_EMU.x + x * RHYTHM_IMG_EMU.w - rGeo.x0) * rGeo.s) + "px";
@@ -2177,7 +2322,14 @@
         font: parseInt(rCountsEl.style.fontSize, 10) || 0, name: rc.data && rc.data.name || "", alt: rc.alt,
         heat: Array.prototype.filter.call(rCountsEl.children, function (e) { return e.hasAttribute("data-pct"); })
           .map(function (e) { return [e.textContent, e.getAttribute("data-pct"), e.className.replace(/.*\b(h[gyr])\b.*/, "$1")]; }),
-        ladder: { on: lad.on, pass: lad.pass, total: lad.total, bpm: mPrefs.bpm }, hear: !!metro.hear, tocks: metro.tocks || 0,
+        ladder: { on: lad.on, pass: lad.pass, total: lad.total, bpm: mPrefs.bpm }, hear: !!metro.hear, tocks: metro.tocks || 0, tocks2: metro.tocks2 || 0,
+        duo: rc.duo ? { name: rc.duo.name, focus: rc.focus, n: rc.duo.parts.map(function (p) { return p.tl.onsets.length; }),
+          shown: Array.prototype.map.call(document.querySelectorAll("#rDuo .d-cnt"), function (b) { return b.children.length; }),
+          heat: Array.prototype.map.call(document.querySelectorAll("#rDuo .d-cnt"), function (b) {
+            return Array.prototype.filter.call(b.children, function (e) { return e.hasAttribute("data-pct"); }).map(function (e) { return e.getAttribute("data-pct"); }); }),
+          lines: Array.prototype.map.call(document.querySelectorAll("#rDuo .d-play.on"), function (e) { return parseFloat(e.style.left); }),
+          imgs: Array.prototype.map.call(document.querySelectorAll("#rDuo img"), function (e) { return e.naturalWidth; }),
+          dim: Array.prototype.map.call(document.querySelectorAll("#rDuo .d-part"), function (e) { return e.classList.contains("dim"); }) } : null,
         altBox: rAlt.classList.contains("on") ? [rAlt.offsetLeft, rAlt.offsetTop, rAlt.offsetWidth, rAlt.offsetHeight] : null },
       play: { on: rPlay.classList.contains("on"), left: parseInt(rPlay.style.left, 10) || 0, now: playIdx,
         beats: mPrefs.beats, tl: rc.tl ? { beats: rc.tl.beats, length: rc.tl.length, onsets: rc.tl.onsets.length } : null } }; },
@@ -2192,7 +2344,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.16.0";
+  var BUILD = "2.17.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2221,9 +2373,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.16.0"></script>
-<script src="ptest.js?v=2.16.0"></script>
-<script src="lunch.js?v=2.16.0"></script>
-<script src="rtap.js?v=2.16.0"></script>
+<script src="ptnet.js?v=2.17.0"></script>
+<script src="ptest.js?v=2.17.0"></script>
+<script src="lunch.js?v=2.17.0"></script>
+<script src="rtap.js?v=2.17.0"></script>
 </body>
 </html>

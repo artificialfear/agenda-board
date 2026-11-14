@@ -63,15 +63,28 @@
   .rcnt span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
   .rcnt span.r { color: #8a93a6; } .rcnt span.h { color: #b9c0cf; }
   .rcnt span.now { color: #b8860b; transform: translateX(-50%) scale(1.3); }
+  /* 2.17.0: two-part rhythms */
+  .rpart { display: flex; align-items: center; gap: 8px; }
+  .rpart + .rpart { margin-top: 6px; }
+  .rcol { flex: 1; min-width: 0; }
+  .ptag { flex: none; width: 28px; height: 28px; border-radius: 50%; background: #d7dbe4; color: var(--deep); display: flex; align-items: center;
+    justify-content: center; font: 600 17px "Oswald", Arial, sans-serif; }
+  .rpart.mine .ptag { background: var(--gold); }
+  .rpart.other { opacity: .4; }
+  .pick { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; color: var(--deep);
+    font: 600 16px "Oswald", Arial, sans-serif; }
+  .pick button { border: 2px solid var(--gold); background: #fff; color: var(--deep); border-radius: 999px; padding: 4px 14px; cursor: pointer;
+    font: 600 17px "Oswald", Arial, sans-serif; }
+  .pick button.sel { background: var(--gold); }
   .link { background: none; border: 0; color: var(--soft); text-decoration: underline; cursor: pointer; font-size: 14px; }
 </style>
 </head>
 <body>
 <div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Tap the <span>Rhythm</span></h1><div class="who" id="who"></div><i class="conn" id="conn"></i></div>
 <main id="main"></main>
-<script src="rhythmtime.js?v=2.16.0"></script>
-<script src="ptnet.js?v=2.16.0"></script>
-<script src="rtap.js?v=2.16.0"></script>
+<script src="rhythmtime.js?v=2.17.0"></script>
+<script src="ptnet.js?v=2.17.0"></script>
+<script src="rtap.js?v=2.17.0"></script>
 <script>
 (function () {
   "use strict";
@@ -165,36 +178,59 @@
   }
 
   // ---------------------------------------------------------------- 2.15.0: the rhythm on this screen
+  // 2.17.0: a two-part rhythm shows both parts; the student picks the one they're playing (kept on this device) and is scored on it
+  var PART_KEY = "rtap.part";
+  var partMem = +load(PART_KEY) === 2 ? 2 : 1;
+  function myPart() { return partMem; }
+  function clean(n) { return String(n || "").replace(/[^\w.\-]/g, ""); }
   function setRhythm(d) {
     var RTm = window.RhythmTime;
-    rhy = d && d.pic && Array.isArray(d.counts) ? { pic: String(d.pic).replace(/[^\w.\-]/g, ""), meter: d.meter, counts: d.counts, cnt: !!d.cnt,
-      line: d.line !== false, tl: RTm ? RTm.rhythmTimeline(d.counts, d.meter) : null } : null;
+    function part(pic, counts) { return { pic: clean(pic), counts: counts, tl: RTm ? RTm.rhythmTimeline(counts, d.meter) : null }; }
+    rhy = d && d.pic && Array.isArray(d.counts) ? { meter: d.meter, cnt: !!d.cnt, line: d.line !== false,
+      dir: d.pic2 ? (clean(d.dir) || "rhythm-duos") : "rhythm-pictures",
+      parts: d.pic2 && Array.isArray(d.counts2) ? [part(d.pic, d.counts), part(d.pic2, d.counts2)] : [part(d.pic, d.counts)] } : null;
+    if (rhy) { rhy.pic = rhy.parts[0].pic; rhy.tl = rhy.parts[0].tl;
+      rhy.both = rhy.parts.length > 1 && RTm && RTm.mergeTimelines ? RTm.mergeTimelines(rhy.parts[0].tl, rhy.parts[1].tl) : rhy.tl; }
     rboxPaint();
   }
   function rboxHtml() { return '<div class="rbox" id="rbox"></div>'; }
   function rboxPaint() {
     var b = $("rbox"); if (!b) return;
-    if (!rhy || !me) { b.innerHTML = ""; return; }
-    b.innerHTML = '<div class="rimg"><img alt="The rhythm" src="rhythm-pictures/' + esc(rhy.pic) + '"><i class="rline" id="rline"></i></div>' +
-      (rhy.cnt ? '<div class="rcnt" id="rcnt">' + rhy.counts.map(function (c, i) {
-        var k = String(c[2] || "n").charAt(0);
-        return '<span data-i="' + i + '" class="' + (k === "h" ? "h" : k === "r" ? "r" : "n") + '" style="left:' + (+c[0] * 100).toFixed(2) + '%">' +
-          esc(c[1]) + "</span>"; }).join("") + "</div>" : "");
+    if (!rhy || !me) { b.innerHTML = ""; b.className = "rbox"; return; }
+    var duo = rhy.parts.length > 1, mine = myPart();
+    b.className = "rbox" + (duo ? " duo" : "");
+    b.innerHTML = (duo ? '<div class="pick"><span>I\'m playing</span><button data-p="1"' + (mine === 1 ? ' class="sel"' : "") + '>Part 1</button>' +
+        '<button data-p="2"' + (mine === 2 ? ' class="sel"' : "") + ">Part 2</button></div>" : "") +
+      rhy.parts.map(function (p, k) {
+        return '<div class="rpart' + (duo ? (k + 1 === mine ? " mine" : " other") : "") + '">' + (duo ? '<b class="ptag">' + (k + 1) + "</b>" : "") +
+          '<div class="rcol"><div class="rimg"><img alt="The rhythm" src="' + rhy.dir + "/" + esc(p.pic) + '"><i class="rline"></i></div>' +
+          (rhy.cnt ? '<div class="rcnt">' + p.counts.map(function (c, i) {
+            var kk = String(c[2] || "n").charAt(0);
+            return '<span data-i="' + i + '" class="' + (kk === "h" ? "h" : kk === "r" ? "r" : "n") + '" style="left:' + (+c[0] * 100).toFixed(2) + '%">' +
+              esc(c[1]) + "</span>"; }).join("") + "</div>" : "") + "</div></div>";
+      }).join("");
+    Array.prototype.forEach.call(b.querySelectorAll(".pick button"), function (x) {
+      x.onclick = function () { if (phase === "round") return; partMem = +x.getAttribute("data-p") === 2 ? 2 : 1; save(PART_KEY, partMem); rboxPaint(); };
+    });
+    lastNow = "";
   }
   // the gold line + the count being played, from the round's clock (t = clicks after the downbeat that follows the count-off)
-  var lastNow = -2;
+  var lastNow = "";
   function lineDraw(now) {
-    var l = $("rline"); if (!l) return;
-    var RTm = window.RhythmTime, t = round && rhy && rhy.tl ? (now - round.t0) / round.spb - round.off : null;
-    var x = t !== null && rhy.line && RTm ? RTm.xAt(rhy.tl, t) : null;
-    l.classList.toggle("on", x !== null);
-    if (x !== null) l.style.left = (x * 100).toFixed(2) + "%";
-    var ci = t !== null && RTm ? RTm.countAt(rhy.tl, t) : -1;
-    if (ci !== lastNow) {
-      var c = $("rcnt");
-      if (c) Array.prototype.forEach.call(c.children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === ci); });
-      lastNow = ci;
-    }
+    var b = $("rbox"); if (!b || !rhy) return;
+    var RTm = window.RhythmTime, t = round ? (now - round.t0) / round.spb - round.off : null;
+    var lines = b.querySelectorAll(".rline"), cnts = b.querySelectorAll(".rcnt"), marks = [];
+    rhy.parts.forEach(function (p, k) {
+      var x = t !== null && rhy.line && RTm && rhy.both ? RTm.xAt(rhy.both, t) : null, l = lines[k];
+      if (l) { l.classList.toggle("on", x !== null); if (x !== null) l.style.left = (x * 100).toFixed(2) + "%"; }
+      marks.push(t !== null && RTm && p.tl ? RTm.countAt(p.tl, t) : -1);
+    });
+    var key = marks.join(",");
+    if (key === lastNow) return;
+    lastNow = key;
+    Array.prototype.forEach.call(cnts, function (c, k) {
+      Array.prototype.forEach.call(c.children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === marks[k]); });
+    });
   }
 
   // ---------------------------------------------------------------- a round
@@ -203,9 +239,10 @@
     var off = offset();
     if (off === null) { pingBurst(); off = 0; }
     var t0 = d.t0 - off;
-    round = { id: d.id, t0: t0, spb: d.spb, off: d.off, clicks: [], onsets: [], end: 0 };
+    var pt = Array.isArray(d.onsets2) && myPart() === 2 ? 2 : 1;          // 2.17.0: a two-part round scores the part picked here
+    round = { id: d.id, t0: t0, spb: d.spb, off: d.off, clicks: [], onsets: [], end: 0, pt: pt };
     for (var k = 0; k < d.off; k++) round.clicks.push(t0 + k * d.spb);
-    round.onsets = d.onsets.map(function (o) { return t0 + (d.off + o) * d.spb; });
+    round.onsets = (pt === 2 ? d.onsets2 : d.onsets).map(function (o) { return t0 + (d.off + o) * d.spb; });
     round.end = t0 + (d.off + d.length) * d.spb;
     taps = []; result = null;
     if (!me) return;                       // watching only until a name is picked
@@ -233,12 +270,11 @@
     var res = RT.scoreAligned(r.onsets, taps, cal !== null ? cal : (+load(CAL_KEY) || 0), Math.min(200, r.spb * 0.3));
     if (res.perfect + res.good >= 3) save(CAL_KEY, res.shift);          // this device's lag, for the record
     result = res; result.cal = res.shift; result.countCal = cal; result.countTaps = countTaps.length;
-    send({ type: "result", round: r.id, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra, h: res.notes,
+    send({ type: "result", round: r.id, pt: r.pt, pct: res.pct, p: res.perfect, g: res.good, m: res.miss, x: res.extra, h: res.notes,
       a: res.offs.length ? Math.round(res.offs.reduce(function (s, o) { return s + Math.abs(o); }, 0) / res.offs.length) : null });   // average ms off (tie-break)
     phase = "result"; draw();
   }
   function tap(t) {
-    lastNow = -2; rboxPaint();
     var pad = $("pad");
     if (pad) { pad.classList.add("hit"); setTimeout(function () { pad.classList.remove("hit"); }, 90); }
     if (round && phase === "round") taps.push(t);
@@ -288,7 +324,7 @@
         (r.countCal === null ? " · count-off not tapped" : " · count-off " + (r.countCal >= 0 ? "+" : "") + r.countCal + " ms") + "</div></div>" +
         '<div class="status" id="status">Want another try? Watch the board.</div>' + rboxHtml() + padHtml;
     }
-    lastNow = -2; rboxPaint();
+    rboxPaint();
     var pad = $("pad");
     if (pad) {
       pad.addEventListener("pointerdown", function (e) { e.preventDefault(); tap(stamp(e)); });
@@ -305,7 +341,8 @@
   function keepAwake() { try { if (navigator.wakeLock && !lock) navigator.wakeLock.request("screen").then(function (l) { lock = l; l.addEventListener("release", function () { lock = null; }); }).catch(function () {}); } catch (e) {} }
   document.addEventListener("pointerdown", keepAwake, { once: true });
 
-  window.__tap = { state: function () { return { rhythm: rhy ? { pic: rhy.pic, cnt: rhy.cnt, line: rhy.line, tl: !!rhy.tl } : null, phase: phase, me: me, roster: roster ? roster.length : 0, offset: offset(), sync: sync.length,
+  window.__tap = { state: function () { return { rhythm: rhy ? { pic: rhy.pic, cnt: rhy.cnt, line: rhy.line, tl: !!rhy.tl, parts: rhy.parts.length,
+    pics: rhy.parts.map(function (p) { return rhy.dir + "/" + p.pic; }), mine: myPart() } : null, phase: phase, pt: round ? round.pt : null, me: me, roster: roster ? roster.length : 0, offset: offset(), sync: sync.length,
     round: round ? { t0: round.t0, onsets: round.onsets, clicks: round.clicks, end: round.end } : null, result: result, taps: taps.length }; },
     tapAt: function (t) { tap(t); } };
   draw();

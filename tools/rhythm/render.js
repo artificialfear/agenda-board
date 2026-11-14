@@ -97,7 +97,90 @@ function renderLine(line, info) {
   const png = new Resvg(svg, { background: '#ffffff', fitTo: { mode: 'width', value: W } }).render().asPng();
   return png;
 }
-module.exports = { renderLine, fitsLine };
+// ---------------------------------------------------------------- 2.17.0 (Mat 11/14): two-part rhythms
+// Two lines that are played together. Each part is its own 1400x160 picture (same look as the pool), but both are laid out
+// together: every measure is as wide as the busier part needs, and the notes are spaced by time across BOTH parts, so the
+// same moment sits at the same x in both pictures (one moving line works for both; counts line up).
+// duo = { meter, parts: [measures, measures] }
+function layoutDuo(duo, w) {
+  const one = { meter: duo.meter, measures: duo.parts[0] };
+  const base = layoutLine(one, w);                 // staves / overhead from the single-part layout
+  const [num, den] = duo.meter.split('/').map(Number);
+  const compound = den === 8;
+  const build = m => {
+    const notes = m.map(n => {
+      const dots = n.d.endsWith('d') ? 1 : 0;
+      const sn = new StaveNote({ keys: ['b/4'], duration: n.d.replace('d', '') + (n.r ? 'r' : ''), clef: 'percussion', stem_direction: 1, auto_stem: false, dots });
+      if (dots) Dot.buildAndAttach([sn], { all: true });
+      return sn;
+    });
+    const voice = new Voice({ num_beats: num, beat_value: den }).setStrict(true);
+    voice.addTickables(notes);
+    const beams = Beam.generateBeams(notes, { groups: compound ? [new Fraction(3, 8)] : [new Fraction(1, 4)], stem_direction: 1, beam_rests: false });
+    return { notes, voice, beams };
+  };
+  const pair = i => [build(duo.parts[0][i]), build(duo.parts[1][i])];
+  const minW = [0, 1, 2, 3].map(i => { const p = pair(i); return new Formatter().joinVoices([p[0].voice]).joinVoices([p[1].voice])
+    .preCalculateMinTotalWidth([p[0].voice, p[1].voice]); });
+  const over = base.over;
+  const content = w - 12 - over.reduce((a, b) => a + b, 0) - 4 * JUSTIFY_SLACK;
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const floor = num * 16 / den * PER16;
+  const lo = minW.map(m => Math.max(m * AIR_MIN, floor * 0.9)), hi = minW.map(m => Math.max(m * AIR, floor));
+  let inner;
+  if (content >= sum(hi)) inner = hi.map(n => n + (content - sum(hi)) / 4);
+  else { const extra = content - sum(lo), d = sum(hi) - sum(lo); inner = lo.map((n, i) => n + (d ? Math.max(0, extra) * (hi[i] - lo[i]) / d : 0)); }
+  return { pair, over, inner, mkStave: base.mkStave, fits: content >= sum(lo) };
+}
+// Busy pairs (7th/8th 4/4) don't fit at the pool's size, so they're drawn smaller (same 1400x160 picture, centered)
+const DUO_SCALES = [SCALE, 1.75, 1.55];
+function duoScale(duo) {
+  if (!global.document) global.document = new JSDOM('<!DOCTYPE html><div></div>').window.document;
+  for (const sc of DUO_SCALES) if (layoutDuo(duo, W / sc).fits) return sc;
+  return null;
+}
+function fitsDuo(duo) { return duoScale(duo) !== null; }
+// one picture per part: [png1, png2]; infos[k] gets the same note positions renderLine gives (for the counts)
+function renderDuo(duo, infos) {
+  const sc = duoScale(duo);
+  if (!sc) throw new Error('duo does not fit');
+  return [0, 1].map(k => {
+    const dom = new JSDOM('<!DOCTYPE html><div id="o"></div>');
+    global.document = dom.window.document;
+    const div = dom.window.document.getElementById('o');
+    const r = new Renderer(div, Renderer.Backends.SVG);
+    r.resize(W, H);
+    const ctx = r.getContext();
+    ctx.scale(sc, sc);
+    const w = W / sc;
+    ctx.setFillStyle('#000'); ctx.setStrokeStyle('#000');
+    const { pair, over, inner, mkStave } = layoutDuo(duo, w);
+    let x = 6;
+    const info = infos ? (infos[k] = []) : null;
+    [0, 1, 2, 3].forEach(i => {
+      const st = mkStave(duo.meter, x, inner[i] + over[i] + JUSTIFY_SLACK, i);
+      st.setContext(ctx).draw();
+      const p = pair(i);
+      p[0].voice.setStave(st); p[1].voice.setStave(st);
+      new Formatter().joinVoices([p[0].voice]).joinVoices([p[1].voice])
+        .format([p[0].voice, p[1].voice], st.getNoteEndX() - st.getNoteStartX() - JUSTIFY_SLACK);
+      p[k].voice.draw(ctx, st);
+      p[k].beams.forEach(b => b.setContext(ctx).draw());
+      if (info) info.push({ start: st.getNoteStartX() / w, end: st.getNoteEndX() / w,
+        xs: p[k].notes.map(sn => ((sn.getNoteHeadBeginX() + sn.getNoteHeadEndX()) / 2) / w) });
+      x += inner[i] + over[i] + JUSTIFY_SLACK;
+    });
+    let svg = div.innerHTML;
+    if (!/xmlns=/.test(svg)) svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    svg = svg.replace('<svg', `<svg style="background:#fff"`);
+    if (sc !== SCALE) {                                   // smaller drawing: move it down so it sits in the middle
+      const dy = Math.round((H - H * sc / SCALE) / 2);
+      svg = svg.replace(/(<svg[^>]*>)/, `$1<g transform="translate(0 ${dy})">`).replace(/<\/svg>\s*$/, '</g></svg>');
+    }
+    return new Resvg(svg, { background: '#ffffff', fitTo: { mode: 'width', value: W } }).render().asPng();
+  });
+}
+module.exports = { renderLine, fitsLine, renderDuo, fitsDuo };
 
 if (require.main === module) {
   const fs = require('fs');

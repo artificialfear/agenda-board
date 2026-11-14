@@ -110,6 +110,9 @@ function makeLine(tierKey, meter) {
   throw new Error('could not build line ' + tierKey + ' ' + meter);
 }
 
+// 2.17.0: gen-duo.js reuses the cells, tiers and line maker (it has its own seed, so this pool is unchanged)
+module.exports = { SIMPLE, COMPOUND, TIERS, ENSEMBLES, measureLen, makeMeasure, makeLine, setSeed: v => { seed = v >>> 0; }, rnd };
+if (require.main === module) {
 fs.mkdirSync(OUT, { recursive: true });
 const manifest = [];
 const counts = {};
@@ -139,3 +142,4 @@ fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 1));
 // The board's "Show counts" reads this file from the Daily Rhythms folder (ClosingScores.gs a=rhythm)
 fs.writeFileSync(path.join(OUT, 'rhythm-counts.json'), JSON.stringify({ v: 2, img: { w: 1400, h: 160 }, lines: counts }));
 console.log('rendered', manifest.length);
+}

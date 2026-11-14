@@ -46,7 +46,20 @@
     var i = -1; while (i + 1 < tl.points.length && tl.points[i + 1].t <= t + 1e-9) i++;
     return i;
   }
-  var api = { rhythmTimeline: rhythmTimeline, xAt: xAt, countAt: countAt, beatsOf: beatsOf };
+  // 2.17.0: two-part rhythms are drawn so the same moment has the same x in both pictures. One timeline from both parts' counts
+  // (same t → x averaged) gives one line position for both, even between notes where each part alone would guess differently.
+  function mergeTimelines(a, b) {
+    if (!a || !b) return a || b || null;
+    var all = a.points.concat(b.points).slice().sort(function (p, q) { return p.t - q.t; }), pts = [];
+    all.forEach(function (p) {
+      var last = pts[pts.length - 1];
+      if (last && Math.abs(last.t - p.t) < 1e-9) { last.x = (last.x * last.k + p.x) / (last.k + 1); last.k++; }
+      else pts.push({ x: p.x, t: p.t, kind: p.kind, label: p.label, k: 1 });
+    });
+    for (var i = 1; i < pts.length; i++) if (pts[i].x < pts[i - 1].x) pts[i].x = pts[i - 1].x;     // never backwards
+    return { beats: a.beats, length: Math.max(a.length, b.length), points: pts, end: Math.max(a.end, b.end), onsets: [] };
+  }
+  var api = { rhythmTimeline: rhythmTimeline, xAt: xAt, countAt: countAt, beatsOf: beatsOf, mergeTimelines: mergeTimelines };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RhythmTime = api;
 })(this);

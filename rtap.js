@@ -239,8 +239,9 @@
     }
     if (d.type === "leave") { c.sid = null; paint(); return; }
     if (d.type === "result" && c.sid && round && d.round === round.id) {
+      var pt = round.onsets2 && +d.pt === 2 ? 2 : 1, ons = pt === 2 ? round.onsets2 : round.onsets;   // 2.17.0: which part they tapped
       results[c.sid] = { n: c.sn, pct: Math.max(0, Math.min(100, Math.round(+d.pct || 0))), p: +d.p || 0, g: +d.g || 0, m: +d.m || 0, x: +d.x || 0,
-        h: Array.isArray(d.h) && d.h.length === round.onsets.length ? d.h.map(function (v) { return +v > 0 ? 1 : 0; }) : null,
+        pt: pt, h: Array.isArray(d.h) && d.h.length === ons.length ? d.h.map(function (v) { return +v > 0 ? 1 : 0; }) : null,
         a: d.a != null && isFinite(+d.a) ? Math.max(0, Math.round(+d.a)) : null };      // 2.12.2: average ms off the beat (tie-break)
       heatSend(); paint();
     }
@@ -253,6 +254,7 @@
   window.rtapRhythm = function (r) {
     var m = r && r.pic && r.counts ? { type: "rhythm", pic: String(r.pic), meter: r.meter || "4/4", counts: r.counts, cnt: !!r.cnt,
       line: r.line !== false } : null;
+    if (m && r.pic2 && r.counts2) { m.pic2 = String(r.pic2); m.counts2 = r.counts2; m.dir = r.dir || "rhythm-duos"; m.duo = r.duo || ""; }   // 2.17.0
     var k = JSON.stringify(m);
     if (k === rhythmKey) return;
     rhythmKey = k; rhythm = m;
@@ -263,11 +265,12 @@
   // r = { t0: performance.now() ms of the first count-off click, spb: ms per click, off: count-off clicks, tl: rhythmtime timeline }
   function roundMsg() {
     return { type: "round", id: round.id, t0: round.t0, spb: round.spb, off: round.off, onsets: round.onsets, length: round.length,
-      pic: round.name || null };
+      pic: round.name || null, onsets2: round.onsets2 || null };
   }
   window.rtapStart = function (r) {
     if (!on || !r || !r.tl) return;
-    round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length, name: r.name || "" };
+    round = { id: Date.now().toString(36), t0: r.t0, spb: r.spb, off: r.off, onsets: r.tl.onsets, length: r.tl.length, name: r.name || "",
+      onsets2: r.tl2 ? r.tl2.onsets : null };
     if (window.rhythmHeat) window.rhythmHeat(null);
     bigHide();
     round.endsAt = r.t0 + (r.off + r.tl.length) * r.spb;
@@ -280,12 +283,16 @@
   };
   // 2.11.0 (Mat 11/13): problem spots. For each note, the share of students who hit it (Perfect or Good) → index.html colors
   // that note's count under the rhythm (green / yellow / red). Only results that carry per-note hits count.
+  // 2.17.0: two-part rhythms get a map per part (hit = Part 1, hit2 = Part 2), from the students who tapped that part
   function heatSend() {
     if (!window.rhythmHeat || !round) return;
-    var rs = Object.keys(results).map(function (k) { return results[k].h; }).filter(Boolean);
-    if (!rs.length) { window.rhythmHeat(null); return; }
-    window.rhythmHeat({ name: round.name, n: rs.length, hit: round.onsets.map(function (_, i) {
-      return rs.reduce(function (s, h) { return s + h[i]; }, 0) / rs.length; }) });
+    function part(pt, ons) {
+      var rs = Object.keys(results).filter(function (k) { return (results[k].pt || 1) === pt; }).map(function (k) { return results[k].h; }).filter(Boolean);
+      return rs.length ? { n: rs.length, hit: ons.map(function (_, i) { return rs.reduce(function (s, h) { return s + h[i]; }, 0) / rs.length; }) } : null;
+    }
+    var a = part(1, round.onsets), b = round.onsets2 ? part(2, round.onsets2) : null;
+    if (!a && !b) { window.rhythmHeat(null); return; }
+    window.rhythmHeat({ name: round.name, n: (a ? a.n : 0) + (b ? b.n : 0), hit: a ? a.hit : [], hit2: b ? b.hit : null });
   }
   window.rtapStop = function () {
     if (!round) return;
@@ -382,11 +389,14 @@
   // never over the rhythm: if the card is taller than the space above it (a taller screen puts the rhythm higher), shrink it
   function fit() {
     card.style.transform = "";
-    var v = $("rView"); if (!v || !card.classList.contains("open")) return;
+    var v = $("rView"), du = $("rDuo");                    // 2.17.0: a two-part rhythm sits in #rDuo instead
+    if (du && du.offsetHeight) v = du;
+    if (!v || !card.classList.contains("open")) return;
     var avail = v.getBoundingClientRect().top - card.getBoundingClientRect().top - 8, h = card.offsetHeight;
     if (avail > 0 && h > avail) card.style.transform = "scale(" + Math.max(0.45, avail / h).toFixed(3) + ")";
   }
   window.addEventListener("resize", function () { if (on) fit(); });
+  window.rtapFit = function () { if (on) fit(); };
   btn.onclick = function (e) {
     e.stopPropagation();
     on = !on;

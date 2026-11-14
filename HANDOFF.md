@@ -1,5 +1,24 @@
 # Agenda Board — handoff
 
+## Session of 11/14/2026 (live = build 2.17.0) — read this first
+- 2.14.0 Lunch & Learn turns on by itself Mon/Wed/Thu/Fri (both grades); Board Settings row "Lunch & Learn days" changes the
+  days (added to the sheet: "Mon, Wed, Thu, Fri"); ☰ switches still override today only. Sheet's 7th row says 12:15-12:40.
+- 2.15.0 Tap along: students' screens show the board's rhythm (picture from rhythm-pictures/, moving line, counts only while
+  the board shows them). Board → device `rhythm` message. 2.17.0 also fixed a 2.15.0 slip: every tap redrew the rhythm box.
+- 2.16.0 practice.html = solo Rhythm Practice (Level/Time/🎲, tempo, counts, line, 🔊 Hear it, ▶ Tap it scored with problem
+  spots, best per rhythm on the device). `?lvl=6beg|6int|7th|8th&m=4-4&r=…&duo=1`. Dojo button NOT deployed yet (needs Chrome):
+  code + block→level map in apps-script/DOJO_PRACTICE_BUTTON.md.
+- 2.17.0 two-part rhythms: tools/rhythm/gen-duo.js (seed 20261114; gen.js now exports its tables, its own pool reproduced byte
+  for byte) → rhythm-duos/ (624 PNGs) + rhythm-duos.json (312 pairs, 24 per level+meter; lines {m, b:[bytes], p:[counts1, counts2]}).
+  Parts are laid out together (same moment = same x, ≤0.45% apart), never both resting, ≥35% of attacks in one part only; busy
+  7th/8th 4/4 pairs are drawn smaller (DUO_SCALES) and come from the lighter half of the pool. Board: 👥 2-part in the picker
+  row (Level/Time/🎲 stay two-part), parts stacked in #rDuo, one line through both (RhythmTime.mergeTimelines), Hear: Both /
+  Part 1 / Part 2 (Part 2 = lower woodblock). Tap along: devices pick "I'm playing Part 1/2" (rtap.part), results carry pt,
+  problem spots per part (heat.hit / hit2). Practice: 👥 2-part, you tap your part while the other plays on the woodblock.
+- Not tried in class yet: all of 2.15–2.17 (plus the older Hear it / ladder / problem spots / leaderboard).
+- Tests: node tests/*_test.js (new rhythm_duos_test.js); python3 tests/smoke.py (65), rtap_smoke.py (50), ptest_smoke.py (29),
+  lunch_smoke.py (45), practice_smoke.py (41). All break-checked.
+
 ## Latest board session (11/12–11/13/2026, live = build 2.13.0) — read this first
 - Bump BUILD (index.html) + version.json + every ?v= tag together; open boards reload within 5 min. Student tap.html does NOT
   self-update (students reload). Workspace shell can't reach github.io: check the live site via Chrome. Pushes sometimes need retries.

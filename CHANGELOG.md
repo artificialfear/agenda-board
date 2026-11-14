@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.17.0 — 2026-11-14 (Mat)
+- **Two-part rhythms**: 312 new pairs (24 for every level + time signature, rhythm-duos/ + rhythm-duos.json, made by
+  tools/rhythm/gen-duo.js). Half the class plays Part 1, half Part 2, together. Each pair: both parts use the level's note values,
+  they're spaced together so the same moment lines up in both pictures, the parts are never both resting, and at least 35% of
+  the attacks belong to one part only (they interlock instead of doubling).
+- Board: 👥 2-part next to 🎲 New rhythm. Both parts stack where the slide's rhythm was (each with its own counts), one moving
+  line runs through both, Level / Time / 🎲 stay in two-part rhythms; 🔊 Hear it plays Both (Part 2 on a lower woodblock), Part 1
+  or Part 2 (the other part dims). The slide is never changed.
+- Tap along: students pick "I'm playing Part 1 / Part 2" on their screen (kept on the device) and are scored on that part;
+  the problem-spot colors show under each part from the students who played it. The Tap along card stays above both parts.
+- Rhythm Practice: 👥 2-part (or `?duo=1`): pick your part, 🔊 Hear it plays both, ▶ Tap it plays the other part on the
+  woodblock while you tap yours. Best score kept per part.
+- Fix (2.15.0): every tap on a student's screen redrew the rhythm picture.
+- RhythmTime.mergeTimelines (one line position for both parts); tools/rhythm/gen.js now exports its tables (pool unchanged,
+  checked byte for byte).
+
 ## 2.16.0 — 2026-11-14 (Mat)
 - **Rhythm Practice** (`practice.html`): solo practice on a Chromebook / iPad / phone, meant to open from a Dojo button
   (`?lvl=6beg|6int|7th|8th`, optional `&m=4-4`, `&r=<picture>`). Level + Time pickers (6/8 only for 8th) and 🎲 New rhythm from

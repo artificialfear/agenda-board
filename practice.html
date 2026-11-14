@@ -27,6 +27,7 @@
   main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 16px; max-width: 980px; width: 100%; margin: 0 auto; }
   .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; }
   .lbl { font: 600 14px "Oswald", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+  [hidden] { display: none !important; }
   .grp { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
   .turn { display: none; text-align: center; color: var(--gold); font-size: 13px; margin-top: -4px; }
   @media (max-width: 600px) and (orientation: portrait) { .turn { display: block; } }
@@ -54,6 +55,13 @@
   .rcnt span.r { color: #8a93a6; } .rcnt span.h { color: #b9c0cf; }
   .rcnt span.now { color: #b8860b; transform: translateX(-50%) scale(1.3); }
   .rcnt span.hg { background: #c9f2d3; } .rcnt span.hy { background: #ffe9a8; } .rcnt span.hr { background: #ffc9c2; color: #9b1c0f; }
+  .rpart { display: flex; align-items: center; gap: 8px; }
+  .rpart + .rpart { margin-top: 8px; }
+  .rcol { flex: 1; min-width: 0; }
+  .ptag { flex: none; width: 30px; height: 30px; border-radius: 50%; background: #d7dbe4; color: var(--deep); display: flex; align-items: center;
+    justify-content: center; font: 600 18px "Oswald", Arial, sans-serif; }
+  .rpart.mine .ptag { background: var(--gold); }
+  .rpart.other { opacity: .45; }
   .rname { text-align: right; color: #8a93a6; font-size: 11px; margin-top: 2px; }
   .status { text-align: center; font: 600 24px/1.25 "Oswald", "Arial Narrow", Arial, sans-serif; min-height: 1.3em; }
   .status.big { font-size: 56px; color: var(--gold); }
@@ -92,9 +100,11 @@
     <span class="grp"><span class="lbl">Time</span>
     <span class="chips" id="pTime"><button data-v="2/4">2/4</button><button data-v="3/4">3/4</button><button data-v="4/4">4/4</button><button data-v="6/8">6/8</button></span></span>
     <button class="b" id="bNew">🎲 New rhythm</button>
+    <button class="b" id="bDuo" aria-pressed="false">👥 2-part</button>
   </div>
-  <div class="rbox" id="rbox"><div class="rimg"><img id="rImg" alt="The rhythm"><i class="rline" id="rLine"></i></div><div class="rcnt" id="rCnt"></div>
-    <div class="rname" id="rName"></div></div>
+  <div class="row" id="partRow" hidden><span class="lbl">I'm playing</span><span class="chips" id="pPart"><button data-p="1">Part 1</button><button data-p="2">Part 2</button></span>
+    <span class="hint" style="margin:0">The other part plays on the woodblock while you tap.</span></div>
+  <div class="rbox" id="rbox"></div>
   <div class="turn">📱 Turn your phone sideways for a bigger rhythm.</div>
   <div class="row">
     <div class="tempo"><button class="rb" id="tDown" aria-label="Slower">−</button><output id="tOut">80 BPM</output>
@@ -112,8 +122,8 @@
   <div class="pad off" id="pad">TAP</div>
   <div class="hint">Tap with the 4 count-off clicks too: that tunes this device. Space bar works on a Chromebook. Headphones in class, please! 🎧</div>
 </main>
-<script src="rhythmtime.js?v=2.16.0"></script>
-<script src="rtap.js?v=2.16.0"></script>
+<script src="rhythmtime.js?v=2.17.0"></script>
+<script src="rtap.js?v=2.17.0"></script>
 <script>
 (function () {
   "use strict";
@@ -133,47 +143,74 @@
   var name = String(q.get("n") || "").slice(0, 40);
   $("who").textContent = name;
 
-  var book = null, cur = null;            // cur = { name, meter, counts, tl }
-  var audio = null, play = null;          // play = { mode: 'hear'|'tap', t0, spb, off, tl, end, clicks, onsets, next, k, hi, tocks, raf, timer }
-  var taps = [], result = null, heat = null, lastCi = -2;
+  var book = null, duos = null, cur = null;   // cur = { name, meter, duo, parts: [{ img, counts, tl }], both }
+  var audio = null, play = null;          // play = { mode: 'hear'|'tap', t0, spb, off, tl, … }
+  var taps = [], result = null, heat = null, lastCi = "";
+  if (q.get("duo") === "1") prefs.duo = true;
+  prefs.part = prefs.part === 2 ? 2 : 1;
 
-  // ---------------------------------------------------------------- the rhythm
-  function kindOf(n) { var m = String(n || "").match(/^([^_]+)_(\d)-(\d)_/); return m ? { set: m[1], meter: m[2] + "/" + m[3] } : null; }
+  // ---------------------------------------------------------------- the rhythm (one line, or 2.17.0: two parts that go together)
+  function kindOf(n) { var m = String(n || "").replace(/^duo_/, "").match(/^([^_]+)_(\d)-(\d)_/); return m ? { set: m[1], meter: m[2] + "/" + m[3] } : null; }
+  function lines() { return prefs.duo ? (duos ? duos.lines : null) : book.lines; }
   function pick(set, meter, avoid) {
-    var pre = set + "_" + meter.replace("/", "-") + "_";
-    var names = Object.keys(book.lines).filter(function (n) { return n.indexOf(pre) === 0 && n !== avoid; });
+    var L = lines(); if (!L) return null;
+    var pre = (prefs.duo ? "duo_" : "") + set + "_" + meter.replace("/", "-") + "_";
+    var names = Object.keys(L).filter(function (n) { return n.indexOf(pre) === 0 && n !== avoid; });
     return names.length ? names[Math.floor(Math.random() * names.length)] : null;
   }
   function use(n) {
-    var line = book.lines[n]; if (!line) return;
+    var duo = /^duo_/.test(n), line = duo ? duos && duos.lines[n] : book.lines[n]; if (!line) return;
     stop();
     var k = kindOf(n);
-    prefs.set = k.set; prefs.meter = k.meter; save(PREF_KEY, prefs);
-    cur = { name: n, meter: line.m, counts: line.c, tl: RT.rhythmTimeline(line.c, line.m) };
+    prefs.set = k.set; prefs.meter = k.meter; prefs.duo = duo; save(PREF_KEY, prefs);
+    cur = { name: n, meter: line.m, duo: duo, parts: duo
+      ? [0, 1].map(function (i) { return { img: "rhythm-duos/" + n + "_" + (i + 1) + ".png", counts: line.p[i], tl: RT.rhythmTimeline(line.p[i], line.m) }; })
+      : [{ img: "rhythm-pictures/" + n, counts: line.c, tl: RT.rhythmTimeline(line.c, line.m) }] };
+    cur.both = duo ? RT.mergeTimelines(cur.parts[0].tl, cur.parts[1].tl) : cur.parts[0].tl;
     result = null; heat = null;
-    $("rImg").src = "rhythm-pictures/" + n;
-    $("rName").textContent = n.replace(/\.png$/, "").replace(/_/g, " ");
     $("res").classList.remove("show");
+    rboxBuild();
     status("Pick a rhythm, then 🔊 Hear it or ▶ Tap it.");
     paint();
   }
   function newOne(set, meter) {
     set = set || prefs.set; meter = meter || prefs.meter;
     if (meter === "6/8" && set !== "8th") meter = "4/4";
+    if (prefs.duo && !duos) { duosGet().then(function () { newOne(set, meter); }); return; }
     var n = pick(set, meter, cur && cur.name);
     if (n) use(n);
   }
+  var duosP = null;
+  function duosGet() {
+    if (!duosP) duosP = fetch("rhythm-duos.json?v=2.17.0").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { duos = { lines: j.lines || {} }; return duos; })
+      .catch(function (e) { duosP = null; prefs.duo = false; status("The two-part rhythms didn't load."); paint(); throw e; });
+    return duosP;
+  }
+  function rboxBuild() {
+    var duo = cur.duo;
+    $("rbox").innerHTML = cur.parts.map(function (p, k) {
+      return '<div class="rpart" data-p="' + (k + 1) + '">' + (duo ? '<b class="ptag">' + (k + 1) + "</b>" : "") +
+        '<div class="rcol"><div class="rimg"><img alt="' + (duo ? "Part " + (k + 1) : "The rhythm") + '" src="' + esc(p.img) + '"><i class="rline"></i></div>' +
+        '<div class="rcnt"></div></div></div>';
+    }).join("") + '<div class="rname">' + esc(cur.name.replace(/\.png$/, "").replace(/_/g, " ")) + "</div>";
+  }
+  function mine() { return cur && cur.duo ? prefs.part : 1; }
   function countsPaint() {
-    var box = $("rCnt");
-    var show = cur && (prefs.counts || heat);
-    if (!show) { box.innerHTML = ""; return; }
-    var oi = 0;
-    box.innerHTML = cur.counts.map(function (c, i) {
-      var k = String(c[2] || "n").charAt(0), cls = k === "h" ? "h" : k === "r" ? "r" : "n";
-      if (heat && c[2] === "n") { var v = heat[oi++]; cls += v === 2 ? " hg" : v === 1 ? " hy" : " hr"; }
-      return '<span data-i="' + i + '" class="' + cls + '" style="left:' + (+c[0] * 100).toFixed(2) + '%">' + esc(c[1]) + "</span>";
-    }).join("");
-    lastCi = -2;
+    if (!cur) return;
+    var boxes = document.querySelectorAll("#rbox .rcnt");
+    cur.parts.forEach(function (p, k) {
+      var box = boxes[k]; if (!box) return;
+      var h = heat && k + 1 === mine() ? heat : null;
+      if (!prefs.counts && !h) { box.innerHTML = ""; return; }
+      var oi = 0;
+      box.innerHTML = p.counts.map(function (c, i) {
+        var kk = String(c[2] || "n").charAt(0), cls = kk === "h" ? "h" : kk === "r" ? "r" : "n";
+        if (h && c[2] === "n") { var v = h[oi++]; cls += v === 2 ? " hg" : v === 1 ? " hy" : " hr"; }
+        return '<span data-i="' + i + '" class="' + cls + '" style="left:' + (+c[0] * 100).toFixed(2) + '%">' + esc(c[1]) + "</span>";
+      }).join("");
+    });
+    lastCi = "";
   }
   function paint() {
     var busy = !!play;
@@ -184,6 +221,15 @@
       b.classList.toggle("sel", v === prefs.meter);
       b.disabled = busy || (v === "6/8" && prefs.set !== "8th");
       b.title = v === "6/8" ? "8th grade only" : "";
+    });
+    var duo = !!(cur && cur.duo);
+    $("bDuo").classList.toggle("on", duo); $("bDuo").setAttribute("aria-pressed", duo ? "true" : "false"); $("bDuo").disabled = busy;
+    $("partRow").hidden = !duo;
+    Array.prototype.forEach.call(document.querySelectorAll("#pPart button"), function (b) {
+      b.classList.toggle("sel", +b.getAttribute("data-p") === prefs.part); b.disabled = busy; });
+    Array.prototype.forEach.call(document.querySelectorAll("#rbox .rpart"), function (e) {
+      var p = +e.getAttribute("data-p");
+      e.classList.toggle("mine", duo && p === prefs.part); e.classList.toggle("other", duo && p !== prefs.part && !(play && play.mode === "hear"));
     });
     $("tOut").textContent = prefs.bpm + " BPM"; $("tRange").value = prefs.bpm;
     $("bCounts").textContent = prefs.counts ? "Hide counts" : "Show counts";
@@ -206,15 +252,15 @@
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
     o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.06);
   }
-  function tock(t) {
+  function tock(t, low) {
     var o = audio.createOscillator(), g = audio.createGain(), o2 = audio.createOscillator(), g2 = audio.createGain();
-    o.type = "sine"; o.frequency.setValueAtTime(950, t); o.frequency.exponentialRampToValueAtTime(620, t + 0.05);
+    o.type = "sine"; o.frequency.setValueAtTime(low ? 620 : 950, t); o.frequency.exponentialRampToValueAtTime(low ? 390 : 620, t + 0.05);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    o2.type = "triangle"; o2.frequency.value = 2400;
+    o2.type = "triangle"; o2.frequency.value = low ? 1500 : 2400;
     g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.25, t + 0.001); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
     o.connect(g); g.connect(audio.destination); o2.connect(g2); g2.connect(audio.destination);
     o.start(t); o.stop(t + 0.14); o2.start(t); o2.stop(t + 0.04);
-    play.tocks++;
+    play.tocks++; if (low) play.tocks2++;
   }
   function lat() { return (audio.outputLatency || audio.baseLatency || 0); }
   // audio clock → page clock (performance.now), at the moment the sound comes out of the speaker
@@ -222,13 +268,15 @@
 
   // ---------------------------------------------------------------- playing (hear = tocks on the notes; tap = score it)
   function start(mode) {
-    if (!cur || !cur.tl || play) return;
+    if (!cur || !cur.parts[0].tl || play) return;
     unlock(); if (!audio) { status("This device can't play sound."); return; }
-    var spb = 60 / prefs.bpm, off = cur.tl.beats, a0 = audio.currentTime + 0.3;
-    play = { mode: mode, a0: a0, spb: spb, off: off, tl: cur.tl, k: 0, hi: 0, tocks: 0, clicks: 0, total: off + cur.tl.length };
+    var tl = cur.parts[0].tl, spb = 60 / prefs.bpm, off = tl.beats, a0 = audio.currentTime + 0.3, me = mine();
+    // what the woodblock plays: Hear it = every part (Part 2 lower); Tap it on a two-part rhythm = the OTHER part, to play against
+    var sound = mode === "hear" ? cur.parts.map(function (p, k) { return k; }) : cur.duo ? [me === 1 ? 1 : 0] : [];
+    play = { mode: mode, a0: a0, spb: spb, off: off, tl: tl, k: 0, hk: [0, 0], sound: sound, tocks: 0, tocks2: 0, clicks: 0, total: off + tl.length, part: me };
     play.t0 = perfOf(a0); play.spbMs = spb * 1000;
     play.clickMs = []; for (var i = 0; i < off; i++) play.clickMs.push(play.t0 + i * play.spbMs);
-    play.onsetMs = cur.tl.onsets.map(function (o) { return play.t0 + (off + o) * play.spbMs; });
+    play.onsetMs = cur.parts[me - 1].tl.onsets.map(function (o) { return play.t0 + (off + o) * play.spbMs; });
     play.endMs = play.t0 + play.total * play.spbMs;
     taps = []; heat = null; result = null;
     $("res").classList.remove("show");
@@ -240,12 +288,14 @@
   function schedule() {
     if (!play) return;
     var ahead = audio.currentTime + 0.12;
-    if (play.mode === "hear") {
-      var on = play.tl.onsets;
-      while (play.hi < on.length && play.a0 + (play.off + on[play.hi]) * play.spb < ahead) { tock(play.a0 + (play.off + on[play.hi]) * play.spb); play.hi++; }
-    }
+    play.sound.forEach(function (k) {
+      var on = cur.parts[k].tl.onsets;
+      while (play.hk[k] < on.length && play.a0 + (play.off + on[play.hk[k]]) * play.spb < ahead) {
+        tock(play.a0 + (play.off + on[play.hk[k]]) * play.spb, k === 1); play.hk[k]++;
+      }
+    });
     while (play.k < play.total && play.a0 + play.k * play.spb < ahead) {
-      click(play.a0 + play.k * play.spb, play.k % play.off === 0, play.mode === "hear" && play.k >= play.off);
+      click(play.a0 + play.k * play.spb, play.k % play.off === 0, play.sound.length > 0 && play.k >= play.off);
       play.k++; play.clicks++;
     }
   }
@@ -255,24 +305,29 @@
     if (now < play.t0 + play.off * play.spbMs - play.spbMs * 0.15) {
       if (now >= play.t0 - 50) status(String(Math.min(play.off, Math.max(1, Math.floor((now - play.t0 + play.spbMs * 0.15) / play.spbMs) + 1))), true);
     } else if (!play.going) { play.going = true; status(play.mode === "hear" ? "Listen… 🔊" : "Tap the rhythm! 🥁"); }
-    var x = prefs.line ? RT.xAt(play.tl, t) : null, l = $("rLine");
-    l.classList.toggle("on", x !== null);
-    if (x !== null) l.style.left = (x * 100).toFixed(2) + "%";
-    var ci = RT.countAt(play.tl, t);
-    if (ci !== lastCi) {
-      Array.prototype.forEach.call($("rCnt").children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === ci); });
-      lastCi = ci;
-    }
+    lineAt(t);
     if (now > play.endMs + 500) { finish(); return; }
     play.raf = requestAnimationFrame(draw);
+  }
+  // the gold line (one position for every part: cur.both) + the count being played in each part
+  function lineAt(t) {
+    var x = t !== null && prefs.line ? RT.xAt(cur.both, t) : null, marks = [];
+    Array.prototype.forEach.call(document.querySelectorAll("#rbox .rline"), function (l) {
+      l.classList.toggle("on", x !== null); if (x !== null) l.style.left = (x * 100).toFixed(2) + "%"; });
+    cur.parts.forEach(function (p) { marks.push(t !== null ? RT.countAt(p.tl, t) : -1); });
+    var key = marks.join(",");
+    if (key === lastCi) return;
+    lastCi = key;
+    Array.prototype.forEach.call(document.querySelectorAll("#rbox .rcnt"), function (c, k) {
+      Array.prototype.forEach.call(c.children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === marks[k]); });
+    });
   }
   function halt() {
     if (!play) return null;
     var p = play; play = null;
     clearInterval(p.timer); cancelAnimationFrame(p.raf);
-    $("rLine").classList.remove("on");
-    Array.prototype.forEach.call($("rCnt").children, function (e) { e.classList.remove("now"); });
-    lastPlay = { mode: p.mode, tocks: p.tocks, clicks: p.clicks };
+    lineAt(null);
+    lastPlay = { mode: p.mode, tocks: p.tocks, tocks2: p.tocks2, clicks: p.clicks, part: p.part };
     return p;
   }
   var lastPlay = null;
@@ -285,7 +340,7 @@
     var res = TAP.scoreAligned(p.onsetMs, taps, cal !== null ? cal : (+load(CAL_KEY) || 0), Math.min(200, p.spbMs * 0.3));
     if (res.perfect + res.good >= 3) save(CAL_KEY, res.shift);
     result = res; heat = res.notes;
-    var best = load(BEST_KEY) || {}, key = cur.name, prev = best[key], isBest = !prev || res.pct > prev.pct;
+    var best = load(BEST_KEY) || {}, key = cur.name + (cur.duo ? "#" + p.part : ""), prev = best[key], isBest = !prev || res.pct > prev.pct;
     if (isBest && res.pct > 0) { best[key] = { pct: res.pct, bpm: prefs.bpm }; save(BEST_KEY, best); }
     var avg = res.offs.length ? res.offs.reduce(function (s, o) { return s + o; }, 0) / res.offs.length : 0;
     var tip = res.extra > 2 ? "Lots of extra taps: only tap the notes, not the rests." :
@@ -296,8 +351,8 @@
     $("res").innerHTML = '<div class="pct">' + res.pct + '%</div><div class="nums"><div>' + res.perfect + "<span>Perfect</span></div><div>" +
       res.good + "<span>Good</span></div><div>" + res.miss + "<span>Missed</span></div><div>" + res.extra + '<span>Extra taps</span></div></div>' +
       '<div class="tip">' + tip + "</div>" +
-      '<div class="best">' + (isBest && res.pct > 0 ? (prev ? "⭐ New best for this rhythm!" : "⭐ Your first score on this rhythm") :
-        "Your best on this rhythm: " + prev.pct + "% at " + prev.bpm + " BPM") + "</div>";
+      '<div class="best">' + (cur.duo ? "Part " + p.part + " · " : "") + (isBest && res.pct > 0 ? (prev ? "⭐ New best for this rhythm!" : "⭐ Your first score on this rhythm") :
+        prev ? "Your best on this rhythm: " + prev.pct + "% at " + prev.bpm + " BPM" : "Keep going!") + "</div>";
     $("res").classList.add("show");
     status("Green = right on · Yellow = close · Red = missed");
     paint();
@@ -320,6 +375,11 @@
     b.onclick = function () { if (!play && !b.disabled) newOne(prefs.set, b.getAttribute("data-v")); };
   });
   $("bNew").onclick = function () { newOne(); };
+  $("bDuo").onclick = function () { if (play) return; prefs.duo = !(cur && cur.duo); newOne(); };
+  Array.prototype.forEach.call(document.querySelectorAll("#pPart button"), function (b) {
+    b.onclick = function () { if (play) return; prefs.part = +b.getAttribute("data-p") === 2 ? 2 : 1; save(PREF_KEY, prefs); heat = null; result = null;
+      $("res").classList.remove("show"); paint(); };
+  });
   function setBpm(v) { prefs.bpm = Math.max(40, Math.min(200, Math.round(v))); save(PREF_KEY, prefs); paint(); }
   $("tDown").onclick = function () { if (!play) setBpm(prefs.bpm - 4); };
   $("tUp").onclick = function () { if (!play) setBpm(prefs.bpm + 4); };
@@ -341,9 +401,10 @@
   document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); });
 
   // ---------------------------------------------------------------- start
-  fetch("rhythm-counts.json?v=2.16.0").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+  fetch("rhythm-counts.json?v=2.17.0").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
     book = { lines: j.lines || {} };
     var want = String(q.get("r") || "");
+    if (/^duo_/.test(want)) { duosGet().then(function () { if (duos.lines[want]) use(want); else newOne(); }); return; }
     if (want && !/\.png$/.test(want)) want += ".png";
     if (book.lines[want]) use(want); else newOne();
   }).catch(function () {
@@ -353,10 +414,12 @@
 
   window.__prac = {
     state: function () {
-      return { prefs: prefs, cur: cur ? { name: cur.name, meter: cur.meter, n: cur.tl ? cur.tl.onsets.length : 0 } : null,
+      return { prefs: prefs, cur: cur ? { name: cur.name, meter: cur.meter, duo: cur.duo, n: cur.parts[0].tl.onsets.length,
+          ns: cur.parts.map(function (p) { return p.tl.onsets.length; }), imgs: Array.prototype.map.call(document.querySelectorAll("#rbox img"), function (i) { return i.naturalWidth; }) } : null,
         play: play ? { mode: play.mode, t0: play.t0, clicks: play.clickMs, onsets: play.onsetMs, end: play.endMs } : null,
         last: lastPlay, result: result, heat: heat, taps: taps.length,
-        counts: Array.prototype.map.call($("rCnt").children, function (e) { return e.className; }) };
+        counts: Array.prototype.map.call((document.querySelectorAll("#rbox .rcnt")[mine() - 1] || { children: [] }).children, function (e) { return e.className; }),
+        lines: Array.prototype.map.call(document.querySelectorAll("#rbox .rline.on"), function (e) { return parseFloat(e.style.left); }) };
     },
     tapAt: function (t) { tap(t); }, use: function (n) { use(n); }
   };

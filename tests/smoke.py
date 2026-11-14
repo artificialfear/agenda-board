@@ -582,7 +582,7 @@ def main():
         failures += 0 if ok else 1
         # 2.13.0: Level + Time pickers (6/8 only for 8th)
         NM = lambda: page.evaluate("window.__agendaBoard.rhythm().counts.name")
-        SEL = lambda: page.evaluate("[...document.querySelectorAll('#mPick .sel')].map(b => b.dataset.v)")
+        SEL = lambda: page.evaluate("[...document.querySelectorAll('#pLevel .sel, #pTime .sel')].map(b => b.dataset.v)")
         s0 = SEL()
         page.click("#pLevel button[data-v='6beg']"); page.wait_for_timeout(400); a1 = NM(); s1 = SEL()
         d68 = page.evaluate("document.querySelector(\"#pTime button[data-v='6/8']\").disabled")
