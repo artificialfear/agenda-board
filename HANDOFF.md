@@ -1,5 +1,24 @@
 # Agenda Board — handoff
 
+## Latest board session (11/12–11/13/2026, live = build 2.13.0) — read this first
+- Bump BUILD (index.html) + version.json + every ?v= tag together; open boards reload within 5 min. Student tap.html does NOT
+  self-update (students reload). Workspace shell can't reach github.io: check the live site via Chrome. Pushes sometimes need retries.
+- Lunch & Learn (2.6.0, lunch.js): ☰ switches 8th/7th, today only; Board Settings rows "Lunch & Learn 8th/7th" (11:15-11:40,
+  12:15-12:35) override times; pack-up 5 min before the end; waits while a block is in session.
+- Rhythm view: rhythmtime.js timeline; moving line (switch "〰 Moving line", agendaBoard.metro.line); metronome stops after the
+  rhythm (metro.stopAt); 🔈 Speaker delay (settings.audioDelay, Mat's ViewBoard is set, works); 🎲 New rhythm + Level/Time pickers
+  (practice picture over the slide's card, slide never changed: 3rd+4th share the 7th rhythm); 🔊 Hear it; 🪜 Speed ladder.
+- Tap along (rtap.js + tap.html, PeerJS "ravenband-rtap-v1-CODE"): Mat's choices: Chromebooks + iPads, pick name, Top 5 + class
+  average, NOT saved. Works in class (2.9.1 scoreAligned fixed a 47% cap). Big 5 s leaderboard (#rtBig), problem-spot colors,
+  ranking pct → Perfect count → accuracy (`a` ms), exact ties share a place.
+- Closing score numbers enlarged (2.12.1).
+- Not yet tried in class: Hear it sound, speed ladder, problem spots, big leaderboard. On 4:3 the shrunken tap card can cover the
+  end of the title. smoke "world map" check failed once then passed (flaky).
+- Offered, not chosen: auto-on Lunch & Learn weekdays; pause between ladder passes for the big leaderboard; New rhythm that
+  replaces the slide's rhythm (Daily Slides script); counts fade-out, solo practice from the Dojo, rhythm on student screens, two-part rhythms.
+- Tests: node tests/*_test.js; python3 tests/smoke.py (65), tests/rtap_smoke.py (29), tests/ptest_smoke.py (29), tests/lunch_smoke.py (27).
+  Details per version: CHANGELOG.md.
+
 ## Agenda fill from the lesson plan (11/12/2026, Mat; live)
 - New apps-script/AgendaFill.gs v1.0 + ClosingScores.gs v1.9 in "Class Agenda – Daily Slide Updater"; web app deployment
   AKfycbw9… now @10 (same URL). Live ClosingScores was checked = main by SHA-256 before the swap. setupAgendaFill run:
@@ -18,7 +37,7 @@
   Opening untouched (rhythm). First real POST not yet exercised (Mat's next turn-in / Send to agenda).
 - Tests: node tests/agenda_fill_test.js (break-checked: matcher, stale range, blank focus).
 
-## Latest session (11/10/2026, evening) — read this first
+## Session of 11/10/2026 (evening)
 - All live (CHANGELOG 2.1.0 / 2.2.0 / 2.2.1). Apps Script "Class Agenda – Daily Slide Updater"
   (1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG: Code.js v2.4, ClosingScores.js v1.5, NinjaGoals.js), web app
   deployment AKfycbw9ThMFeLqxlurKz10_5gzwpOrfmoh2BhsYYksPOsESJ_htNiobf-u4xcMO1zuqbek-CA @6. Content Pool sheet
@@ -59,7 +78,7 @@ Live URL (once Pages is on): https://artificialfear.github.io/agenda-board/
 - settings.audioDelay (ms, this board only). delaySec(); metroDraw shifts every visual by it; rtapStart t0 uses it instead of
   outputLatency when set. Tap test: dly {test, clicks (perf ms the click left), taps}. Tests: smoke "speaker delay …" (2).
 
-## 2.8.0 Tap along (11/13, Mat; live, NOT yet tried on the school network)
+## 2.8.0 Tap along (11/13, Mat; live, works on the school network)
 - rtap.js (board card + RTAP.score / RTAP.calibrate, also loaded by tap.html for scoring) + tap.html (student page).
   Mat's choices 11/13: school Chromebooks + iPads; pick name from the roster; board shows Top 5 + class average; not saved.
 - Round message: {t0 (board performance.now ms of 1st count-off click, incl. outputLatency), spb ms, off clicks, onsets (clicks),
