@@ -9,7 +9,7 @@
    Connection: PeerJS through ptnet.js (same as the Playing Test remote), peer id "ravenband-rtap-v1-" + CODE.
    Clock: devices ping the board (performance.now() both ends) and keep the fastest answer to line their clocks up.
    Uses window.__board (index.html): call(params), settings(), now(), ymd(d), shown(). index.html calls window.rtapStart(round)
-   from metroStart and window.rtapStop() from metroStop. */
+   from metroStart and window.rtapStop() from metroStop, and window.rtapRhythm(r) when the rhythm on the board changes (2.15.0). */
 (function () {
   "use strict";
 
@@ -229,7 +229,8 @@
   function onData(c, d) {
     if (!d || typeof d !== "object") return;
     if (d.type === "ping") { send(c, { type: "pong", c: d.c, b: performance.now() }); return; }
-    if (d.type === "hello") { c.hi = true; send(c, rosterMsg()); if (round && performance.now() < round.endsAt) send(c, roundMsg()); return; }
+    if (d.type === "hello") { c.hi = true; send(c, rosterMsg()); if (rhythm) send(c, rhythm);
+      if (round && performance.now() < round.endsAt) send(c, roundMsg()); return; }
     if (d.type === "join") {
       var s = roster.filter(function (x) { return x.id === d.id; })[0];
       if (!s) { send(c, { type: "nojoin" }); return; }
@@ -245,10 +246,24 @@
     }
   }
 
+  // ---------------------------------------------------------------- 2.15.0 (Mat 11/14): the rhythm on the students' screens
+  // index.html calls window.rtapRhythm({ pic, meter, counts, cnt, line }) whenever the board's rhythm, its counts (shown or not)
+  // or the moving-line switch changes; null = no rhythm with counts. Devices load the same picture from rhythm-pictures/.
+  var rhythm = null, rhythmKey = "null";
+  window.rtapRhythm = function (r) {
+    var m = r && r.pic && r.counts ? { type: "rhythm", pic: String(r.pic), meter: r.meter || "4/4", counts: r.counts, cnt: !!r.cnt,
+      line: r.line !== false } : null;
+    var k = JSON.stringify(m);
+    if (k === rhythmKey) return;
+    rhythmKey = k; rhythm = m;
+    conns.forEach(function (c) { if (c.hi) send(c, m || { type: "rhythm", pic: null }); });
+  };
+
   // ---------------------------------------------------------------- rounds (index.html metroStart / metroStop)
   // r = { t0: performance.now() ms of the first count-off click, spb: ms per click, off: count-off clicks, tl: rhythmtime timeline }
   function roundMsg() {
-    return { type: "round", id: round.id, t0: round.t0, spb: round.spb, off: round.off, onsets: round.onsets, length: round.length };
+    return { type: "round", id: round.id, t0: round.t0, spb: round.spb, off: round.off, onsets: round.onsets, length: round.length,
+      pic: round.name || null };
   }
   window.rtapStart = function (r) {
     if (!on || !r || !r.tl) return;

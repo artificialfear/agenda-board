@@ -94,6 +94,19 @@ def main():
         # a round: Ana taps every note exactly (+ the count-off, 110 ms late = her device's delay); Ben taps half the notes
         GAP = "(() => { const c = document.getElementById('rtCard').getBoundingClientRect(), v = document.getElementById('rView').getBoundingClientRect(); return v.top - c.bottom; })()"
         check("card above the rhythm (join)", board.evaluate(GAP) >= 0, board.evaluate(GAP))
+        # 2.15.0: the same rhythm on the students' screens (counts only when the board shows them)
+        ana0 = kids[0]
+        ana0.wait_for_function("document.querySelector('#rbox img') && document.querySelector('#rbox img').naturalWidth > 0", timeout=5000)
+        st = ana0.evaluate("window.__tap.state().rhythm")
+        check("student screen shows the board's rhythm", st and st["pic"] == LINE and st["tl"] and not st["cnt"]
+              and ana0.evaluate("document.querySelector('#rbox img').getAttribute('src')") == "rhythm-pictures/" + LINE
+              and not ana0.is_visible("#rcnt"), st)
+        board.click("#mCounts"); ana0.wait_for_selector("#rcnt span", timeout=3000)
+        n_counts = len(json.load(open(ROOT / "rhythm-counts.json"))["lines"][LINE]["c"])
+        check("counts follow the board's Show counts", ana0.evaluate("document.querySelectorAll('#rcnt span').length") == n_counts)
+        board.click("#mCounts"); ana0.wait_for_function("!document.getElementById('rcnt')", timeout=3000)
+        check("hiding counts hides them on devices too", not ana0.is_visible("#rcnt"))
+        check("nobody's line before the count-off", not ana0.is_visible("#rline"))
         board.click("#mGo")
         for k in kids: k.wait_for_function("window.__tap.state().round !== null", timeout=3000)
         board.wait_for_timeout(200)
@@ -112,6 +125,10 @@ def main():
         diff = abs((r["onsets"][0] + at) - (rb["onsets"][0] + btn_))
         check("both devices agree on note times", diff < 25, diff)
         board.wait_for_timeout(1200)
+        ana.wait_for_selector("#rline.on", timeout=4000)
+        x1 = ana.evaluate("parseFloat(document.getElementById('rline').style.left)"); board.wait_for_timeout(400)
+        x2 = ana.evaluate("parseFloat(document.getElementById('rline').style.left)")
+        check("moving line on the student screen", 0 < x1 < x2 < 100, (x1, x2))
         if shots: ana.screenshot(path=shots + "/tap_round.png")
         dur = (r["end"] - ana.evaluate("performance.now()")) / 1000
         board.wait_for_timeout(int(max(0, dur) * 1000) + 2600)
@@ -155,6 +172,18 @@ def main():
         if shots: board.screenshot(path=shots + "/tap_board_results.png")
         st = board.evaluate("window.__rtap.state()")
         check("nothing saved anywhere", all(q not in ["ptscore"] for q in []) and set(st["results"].keys()) == {"a1", "b2"})
+
+        # 2.15.0: the moving-line switch and 🎲 New rhythm reach the devices
+        board.click("#mLine"); ana.wait_for_function("window.__tap.state().rhythm.line === false", timeout=3000)
+        check("line switch off reaches devices", True)
+        board.click("#mLine"); ana.wait_for_function("window.__tap.state().rhythm.line === true", timeout=3000)
+        board.click("#mNew"); board.wait_for_timeout(500)
+        newpic = board.evaluate("window.__agendaBoard.rhythm().counts.name") if board.evaluate("!!window.__agendaBoard.rhythm().counts.name") else None
+        ana.wait_for_function("window.__tap.state().rhythm.pic !== '%s'" % LINE, timeout=3000)
+        np = ana.evaluate("window.__tap.state().rhythm.pic")
+        check("🎲 New rhythm shows on devices", np != LINE and np.startswith("8th_4-4_") and (newpic is None or np == newpic), (np, newpic))
+        board.click("#mToday"); ana.wait_for_function("window.__tap.state().rhythm.pic === '%s'" % LINE, timeout=3000)
+        check("↩ Today's rhythm back on devices", True)
 
         # stopping in the middle cancels the round on the devices
         check("metronome stopped after the rhythm (round still counts)", not board.evaluate("window.__agendaBoard.metro().on"))

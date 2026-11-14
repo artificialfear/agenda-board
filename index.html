@@ -713,7 +713,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.14.0"></script>
+<script src="rhythmtime.js?v=2.15.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1318,7 +1318,14 @@
       rc.loading = false; rc.err = String(e && e.message || e); countsPaint();
     });
   }
+  // 2.15.0: the students' Tap along screens show the same rhythm (picture, counts if shown here, moving line on/off)
+  function rtapRhythmSend() {
+    if (!window.rtapRhythm) return;
+    var d = rc.data && rc.data.block === rc.block && rc.data.counts ? rc.data : null;
+    window.rtapRhythm(d ? { pic: d.name, meter: d.meter, counts: d.counts, cnt: rc.shown, line: (mPrefs || {}).line !== false } : null);
+  }
   function countsPaint() {
+    rtapRhythmSend();
     var has = !!settings.closingUrl;
     rhythmEl.classList.toggle("has-counts", has);
     if (!has) return;
@@ -1595,7 +1602,7 @@
     document.getElementById("mLine").setAttribute("aria-checked", on ? "true" : "false");
   }
   document.getElementById("mLine").onclick = function () {
-    mPrefs.line = mPrefs.line === false; save(METRO_KEY, mPrefs); linePaint();
+    mPrefs.line = mPrefs.line === false; save(METRO_KEY, mPrefs); linePaint(); rtapRhythmSend();
   };
   linePaint();
   document.getElementById("mDelay").onclick = function () { document.getElementById("mDelayBox").classList.toggle("open"); dlyPaint(); };
@@ -2185,7 +2192,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.14.0";
+  var BUILD = "2.15.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2214,9 +2221,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.14.0"></script>
-<script src="ptest.js?v=2.14.0"></script>
-<script src="lunch.js?v=2.14.0"></script>
-<script src="rtap.js?v=2.14.0"></script>
+<script src="ptnet.js?v=2.15.0"></script>
+<script src="ptest.js?v=2.15.0"></script>
+<script src="lunch.js?v=2.15.0"></script>
+<script src="rtap.js?v=2.15.0"></script>
 </body>
 </html>

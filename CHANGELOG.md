@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.15.0 — 2026-11-14 (Mat)
+- Tap along: the students' screens show the same rhythm as the board, above the TAP pad (the picture from rhythm-pictures/,
+  so today's rhythm, 🎲 New rhythm and the Level/Time pickers all show). During a round the gold line moves through it on the
+  device's own clock (same timing as the scoring) and the count being played lights up. Counts show on devices only while
+  "Show counts" is on at the board; the 〰 Moving line switch turns the devices' line off too.
+  Board → devices: new `rhythm` message (pic, meter, counts, cnt, line), sent on join and whenever any of it changes.
+  Students must reload tap.html to get this.
+
 ## 2.14.0 — 2026-11-14 (Mat)
 - Lunch & Learn turns on by itself on **Mon, Wed, Thu, Fri** (8th 11:15–11:40 and 7th 12:15–12:35), no menu switch needed.
   Tuesday (fall IF day) stays off unless switched on. The ☰ switches still change TODAY only for one grade (off on a usual day,
