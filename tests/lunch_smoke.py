@@ -1,4 +1,4 @@
-"""Lunch & Learn (2.6.0): menu switches, countdown + rules, pack-up at 5 minutes before the end, Brain Break, IF days.
+"""Lunch & Learn (2.6.0): usual days (2.14.0), menu switches, countdown + rules, pack-up at 5 minutes before the end, Brain Break, IF days.
 Run: python3 tests/lunch_smoke.py [screenshot-folder]"""
 import http.server, json, socketserver, sys, threading
 from pathlib import Path
@@ -60,9 +60,9 @@ def main():
         def is_open(pg):
             return pg.evaluate("document.getElementById('ll').classList.contains('open')")
 
-        # 1) Off by default; the ☰ switch turns it on for today
-        pg = board("2026-11-12T11:15:30")                       # Thursday, regular day
-        check("off unless switched on", not is_open(pg))
+        # 1) Switched off for today on a usual day; the ☰ switch turns it back on
+        pg = board("2026-11-12T11:15:30", on={"date": "2026-11-12", "8th": False})   # Thursday, regular day
+        check("off when switched off today", not is_open(pg))
         pg.click("#btnMenu"); pg.wait_for_timeout(100)
         sub = pg.inner_text("#llSub8th")
         check("menu shows 8th times", "11:15–11:40" in sub and "11:35" in sub, sub)
@@ -109,9 +109,12 @@ def main():
         check("closes 2 minutes later", not is_open(pg) and not pg.is_visible("#btnLunch"))
         pg.context.close()
 
-        # 4) Only today: yesterday's switch doesn't count
-        pg = board("2026-11-12T11:20:00", on={"date": "2026-11-11", "8th": True})
-        check("yesterday's switch is off today", not is_open(pg))
+        # 4) Only today: yesterday's switch doesn't count (Wed switched off → Thu is back to the usual days)
+        pg = board("2026-11-12T11:20:00", on={"date": "2026-11-11", "8th": False})
+        check("yesterday's switch doesn't carry over", is_open(pg))
+        pg.context.close()
+        pg = board("2026-11-17T11:20:00", on={"date": "2026-11-16", "8th": True})   # Mon switched on, Tue isn't a usual day
+        check("Monday's switch doesn't turn on Tuesday", not is_open(pg))
         pg.context.close()
 
         # 5) 7th grade 12:15–12:35, pack-up at 12:30; opening the board mid-way doesn't chime
@@ -149,6 +152,59 @@ def main():
         pr = pg.evaluate("""[__lunch.parseRange('12:15-12:35'), __lunch.parseRange('11:15 AM – 11:40 AM'), __lunch.parseRange('1:00-1:30'),
                            __lunch.parseRange('nonsense'), __lunch.parseRange('11:15-11:17')]""")
         check("time parsing", pr == [[735, 755], [675, 700], [780, 810], None, None], pr)
+        pg.context.close()
+        cfg["config"] = {}
+
+        # 9) 2.14.0: on by itself Mon, Wed, Thu, Fri — both grades, no switch needed
+        for day, name in (("2026-11-16", "Mon"), ("2026-11-18", "Wed"), ("2026-11-19", "Thu"), ("2026-11-20", "Fri")):
+            pg = board(day + "T11:20:00")
+            ok8 = is_open(pg) and pg.inner_text("#llGrade") == "8th Grade"
+            pg.clock.fast_forward("01:00:00"); pg.wait_for_timeout(100)                     # 12:20
+            ok7 = is_open(pg) and pg.inner_text("#llGrade") == "7th Grade"
+            check(f"{name}: on by itself (8th + 7th)", ok8 and ok7, (ok8, ok7))
+            pg.context.close()
+        pg = board("2026-11-16T11:20:00")
+        pg.click("#llHide"); pg.click("#btnMenu"); pg.wait_for_timeout(100)
+        sub = pg.inner_text("#llSub8th")
+        check("menu: on + usual days listed", pg.get_attribute("#llToggle8th", "aria-checked") == "true"
+              and "On today" in sub and "usual days: Mon, Wed, Thu, Fri" in sub, sub)
+        check("nothing saved until the switch is used", pg.evaluate("localStorage.getItem('agendaBoard.lunchOn')") is None)
+        pg.click("#llToggle8th"); pg.wait_for_timeout(100)
+        sub = pg.inner_text("#llSub8th")
+        check("switch off on a usual day", not is_open(pg) and "Off today" in sub and "today only, usually on" in sub, sub)
+        saved = pg.evaluate("JSON.parse(localStorage.getItem('agendaBoard.lunchOn'))")
+        check("off is saved for today", saved == {"date": "2026-11-16", "8th": False}, saved)
+        pg.context.close()
+        pg = board("2026-11-16T12:20:00", on={"date": "2026-11-16", "8th": False})
+        check("8th off today doesn't turn off 7th", is_open(pg) and pg.inner_text("#llGrade") == "7th Grade")
+        pg.context.close()
+
+        # Tuesday (IF day this semester) isn't a usual day: off unless switched on
+        pg = board("2026-11-17T11:20:00")
+        check("Tue: off by itself", not is_open(pg))
+        pg.click("#btnMenu"); pg.wait_for_timeout(100)
+        check("Tue menu: off", pg.get_attribute("#llToggle8th", "aria-checked") == "false" and "Off today" in pg.inner_text("#llSub8th"))
+        pg.click("#llToggle8th"); pg.click("#closeMenu"); pg.wait_for_timeout(200)
+        check("Tue: switch turns it on", is_open(pg) and "today only, usually off" in pg.inner_text("#llSub8th"))
+        pg.context.close()
+        pg = board("2026-11-21T11:20:00")
+        check("Sat: never by itself", not is_open(pg))
+        pg.context.close()
+
+        # Board Settings "Lunch & Learn days" changes the usual days (e.g. next semester)
+        cfg["config"] = {"Lunch & Learn days": "Tue, Thu"}
+        pg = board("2026-11-16T11:19:00"); pg.clock.run_for(2000); pg.clock.fast_forward("01:00"); pg.wait_for_timeout(200)
+        check("sheet days: Mon off", not is_open(pg))
+        pg.context.close()
+        pg = board("2026-11-17T11:19:00"); pg.clock.run_for(2000); pg.clock.fast_forward("01:00"); pg.wait_for_timeout(200)
+        check("sheet days: Tue on", is_open(pg))
+        pd = pg.evaluate("""['Mon, Wed, Thu, Fri', 'M W Th F', 'Monday - Friday', 'none', 'Tues & Thurs', 'weekdays', 'banana', '']
+                            .map(__lunch.parseDays)""")
+        check("day parsing", pd == [[1, 3, 4, 5], [1, 3, 4, 5], [1, 2, 3, 4, 5], [], [2, 4], [1, 2, 3, 4, 5], None, None], pd)
+        pg.context.close()
+        cfg["config"] = {"Lunch & Learn days": "banana"}
+        pg = board("2026-11-16T11:20:00")
+        check("unreadable sheet days → Mon, Wed, Thu, Fri", is_open(pg))
         pg.context.close()
         cfg["config"] = {}
         browser.close()

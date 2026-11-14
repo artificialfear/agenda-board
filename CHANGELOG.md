@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.14.0 — 2026-11-14 (Mat)
+- Lunch & Learn turns on by itself on **Mon, Wed, Thu, Fri** (8th 11:15–11:40 and 7th 12:15–12:35), no menu switch needed.
+  Tuesday (fall IF day) stays off unless switched on. The ☰ switches still change TODAY only for one grade (off on a usual day,
+  on on a Tuesday); tomorrow it's back to the usual days. Menu line shows "usual days: …" or "today only, usually on/off".
+- New Board Settings row **"Lunch & Learn days"** changes the usual days (e.g. "Mon, Tue, Wed, Fri", "Mon-Fri", "M W Th F",
+  "none"); unreadable text falls back to Mon, Wed, Thu, Fri.
+
 ## 2.13.0 — 2026-11-13 (Mat)
 - Rhythm view: **Level** (6 Beg / 6 Int / 7th / 8th = the four rhythm sets) and **Time** (2/4, 3/4, 4/4; 6/8 only for 8th)
   chips next to 🎲 New rhythm. Picking one shows a random practice rhythm of that kind (switching to a level without 6/8 drops to

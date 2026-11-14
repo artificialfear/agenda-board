@@ -1,7 +1,9 @@
 /* ===================== LUNCH & LEARN (2.6.0, Mat 11/12) =====================
    Some days Mat hosts Lunch & Learn in the band room during 8th grade lunch (11:15–11:40) and 7th grade lunch (12:15–12:35):
    approved students eat, then practice. This is a full-screen Raven Band page for those times.
-   - Turned on per grade, for TODAY only, by the ☰ menu switches (🥪 Lunch & Learn · 8th / 7th). Tomorrow they're off again.
+   - 2.14.0 (Mat 11/14): turns on by itself on Mon, Wed, Thu, Fri (both grades). The days can be changed from the Board Settings
+     row "Lunch & Learn days" (e.g. "Mon, Tue, Wed, Fri" or "none"). The ☰ menu switches (🥪 Lunch & Learn · 8th / 7th) still
+     turn a grade on or off for TODAY only (on a Tuesday, or off on a Monday); tomorrow it's back to the usual days.
    - From the start time: a big countdown to pack-up + the three Lunch & Learn rules.
    - 5 minutes before the end (PACK_MIN): chime, the screen flashes, and the four pack-up steps show with a countdown to Brain Break.
    - At the end: chime + "Time for Brain Break!" for 2 minutes, then the board goes back to normal.
@@ -14,7 +16,9 @@
   var B = window.__board;
   if (!B) return;
 
-  var DAY_KEY = "agendaBoard.lunchOn";        // { date, "8th": true|false, "7th": true|false }
+  var DAY_KEY = "agendaBoard.lunchOn";        // { date, "8th": true|false, "7th": true|false } — today's switch, beats the usual days
+  var DEF_DAYS = "Mon, Wed, Thu, Fri";         // 2.14.0: the usual Lunch & Learn days (Board Settings "Lunch & Learn days" wins)
+  var DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   var PACK_MIN = 5;                            // pack-up starts this many minutes before the end
   var GONE_MS = 2 * 60000;                     // "Time for Brain Break!" stays this long after the end
   var GRADES = [
@@ -64,8 +68,40 @@
     return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   }
 
+  // "Mon, Wed, Thu, Fri" / "M W Th F" / "Monday-Friday" / "none" → [1, 3, 4, 5] (null = can't read it → use the default)
+  function parseDays(s) {
+    s = String(s == null ? "" : s).toLowerCase().trim();
+    if (!s) return null;
+    if (/^(none|off|no|never|-)$/.test(s)) return [];
+    if (/^(week ?days|every ?day|daily|school ?days)$/.test(s)) return [1, 2, 3, 4, 5];
+    var FULL = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"], ONE = { m: 1, t: 2, w: 3, r: 4, f: 5 };
+    function day(w) {                                                   // "wed" / "wednesday" / "w" / "th" / "thurs"
+      w = w.replace(/\.$/, "");
+      if (ONE[w] != null) return ONE[w];
+      if (w === "tues" || w === "thur" || w === "thurs") return w.charAt(1) === "u" ? 2 : 4;
+      if (w.length < 2) return -1;
+      for (var i = 0; i < 7; i++) if (FULL[i].indexOf(w) === 0 && (w.length >= 3 || w === "th" || w === "tu" || w === "su" || w === "sa" || w === "mo" || w === "we" || w === "fr")) return i;
+      return -1;
+    }
+    s = s.replace(/\s*(?:[-–—]|\bthrough\b|\bthru\b|\bto\b)\s*/g, "-");   // "Mon - Fri" / "Mon to Fri" → "mon-fri"
+    var out = [], bad = false;
+    s.split(/[\s,;\/&+]+|\band\b/).filter(Boolean).forEach(function (part) {
+      var r = part.split("-").filter(Boolean);
+      if (r.length === 2) {                                            // "mon-fri"
+        var a = day(r[0]), b = day(r[1]);
+        if (a < 0 || b < 0) { bad = true; return; }
+        for (var i = a; ; i = (i + 1) % 7) { if (out.indexOf(i) < 0) out.push(i); if (i === b) break; }
+      } else {
+        var d = day(part); if (d < 0) { bad = true; return; }
+        if (out.indexOf(d) < 0) out.push(d);
+      }
+    });
+    return bad ? null : out.sort();
+  }
+  function usualDays() { var d = parseDays(B.settings().llDays); return d || parseDays(DEF_DAYS); }
+  function usualToday() { return usualDays().indexOf(B.now().getDay()) >= 0; }
   function dayOn() { var o = load(DAY_KEY); return o && o.date === today() ? o : { date: today() }; }
-  function isOn(g) { return !!dayOn()[g]; }
+  function isOn(g) { var v = dayOn()[g]; return typeof v === "boolean" ? v : usualToday(); }
 
   // What should be on screen right now: { gr, phase: 'learn' | 'pack' | 'gone', t, msLeft } or null.
   function current() {
@@ -211,7 +247,7 @@
         '<span class="tgl-sub" id="llSub' + gr.g + '"></span></span><span class="tgl-sw" aria-hidden="true"></span>';
       box.appendChild(t);
       t.onclick = function () {
-        var o = dayOn(); o.date = today(); o[gr.g] = !o[gr.g];
+        var o = dayOn(); o.date = today(); o[gr.g] = !isOn(gr.g);
         save(DAY_KEY, o); hidden = ""; paintMenu(); tick();
       };
     });
@@ -222,8 +258,10 @@
       var t = $("llToggle" + gr.g); if (!t) return;
       var on = isOn(gr.g), tm = times(gr);
       t.setAttribute("aria-checked", on ? "true" : "false");
-      $("llSub" + gr.g).textContent = (on ? "On today: " : "Off: ") + clock(tm.start) + "–" + clock(tm.end) +
-        " (pack up at " + clock(tm.pack) + ")";
+      var days = usualDays(), usual = days.length ? days.map(function (d) { return DAY_NAMES[d]; }).join(", ") : "no days";
+      var changed = on !== usualToday();
+      $("llSub" + gr.g).textContent = (on ? "On today: " : "Off today: ") + clock(tm.start) + "–" + clock(tm.end) +
+        " (pack up at " + clock(tm.pack) + ") · " + (changed ? "today only, usually " + (usualToday() ? "on" : "off") : "usual days: " + usual);
     });
   }
   var menuBtn = $("btnMenu");
@@ -231,5 +269,5 @@
   menuSetup();
   tick();
 
-  window.__lunch = { current: current, parseRange: parseRange, times: times };
+  window.__lunch = { current: current, parseRange: parseRange, times: times, parseDays: parseDays, isOn: isOn };
 })();

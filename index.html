@@ -713,7 +713,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.13.0"></script>
+<script src="rhythmtime.js?v=2.14.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1826,7 +1826,7 @@
   // The Daily Slides script (same link as closing scores, a=config) serves the "Board Settings" tab of the
   // Daily Agenda Content Pool sheet, so links can be changed from a laptop. A value there wins over the board's own.
   var REMOTE_SETTINGS = { "method book pdf link": "bookUrl", "playing test pin": "ptPin",
-    "lunch & learn 8th": "ll8", "lunch & learn 7th": "ll7" };
+    "lunch & learn 8th": "ll8", "lunch & learn 7th": "ll7", "lunch & learn days": "llDays" };
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2185,7 +2185,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.13.0";
+  var BUILD = "2.14.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2214,9 +2214,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.13.0"></script>
-<script src="ptest.js?v=2.13.0"></script>
-<script src="lunch.js?v=2.13.0"></script>
-<script src="rtap.js?v=2.13.0"></script>
+<script src="ptnet.js?v=2.14.0"></script>
+<script src="ptest.js?v=2.14.0"></script>
+<script src="lunch.js?v=2.14.0"></script>
+<script src="rtap.js?v=2.14.0"></script>
 </body>
 </html>
