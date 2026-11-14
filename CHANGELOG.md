@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.16.0 — 2026-11-14 (Mat)
+- **Rhythm Practice** (`practice.html`): solo practice on a Chromebook / iPad / phone, meant to open from a Dojo button
+  (`?lvl=6beg|6int|7th|8th`, optional `&m=4-4`, `&r=<picture>`). Level + Time pickers (6/8 only for 8th) and 🎲 New rhythm from
+  the same 780 pictures + counts as the board; tempo −/+/slider (40–200); Show counts; 〰 Line on/off; 🔊 Hear it (woodblock on
+  the notes over soft clicks); ▶ Tap it (this device's own metronome: one-bar count-off, then tap; space bar on Chromebooks),
+  scored like Tap along (count-off tunes the device; same `rtap.cal`), then the counts turn green / yellow / red per note.
+  Best score per rhythm kept on the device only (`practice.best`); nothing is sent anywhere.
+- Dojo button: code + level mapping in `apps-script/DOJO_PRACTICE_BUTTON.md` (not deployed yet: needs Chrome).
+
 ## 2.15.0 — 2026-11-14 (Mat)
 - Tap along: the students' screens show the same rhythm as the board, above the TAP pad (the picture from rhythm-pictures/,
   so today's rhythm, 🎲 New rhythm and the Level/Time pickers all show). During a round the gold line moves through it on the

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Rhythm Practice · Raven Band</title>
+<style>
+  /* Solo rhythm practice (2.16.0, Mat 11/14): opened from the Band Ninja Dojo (or the link) on a Chromebook / iPad / phone.
+     Same rhythm pictures + counts as the board (rhythm-pictures/, rhythm-counts.json). Pick a level and time signature, hear it,
+     then tap it with this device's own metronome and get a score + problem spots. Nothing leaves the device; the best score
+     per rhythm is kept on the device only. ?lvl=6beg|6int|7th|8th picks the level (the Dojo passes the student's band),
+     ?m=4-4 the time signature, ?r=<picture name> one rhythm, ?n=Name shows the name. */
+  @font-face { font-family: "Oswald"; font-weight: 600; font-style: normal; font-display: swap;
+    src: url("assets/oswald-latin-600-normal.woff2?v=1.1.0") format("woff2"); }
+  :root { --navy: #1f2a44; --deep: #141c30; --card: #2a3858; --gold: #c9a227; --soft: #b7bfd0; --line: #34405e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--deep); color: #fff; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+  body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  button { font: inherit; }
+  .top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--navy); border-bottom: 3px solid var(--gold); flex: none; }
+  .top img { height: 34px; }
+  .top h1 { margin: 0; font: 600 21px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em; white-space: nowrap; }
+  .top h1 span { color: var(--gold); }
+  .who { margin-left: auto; font: 600 17px "Oswald", Arial, sans-serif; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 16px; max-width: 980px; width: 100%; margin: 0 auto; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; }
+  .lbl { font: 600 14px "Oswald", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+  .grp { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .turn { display: none; text-align: center; color: var(--gold); font-size: 13px; margin-top: -4px; }
+  @media (max-width: 600px) and (orientation: portrait) { .turn { display: block; } }
+  .chips { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .chips button { background: var(--card); color: #fff; border: 0; border-left: 2px solid var(--line); padding: 8px 12px; cursor: pointer;
+    font: 600 17px "Oswald", "Arial Narrow", Arial, sans-serif; }
+  .chips button:first-child { border-left: 0; }
+  .chips button.sel { background: var(--gold); color: var(--deep); }
+  .chips button:disabled { opacity: .35; cursor: default; }
+  .b { border-radius: 999px; border: 2px solid var(--gold); background: transparent; color: var(--gold); padding: 9px 16px; cursor: pointer;
+    font: 600 18px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em; white-space: nowrap; }
+  .b.main { background: var(--gold); color: var(--deep); }
+  .b.on { background: var(--gold); color: var(--deep); }
+  .b:disabled { opacity: .4; cursor: default; }
+  /* the rhythm */
+  .rbox { background: #fff; border-radius: 16px; border: 3px solid var(--gold); padding: 10px 12px 6px; }
+  .rimg { position: relative; width: 100%; aspect-ratio: 1400 / 160; }
+  .rimg img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .rline { position: absolute; top: -4%; bottom: -4%; width: 4px; margin-left: -2px; background: var(--gold); border-radius: 2px;
+    box-shadow: 0 0 8px rgba(201,162,39,.9); display: none; }
+  .rline.on { display: block; }
+  .rcnt { position: relative; height: 1.6em; font: 600 clamp(12px, 2.3vw, 22px)/1.5 "Oswald", "Arial Narrow", Arial, sans-serif; color: var(--deep); }
+  .rcnt:empty { display: none; }
+  .rcnt span { position: absolute; transform: translateX(-50%); white-space: nowrap; padding: 0 .12em; border-radius: .25em; }
+  .rcnt span.r { color: #8a93a6; } .rcnt span.h { color: #b9c0cf; }
+  .rcnt span.now { color: #b8860b; transform: translateX(-50%) scale(1.3); }
+  .rcnt span.hg { background: #c9f2d3; } .rcnt span.hy { background: #ffe9a8; } .rcnt span.hr { background: #ffc9c2; color: #9b1c0f; }
+  .rname { text-align: right; color: #8a93a6; font-size: 11px; margin-top: 2px; }
+  .status { text-align: center; font: 600 24px/1.25 "Oswald", "Arial Narrow", Arial, sans-serif; min-height: 1.3em; }
+  .status.big { font-size: 56px; color: var(--gold); }
+  .tempo { display: flex; align-items: center; gap: 8px; }
+  .tempo output { font: 600 22px "Oswald", Arial, sans-serif; min-width: 4.8em; text-align: center; }
+  .tempo input { width: 160px; accent-color: var(--gold); }
+  .rb { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--gold); background: var(--card); color: var(--gold); font: 600 24px/1 Arial, sans-serif; cursor: pointer; }
+  .pad { flex: 1; min-height: 160px; border-radius: 28px; border: 4px solid var(--gold); background: var(--card); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; font: 600 50px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .1em; color: var(--gold);
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: background .08s, transform .08s; }
+  .pad.hit { background: var(--gold); color: var(--deep); transform: scale(.985); transition: none; }
+  .pad.off { opacity: .45; }
+  .res { background: var(--card); border-radius: 20px; padding: 12px 16px; text-align: center; display: none; }
+  .res.show { display: block; }
+  .res .pct { font: 600 64px/1 "Oswald", "Arial Narrow", Arial, sans-serif; color: var(--gold); }
+  .res .nums { display: flex; justify-content: center; gap: 18px; margin-top: 6px; font: 600 20px "Oswald", Arial, sans-serif; flex-wrap: wrap; }
+  .res .nums span { color: var(--soft); font-weight: 400; font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; display: block; }
+  .res .tip { margin-top: 8px; color: var(--soft); font-size: 15px; }
+  .res .best { margin-top: 4px; color: var(--gold); font: 600 16px "Oswald", Arial, sans-serif; }
+  .hint { text-align: center; color: var(--soft); font-size: 14px; }
+  .err { text-align: center; color: #ffb4a8; padding: 30px 10px; font-size: 18px; }
+  @media (max-width: 600px) {
+    .chips button { padding: 7px 9px; font-size: 15px; }
+    .b { padding: 8px 12px; font-size: 16px; }
+    .tempo input { width: 110px; }
+    .status.big { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Rhythm <span>Practice</span></h1><div class="who" id="who"></div></div>
+<main id="main">
+  <div class="row">
+    <span class="grp"><span class="lbl">Level</span>
+    <span class="chips" id="pLevel"><button data-v="6beg">6 Beg</button><button data-v="6int">6 Int</button><button data-v="7th">7th</button><button data-v="8th">8th</button></span></span>
+    <span class="grp"><span class="lbl">Time</span>
+    <span class="chips" id="pTime"><button data-v="2/4">2/4</button><button data-v="3/4">3/4</button><button data-v="4/4">4/4</button><button data-v="6/8">6/8</button></span></span>
+    <button class="b" id="bNew">🎲 New rhythm</button>
+  </div>
+  <div class="rbox" id="rbox"><div class="rimg"><img id="rImg" alt="The rhythm"><i class="rline" id="rLine"></i></div><div class="rcnt" id="rCnt"></div>
+    <div class="rname" id="rName"></div></div>
+  <div class="turn">📱 Turn your phone sideways for a bigger rhythm.</div>
+  <div class="row">
+    <div class="tempo"><button class="rb" id="tDown" aria-label="Slower">−</button><output id="tOut">80 BPM</output>
+      <button class="rb" id="tUp" aria-label="Faster">+</button><input type="range" id="tRange" min="40" max="200" step="2" aria-label="Tempo"></div>
+    <button class="b" id="bCounts" aria-pressed="false">Show counts</button>
+    <button class="b" id="bLine" aria-pressed="true">〰 Line: On</button>
+  </div>
+  <div class="row">
+    <button class="b" id="bHear">🔊 Hear it</button>
+    <button class="b main" id="bTap">▶ Tap it</button>
+    <button class="b" id="bStop" disabled>■ Stop</button>
+  </div>
+  <div class="status" id="status">Pick a rhythm, then 🔊 Hear it or ▶ Tap it.</div>
+  <div class="res" id="res"></div>
+  <div class="pad off" id="pad">TAP</div>
+  <div class="hint">Tap with the 4 count-off clicks too: that tunes this device. Space bar works on a Chromebook. Headphones in class, please! 🎧</div>
+</main>
+<script src="rhythmtime.js?v=2.16.0"></script>
+<script src="rtap.js?v=2.16.0"></script>
+<script>
+(function () {
+  "use strict";
+  var RT = window.RhythmTime, TAP = window.RTAP;
+  var $ = function (id) { return document.getElementById(id); };
+  function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var PREF_KEY = "practice.prefs", BEST_KEY = "practice.best", CAL_KEY = "rtap.cal";   // same device delay as Tap along
+  var SETS = ["6beg", "6int", "7th", "8th"], METERS = ["2/4", "3/4", "4/4", "6/8"];
+  var q = new URLSearchParams(location.search);
+  var prefs = Object.assign({ set: "7th", meter: "4/4", bpm: 80, counts: false, line: true }, load(PREF_KEY) || {});
+  var qlvl = String(q.get("lvl") || "").toLowerCase(), qm = String(q.get("m") || "").replace("-", "/");
+  if (SETS.indexOf(qlvl) >= 0) prefs.set = qlvl;
+  if (METERS.indexOf(qm) >= 0) prefs.meter = qm;
+  if (prefs.meter === "6/8" && prefs.set !== "8th") prefs.meter = "4/4";
+  var name = String(q.get("n") || "").slice(0, 40);
+  $("who").textContent = name;
+
+  var book = null, cur = null;            // cur = { name, meter, counts, tl }
+  var audio = null, play = null;          // play = { mode: 'hear'|'tap', t0, spb, off, tl, end, clicks, onsets, next, k, hi, tocks, raf, timer }
+  var taps = [], result = null, heat = null, lastCi = -2;
+
+  // ---------------------------------------------------------------- the rhythm
+  function kindOf(n) { var m = String(n || "").match(/^([^_]+)_(\d)-(\d)_/); return m ? { set: m[1], meter: m[2] + "/" + m[3] } : null; }
+  function pick(set, meter, avoid) {
+    var pre = set + "_" + meter.replace("/", "-") + "_";
+    var names = Object.keys(book.lines).filter(function (n) { return n.indexOf(pre) === 0 && n !== avoid; });
+    return names.length ? names[Math.floor(Math.random() * names.length)] : null;
+  }
+  function use(n) {
+    var line = book.lines[n]; if (!line) return;
+    stop();
+    var k = kindOf(n);
+    prefs.set = k.set; prefs.meter = k.meter; save(PREF_KEY, prefs);
+    cur = { name: n, meter: line.m, counts: line.c, tl: RT.rhythmTimeline(line.c, line.m) };
+    result = null; heat = null;
+    $("rImg").src = "rhythm-pictures/" + n;
+    $("rName").textContent = n.replace(/\.png$/, "").replace(/_/g, " ");
+    $("res").classList.remove("show");
+    status("Pick a rhythm, then 🔊 Hear it or ▶ Tap it.");
+    paint();
+  }
+  function newOne(set, meter) {
+    set = set || prefs.set; meter = meter || prefs.meter;
+    if (meter === "6/8" && set !== "8th") meter = "4/4";
+    var n = pick(set, meter, cur && cur.name);
+    if (n) use(n);
+  }
+  function countsPaint() {
+    var box = $("rCnt");
+    var show = cur && (prefs.counts || heat);
+    if (!show) { box.innerHTML = ""; return; }
+    var oi = 0;
+    box.innerHTML = cur.counts.map(function (c, i) {
+      var k = String(c[2] || "n").charAt(0), cls = k === "h" ? "h" : k === "r" ? "r" : "n";
+      if (heat && c[2] === "n") { var v = heat[oi++]; cls += v === 2 ? " hg" : v === 1 ? " hy" : " hr"; }
+      return '<span data-i="' + i + '" class="' + cls + '" style="left:' + (+c[0] * 100).toFixed(2) + '%">' + esc(c[1]) + "</span>";
+    }).join("");
+    lastCi = -2;
+  }
+  function paint() {
+    var busy = !!play;
+    Array.prototype.forEach.call(document.querySelectorAll("#pLevel button"), function (b) {
+      b.classList.toggle("sel", b.getAttribute("data-v") === prefs.set); b.disabled = busy; });
+    Array.prototype.forEach.call(document.querySelectorAll("#pTime button"), function (b) {
+      var v = b.getAttribute("data-v");
+      b.classList.toggle("sel", v === prefs.meter);
+      b.disabled = busy || (v === "6/8" && prefs.set !== "8th");
+      b.title = v === "6/8" ? "8th grade only" : "";
+    });
+    $("tOut").textContent = prefs.bpm + " BPM"; $("tRange").value = prefs.bpm;
+    $("bCounts").textContent = prefs.counts ? "Hide counts" : "Show counts";
+    $("bCounts").classList.toggle("on", prefs.counts); $("bCounts").setAttribute("aria-pressed", prefs.counts ? "true" : "false");
+    $("bLine").textContent = "〰 Line: " + (prefs.line ? "On" : "Off"); $("bLine").setAttribute("aria-pressed", prefs.line ? "true" : "false");
+    $("bHear").disabled = busy; $("bTap").disabled = busy; $("bStop").disabled = !busy; $("bNew").disabled = busy;
+    $("pad").classList.toggle("off", !(play && play.mode === "tap"));
+    countsPaint();
+  }
+  function status(t, big) { var s = $("status"); s.className = "status" + (big ? " big" : ""); s.innerHTML = t; }
+
+  // ---------------------------------------------------------------- sound (the board's click + "Hear it" tock)
+  function unlock() {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.resume) audio.resume(); } catch (e) {}
+  }
+  function click(t, accent, soft) {
+    var o = audio.createOscillator(), g = audio.createGain(), q = soft ? 0.4 : 1;
+    o.type = "square"; o.frequency.value = accent ? 1760 : 1175;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime((accent ? 0.35 : 0.22) * q, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.06);
+  }
+  function tock(t) {
+    var o = audio.createOscillator(), g = audio.createGain(), o2 = audio.createOscillator(), g2 = audio.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(950, t); o.frequency.exponentialRampToValueAtTime(620, t + 0.05);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o2.type = "triangle"; o2.frequency.value = 2400;
+    g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.25, t + 0.001); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(g); g.connect(audio.destination); o2.connect(g2); g2.connect(audio.destination);
+    o.start(t); o.stop(t + 0.14); o2.start(t); o2.stop(t + 0.04);
+    play.tocks++;
+  }
+  function lat() { return (audio.outputLatency || audio.baseLatency || 0); }
+  // audio clock → page clock (performance.now), at the moment the sound comes out of the speaker
+  function perfOf(at) { return performance.now() + (at - audio.currentTime + lat()) * 1000; }
+
+  // ---------------------------------------------------------------- playing (hear = tocks on the notes; tap = score it)
+  function start(mode) {
+    if (!cur || !cur.tl || play) return;
+    unlock(); if (!audio) { status("This device can't play sound."); return; }
+    var spb = 60 / prefs.bpm, off = cur.tl.beats, a0 = audio.currentTime + 0.3;
+    play = { mode: mode, a0: a0, spb: spb, off: off, tl: cur.tl, k: 0, hi: 0, tocks: 0, clicks: 0, total: off + cur.tl.length };
+    play.t0 = perfOf(a0); play.spbMs = spb * 1000;
+    play.clickMs = []; for (var i = 0; i < off; i++) play.clickMs.push(play.t0 + i * play.spbMs);
+    play.onsetMs = cur.tl.onsets.map(function (o) { return play.t0 + (off + o) * play.spbMs; });
+    play.endMs = play.t0 + play.total * play.spbMs;
+    taps = []; heat = null; result = null;
+    $("res").classList.remove("show");
+    schedule(); play.timer = setInterval(schedule, 25);
+    play.raf = requestAnimationFrame(draw);
+    status(mode === "hear" ? "Listen… 🔊" : "Get ready…");
+    paint();
+  }
+  function schedule() {
+    if (!play) return;
+    var ahead = audio.currentTime + 0.12;
+    if (play.mode === "hear") {
+      var on = play.tl.onsets;
+      while (play.hi < on.length && play.a0 + (play.off + on[play.hi]) * play.spb < ahead) { tock(play.a0 + (play.off + on[play.hi]) * play.spb); play.hi++; }
+    }
+    while (play.k < play.total && play.a0 + play.k * play.spb < ahead) {
+      click(play.a0 + play.k * play.spb, play.k % play.off === 0, play.mode === "hear" && play.k >= play.off);
+      play.k++; play.clicks++;
+    }
+  }
+  function draw() {
+    if (!play) return;
+    var now = performance.now(), t = (now - play.t0) / play.spbMs - play.off;
+    if (now < play.t0 + play.off * play.spbMs - play.spbMs * 0.15) {
+      if (now >= play.t0 - 50) status(String(Math.min(play.off, Math.max(1, Math.floor((now - play.t0 + play.spbMs * 0.15) / play.spbMs) + 1))), true);
+    } else if (!play.going) { play.going = true; status(play.mode === "hear" ? "Listen… 🔊" : "Tap the rhythm! 🥁"); }
+    var x = prefs.line ? RT.xAt(play.tl, t) : null, l = $("rLine");
+    l.classList.toggle("on", x !== null);
+    if (x !== null) l.style.left = (x * 100).toFixed(2) + "%";
+    var ci = RT.countAt(play.tl, t);
+    if (ci !== lastCi) {
+      Array.prototype.forEach.call($("rCnt").children, function (e) { e.classList.toggle("now", +e.getAttribute("data-i") === ci); });
+      lastCi = ci;
+    }
+    if (now > play.endMs + 500) { finish(); return; }
+    play.raf = requestAnimationFrame(draw);
+  }
+  function halt() {
+    if (!play) return null;
+    var p = play; play = null;
+    clearInterval(p.timer); cancelAnimationFrame(p.raf);
+    $("rLine").classList.remove("on");
+    Array.prototype.forEach.call($("rCnt").children, function (e) { e.classList.remove("now"); });
+    lastPlay = { mode: p.mode, tocks: p.tocks, clicks: p.clicks };
+    return p;
+  }
+  var lastPlay = null;
+  function stop() { if (halt()) { status("Stopped. Try again when you're ready."); paint(); } }
+  function finish() {
+    var p = halt(); if (!p) return;
+    if (p.mode === "hear") { status("Now you try: ▶ Tap it"); paint(); return; }
+    var countTaps = taps.filter(function (t) { return t < p.t0 + (p.off - 0.5) * p.spbMs; });
+    var cal = TAP.calibrate(p.clickMs, countTaps, p.spbMs);
+    var res = TAP.scoreAligned(p.onsetMs, taps, cal !== null ? cal : (+load(CAL_KEY) || 0), Math.min(200, p.spbMs * 0.3));
+    if (res.perfect + res.good >= 3) save(CAL_KEY, res.shift);
+    result = res; heat = res.notes;
+    var best = load(BEST_KEY) || {}, key = cur.name, prev = best[key], isBest = !prev || res.pct > prev.pct;
+    if (isBest && res.pct > 0) { best[key] = { pct: res.pct, bpm: prefs.bpm }; save(BEST_KEY, best); }
+    var avg = res.offs.length ? res.offs.reduce(function (s, o) { return s + o; }, 0) / res.offs.length : 0;
+    var tip = res.extra > 2 ? "Lots of extra taps: only tap the notes, not the rests." :
+      res.miss > res.n / 3 ? "Missed some notes: the red counts are the ones to fix." :
+      res.offs.length > 2 && avg > 40 ? "A little late. Lead with the click." :
+      res.offs.length > 2 && avg < -40 ? "A little early. Wait for the click." :
+      res.pct >= 90 ? "Excellent! Try it faster (+)." : "Nice and steady! Try the red spots again.";
+    $("res").innerHTML = '<div class="pct">' + res.pct + '%</div><div class="nums"><div>' + res.perfect + "<span>Perfect</span></div><div>" +
+      res.good + "<span>Good</span></div><div>" + res.miss + "<span>Missed</span></div><div>" + res.extra + '<span>Extra taps</span></div></div>' +
+      '<div class="tip">' + tip + "</div>" +
+      '<div class="best">' + (isBest && res.pct > 0 ? (prev ? "⭐ New best for this rhythm!" : "⭐ Your first score on this rhythm") :
+        "Your best on this rhythm: " + prev.pct + "% at " + prev.bpm + " BPM") + "</div>";
+    $("res").classList.add("show");
+    status("Green = right on · Yellow = close · Red = missed");
+    paint();
+  }
+  function tap(t) {
+    var pad = $("pad");
+    pad.classList.add("hit"); setTimeout(function () { pad.classList.remove("hit"); }, 90);
+    if (play && play.mode === "tap") taps.push(t);
+  }
+  function stamp(e) {
+    var n = performance.now(), t = e && e.timeStamp;
+    return t && t > 0 && Math.abs(n - t) < 1000 ? t : n;
+  }
+
+  // ---------------------------------------------------------------- controls
+  Array.prototype.forEach.call(document.querySelectorAll("#pLevel button"), function (b) {
+    b.onclick = function () { if (!play) newOne(b.getAttribute("data-v"), prefs.meter); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#pTime button"), function (b) {
+    b.onclick = function () { if (!play && !b.disabled) newOne(prefs.set, b.getAttribute("data-v")); };
+  });
+  $("bNew").onclick = function () { newOne(); };
+  function setBpm(v) { prefs.bpm = Math.max(40, Math.min(200, Math.round(v))); save(PREF_KEY, prefs); paint(); }
+  $("tDown").onclick = function () { if (!play) setBpm(prefs.bpm - 4); };
+  $("tUp").onclick = function () { if (!play) setBpm(prefs.bpm + 4); };
+  $("tRange").oninput = function () { if (!play) setBpm(+this.value); else this.value = prefs.bpm; };
+  $("bCounts").onclick = function () { prefs.counts = !prefs.counts; save(PREF_KEY, prefs); paint(); };
+  $("bLine").onclick = function () { prefs.line = !prefs.line; save(PREF_KEY, prefs); paint(); };
+  $("bHear").onclick = function () { start("hear"); };
+  $("bTap").onclick = function () { start("tap"); };
+  $("bStop").onclick = stop;
+  $("pad").addEventListener("pointerdown", function (e) { e.preventDefault(); tap(stamp(e)); });
+  $("pad").addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === " " || e.key === "Enter") {
+      if (play && play.mode === "tap") { e.preventDefault(); tap(stamp(e)); }
+      else if (!play && e.key === " " && !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test((e.target || {}).tagName || "")) { e.preventDefault(); start("tap"); }
+    } else if (play && play.mode === "tap" && e.key.length === 1) { e.preventDefault(); tap(stamp(e)); }
+  });
+  document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); });
+
+  // ---------------------------------------------------------------- start
+  fetch("rhythm-counts.json?v=2.16.0").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+    book = { lines: j.lines || {} };
+    var want = String(q.get("r") || "");
+    if (want && !/\.png$/.test(want)) want += ".png";
+    if (book.lines[want]) use(want); else newOne();
+  }).catch(function () {
+    $("main").innerHTML = '<div class="err">The rhythms didn\'t load. Check the internet and reload the page.</div>';
+  });
+  paint();
+
+  window.__prac = {
+    state: function () {
+      return { prefs: prefs, cur: cur ? { name: cur.name, meter: cur.meter, n: cur.tl ? cur.tl.onsets.length : 0 } : null,
+        play: play ? { mode: play.mode, t0: play.t0, clicks: play.clickMs, onsets: play.onsetMs, end: play.endMs } : null,
+        last: lastPlay, result: result, heat: heat, taps: taps.length,
+        counts: Array.prototype.map.call($("rCnt").children, function (e) { return e.className; }) };
+    },
+    tapAt: function (t) { tap(t); }, use: function (n) { use(n); }
+  };
+})();
+</script>
+</body>
+</html>
