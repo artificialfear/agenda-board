@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.17.1 — 2026-11-16 (Mat)
+- **Fix: student screens zoomed in while tapping.** On iPads, two quick taps on the TAP pad counted as "double-tap to zoom"
+  (Safari ignores `user-scalable=no`), so the page zoomed and the rhythm slid off the screen. New `nozoom.js` (tap.html +
+  practice.html): every touch on the pad is only a tap (scoring unchanged, it still runs on pointerdown); quick double taps and
+  pinches elsewhere don't zoom; a page that's already zoomed snaps back to 100% on the next touch. Buttons, the code box and the
+  tempo slider work as before. Students must reload tap.html / practice.html to get this.
+
 ## 2.17.0 — 2026-11-14 (Mat)
 - **Two-part rhythms**: 312 new pairs (24 for every level + time signature, rhythm-duos/ + rhythm-duos.json, made by
   tools/rhythm/gen-duo.js). Half the class plays Part 1, half Part 2, together. Each pair: both parts use the level's note values,

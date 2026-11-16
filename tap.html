@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="robots" content="noindex">
 <title>Tap the Rhythm · Raven Band</title>
 <style>
@@ -12,7 +12,7 @@
   @font-face { font-family: "Oswald"; font-weight: 600; font-style: normal; font-display: swap;
     src: url("assets/oswald-latin-600-normal.woff2?v=1.1.0") format("woff2"); }
   :root { --navy: #1f2a44; --deep: #141c30; --card: #2a3858; --gold: #c9a227; --soft: #b7bfd0; --line: #34405e; }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; touch-action: manipulation; }   /* 2.17.1: no double-tap zoom on iPads (with nozoom.js) */
   html, body { margin: 0; height: 100%; background: var(--deep); color: #fff; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-text-size-adjust: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   body { display: flex; flex-direction: column; }
@@ -42,7 +42,7 @@
   .status.big { font-size: 64px; color: var(--gold); }
   .pad { flex: 1; min-height: 220px; border-radius: 28px; border: 4px solid var(--gold); background: var(--card); display: flex; align-items: center;
     justify-content: center; cursor: pointer; font: 600 54px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .1em; color: var(--gold);
-    transition: background .08s, transform .08s; }
+    transition: background .08s, transform .08s; touch-action: none; -webkit-tap-highlight-color: transparent; }
   .pad.hit { background: var(--gold); color: var(--deep); transform: scale(.985); transition: none; }
   .pad.off { opacity: .45; }
   .hint { text-align: center; color: var(--soft); font-size: 15px; }
@@ -82,9 +82,10 @@
 <body>
 <div class="top"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1>Tap the <span>Rhythm</span></h1><div class="who" id="who"></div><i class="conn" id="conn"></i></div>
 <main id="main"></main>
-<script src="rhythmtime.js?v=2.17.0"></script>
-<script src="ptnet.js?v=2.17.0"></script>
-<script src="rtap.js?v=2.17.0"></script>
+<script src="nozoom.js?v=2.17.1"></script>
+<script src="rhythmtime.js?v=2.17.1"></script>
+<script src="ptnet.js?v=2.17.1"></script>
+<script src="rtap.js?v=2.17.1"></script>
 <script>
 (function () {
   "use strict";
@@ -329,6 +330,7 @@
     if (pad) {
       pad.addEventListener("pointerdown", function (e) { e.preventDefault(); tap(stamp(e)); });
       pad.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+      if (window.NoZoom) NoZoom.pad(pad);
     }
   }
   function avgOff(a) { return a.reduce(function (s, x) { return s + x; }, 0) / a.length; }

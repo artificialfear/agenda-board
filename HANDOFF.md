@@ -1,5 +1,7 @@
 # Agenda Board — handoff
 
+## 11/16/2026: build 2.17.1 = iPad zoom fix for tap.html + practice.html (nozoom.js; NoZoom.pad(el) on any new tap pad)
+
 ## Session of 11/14/2026 (live = build 2.17.0) — read this first
 - 2.14.0 Lunch & Learn turns on by itself Mon/Wed/Thu/Fri (both grades); Board Settings row "Lunch & Learn days" changes the
   days (added to the sheet: "Mon, Wed, Thu, Fri"); ☰ switches still override today only. Sheet's 7th row says 12:15-12:40.
