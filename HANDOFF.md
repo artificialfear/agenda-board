@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## 11/16/2026: build 2.17.1 = iPad zoom fix for tap.html + practice.html (nozoom.js; NoZoom.pad(el) on any new tap pad)
+## 11/16/2026: build 2.18.0 = tap the Tap along QR → full-screen QR (#rtQrBig in rtap.js, state().qrBig). 2.17.1 = iPad zoom fix for tap.html + practice.html (nozoom.js; NoZoom.pad(el) on any new tap pad)
 
 ## Session of 11/14/2026 (live = build 2.17.0) — read this first
 - 2.14.0 Lunch & Learn turns on by itself Mon/Wed/Thu/Fri (both grades); Board Settings row "Lunch & Learn days" changes the

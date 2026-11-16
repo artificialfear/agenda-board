@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.18.0 — 2026-11-16 (Mat)
+- **Big QR for Tap along**: tap the QR on the Tap along card (it has a 🔍 badge) and it fills the screen (~85% of the height),
+  with the 4-letter code, the tap page address and a live "N students ready" count, so the back of the room can scan it.
+  Tap anywhere (or Esc) to close; it also closes by itself on ▶ Count off, Turn off, or leaving the rhythm view.
+  Closing it leaves the rhythm view open. Board only: no student reload needed.
+
 ## 2.17.1 — 2026-11-16 (Mat)
 - **Fix: student screens zoomed in while tapping.** On iPads, two quick taps on the TAP pad counted as "double-tap to zoom"
   (Safari ignores `user-scalable=no`), so the page zoomed and the rhythm slid off the screen. New `nozoom.js` (tap.html +

@@ -71,6 +71,12 @@ def main():
         check("card with QR + code", board.is_visible("#rtCard") and len(code) == 4 and board.evaluate("!!document.querySelector('#rtCard .rt-qr svg')")
               and "0 students ready" in board.inner_text("#rtCard"), board.inner_text("#rtCard"))
         check("rhythm view stays open", board.evaluate("window.__agendaBoard.rhythm().open"))
+        # 2.18.0: tap the small QR → a huge one with the code + live count; stays up while students join
+        board.click("#rtCard .rt-qr")
+        QR = "document.querySelector('#rtQrBig .q-qr svg')"
+        check("tap the QR: big QR fills the screen", board.is_visible("#rtQrBig") and board.evaluate(QR + " && " + QR + ".getBoundingClientRect().width > 700")
+              and code in board.inner_text("#rtQrBig") and "0 students ready" in board.inner_text("#rtQrBig"),
+              board.evaluate("document.querySelector('#rtQrBig .q-qr').getBoundingClientRect().width"))
 
         # two students join on their own pages (their own clocks: performance.now differs per page)
         kids = []
@@ -88,6 +94,11 @@ def main():
             kids.append(k)
         board.wait_for_timeout(600)
         check("board counts 2 ready", "2 students ready" in board.inner_text("#rtCard"), board.inner_text("#rtCard"))
+        check("big QR counts joins live", board.is_visible("#rtQrBig") and "2 students ready" in board.inner_text("#rtQrBig"), board.inner_text("#rtQrBig"))
+        if shots: board.screenshot(path=shots + "/tap_board_bigqr.png")
+        board.mouse.click(300, 300); board.wait_for_timeout(200)
+        check("tap anywhere closes the big QR", not board.is_visible("#rtQrBig") and board.evaluate("window.__agendaBoard.rhythm().open")
+              and board.is_visible("#rtCard"))
         check("clock synced on the devices", all(k.evaluate("window.__tap.state().sync") >= 3 for k in kids))
         if shots: board.screenshot(path=shots + "/tap_board_join.png")
 
@@ -107,8 +118,10 @@ def main():
         board.click("#mCounts"); ana0.wait_for_function("!document.querySelector('.rcnt')", timeout=3000)
         check("hiding counts hides them on devices too", not ana0.is_visible(".rcnt"))
         check("nobody's line before the count-off", not ana0.is_visible(".rline"))
-        board.click("#mGo")
+        board.click("#rtCard .rt-qr"); board.wait_for_timeout(100)
+        board.evaluate("document.getElementById('mGo').click()")
         for k in kids: k.wait_for_function("window.__tap.state().round !== null", timeout=3000)
+        check("count-off closes the big QR", not board.is_visible("#rtQrBig") and not board.evaluate("window.__rtap.state().qrBig"))
         board.wait_for_timeout(200)
         mini = board.inner_text("#rtCard")
         check("one-line card while playing", "2 tapping" in mini and code in mini and board.evaluate("document.getElementById('rtCard').offsetHeight") < 80

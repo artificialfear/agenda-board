@@ -99,6 +99,24 @@
     "#rtCard .rt-join { display: flex; gap: 1vw; align-items: center; }",
     "#rtCard .rt-qr { width: 13vh; height: 13vh; background: #fff; border-radius: 1vh; flex: none; }",
     "#rtCard .rt-qr svg { width: 100%; height: 100%; display: block; }",
+    /* 2.18.0 (Mat 11/16): tap the small QR → a huge one fills the screen while students join */
+    "#rtCard .rt-qr { cursor: zoom-in; position: relative; }",
+    "#rtCard .rt-qr::after { content: '🔍'; position: absolute; right: -.6vh; bottom: -.6vh; font-size: 2.2vh; background: #c9a227; border-radius: 50%;",
+    "  width: 3.4vh; height: 3.4vh; display: flex; align-items: center; justify-content: center; box-shadow: 0 .3vh 1vh rgba(0,0,0,.4); }",
+    "#rtQrBig { position: fixed; inset: 0; z-index: 37; display: none; align-items: center; justify-content: center; gap: 5vw; background: #141c30;",
+    "  cursor: zoom-out; color: #fff; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }",
+    "#rtQrBig.open { display: flex; }",
+    "#rtQrBig .q-qr { width: min(84vh, 52vw); height: min(84vh, 52vw); background: #fff; border-radius: 3vh; padding: 2.4vh; box-sizing: border-box;",
+    "  border: .6vh solid #c9a227; flex: none; }",
+    "#rtQrBig .q-qr svg { width: 100%; height: 100%; display: block; }",
+    "#rtQrBig .q-side { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 34vw; }",
+    "#rtQrBig h2 { margin: 0; font: 600 7vh/1.1 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #c9a227; letter-spacing: .04em; }",
+    "#rtQrBig .q-or { margin-top: 3vh; font-size: 2.8vh; color: #c9d0de; }",
+    "#rtQrBig .q-code { font: 600 15vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .14em; margin-top: 1vh; }",
+    "#rtQrBig .q-url { font-size: 2.4vh; color: #c9d0de; word-break: break-all; margin-top: 1vh; }",
+    "#rtQrBig .q-n { margin-top: 5vh; font: 600 5vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
+    "#rtQrBig .q-n b { color: #c9a227; font-weight: 600; }",
+    "#rtQrBig .q-close { margin-top: 3vh; font-size: 2.2vh; color: #8f99b0; }",
     "#rtCard .rt-code { font: 600 5.6vh/1 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #fff; letter-spacing: .12em; }",
     "#rtCard .rt-url { font-size: 1.7vh; color: #c9d0de; word-break: break-all; margin-top: .6vh; }",
     "#rtCard .rt-n { margin-top: .9vh; font: 600 2.3vh 'Oswald', 'Arial Narrow', Arial, sans-serif; color: #dfe4ee; }",
@@ -349,12 +367,32 @@
     setTimeout(function () { if (!big.classList.contains("show")) big.classList.remove("open"); }, 360);
   }
   big.addEventListener("click", function (e) { e.stopPropagation(); bigHide(); });
+  // ---------- 2.18.0 (Mat 11/16): big QR ----------
+  // Tap the card's QR → it fills the screen (with the code and a live "N students ready" count) so the back row can scan it.
+  // Tap anywhere (or Esc) to close; it also closes by itself when ▶ Count off starts a round, Tap along turns off, or the
+  // rhythm view closes.
+  var qrBig = document.createElement("div"), qrOpen = false;
+  qrBig.id = "rtQrBig"; qrBig.setAttribute("role", "dialog"); qrBig.setAttribute("aria-label", "Tap along QR code");
+  document.body.appendChild(qrBig);
+  function qrPaint() {
+    var n = players().length, qr = window.qrcode && code ? NET.qrSvg(tapUrl()) : "";
+    qrBig.innerHTML = '<div class="q-qr">' + qr + '</div><div class="q-side"><h2>📱 Scan to join</h2>' +
+      '<div class="q-or">or open the tap page and type</div><div class="q-code">' + esc(code || "…") + "</div>" +
+      '<div class="q-url">' + esc(tapUrl().replace(/^https?:\/\//, "").replace(/\?.*$/, "")) + "</div>" +
+      '<div class="q-n">' + (status === "ready" ? "<b>" + n + "</b> " + (n === 1 ? "student" : "students") + " ready" : "Connecting…") + "</div>" +
+      '<div class="q-close">Tap anywhere to close</div></div>';
+  }
+  function qrShow() { qrOpen = true; qrPaint(); qrBig.classList.add("open"); }
+  function qrHide() { qrOpen = false; qrBig.classList.remove("open"); }
+  qrBig.addEventListener("click", function (e) { e.stopPropagation(); qrHide(); });
+  document.addEventListener("keydown", function (e) { if (qrOpen && e.key === "Escape") { e.stopPropagation(); qrHide(); } }, true);
   function paint() {
     if (bigFor && bigFor === lastRound && big.classList.contains("open")) bigPaint();     // late scores join the big board too
     if (!on && bigFor) bigHide();
     btn.classList.toggle("on", on);
     btn.textContent = on ? "📱 Tap along: on" : "📱 Tap along";
     card.classList.toggle("open", on);
+    if (qrOpen) { if (on && view === "join" && $("rhythm").classList.contains("open")) qrPaint(); else qrHide(); }
     if (!on) return;
     var n = players().length;
     var res = view === "results" || (view === "round" && Object.keys(results).length);
@@ -385,6 +423,7 @@
     fit();
     var off = $("rtOff"); if (off) off.onclick = function () { on = false; stopHost(); if (window.rhythmHeat) window.rhythmHeat(null); bigHide(); paint(); };
     var q = $("rtShowQr"); if (q) q.onclick = function () { view = "join"; paint(); };
+    var sq = card.querySelector(".rt-qr"); if (sq) sq.onclick = function (e) { e.stopPropagation(); if (code) qrShow(); };
   }
   // never over the rhythm: if the card is taller than the space above it (a taller screen puts the rhythm higher), shrink it
   function fit() {
@@ -406,13 +445,14 @@
   };
   // the rhythm view opening for another block brings that class's names
   var rv = $("rhythm");
-  if (window.MutationObserver) new MutationObserver(function () { if (on && rv.classList.contains("open") && shownBlock() !== block) loadRoster(); })
+  if (window.MutationObserver) new MutationObserver(function () { if (qrOpen && !rv.classList.contains("open")) qrHide();
+    if (on && rv.classList.contains("open") && shownBlock() !== block) loadRoster(); })
     .observe(rv, { attributes: true, attributeFilter: ["class"] });
   setInterval(function () { if (on && view === "join") paint(); }, 5000);
 
   window.__rtap = { rank: function (rs) { var keep = results; results = rs; var l = ranked().map(function (r) { return [r.n, r.rank, msTag(r)]; }); results = keep; return l; },
     state: function () {
     return { on: on, status: status, code: code, block: block, roster: roster.length, players: players().map(function (c) { return c.sn; }),
-      view: view, round: round ? round.id : null, results: results, big: big.classList.contains("show") };
+      view: view, round: round ? round.id : null, results: results, big: big.classList.contains("show"), qrBig: qrOpen };
   } };
 })();
