@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.20.0 — 2026-11-16 (Mat)
+- **Stage Managers** (all five blocks): 2 a day straighten every row of chairs + stands, taking turns down the block's
+  non-percussionists (Board Settings rows "Stage Managers 1st" … "7th", filled from the Band Ninja Tracker). Named on the pack-up
+  screen under the Percussion Captains; the closing scoreboard has its own ✅ / ❌ row and its own 🔥 streak.
+- A ❌ on either job = Effort can't be a 3 today (same as 2.19.0). Tap a name to swap in the next one (absent).
+- The percussion code is now general "class jobs" (JOBS in index.html: a new job = one line + its Board Settings rows).
+  2.19.0 percussion rotation, streaks and today's answers carry over unchanged. With two jobs showing, the full-screen
+  scoreboard tightens a bit more so all three categories still fit (checked at 1920×1080, 1600×900, 1366×768, 1024×768).
+
 ## 2.19.0 — 2026-11-16 (Mat)
 - **Percussion check** for the blocks with percussion (Board Settings rows "Percussion 1st/4th/6th/7th": "First L., …" in turn
   order; blank or missing = no check, e.g. 3rd Block). Two **Percussion Captains** a day per block, taking turns down the list

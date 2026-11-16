@@ -1,5 +1,10 @@
 # Agenda Board — handoff
 
+## 11/16/2026 (later): Stage Managers (live = build 2.20.0)
+- Mat tested the percussion check in 7th Block: worked well. Added Stage Managers: 2 a day, all five blocks, every
+  non-percussionist in roster order (Board Settings rows 11-15), a ❌ caps Effort at 2 like percussion. Code = JOBS (class jobs).
+- Tests: tests/perc_smoke.py (33), break-checked (Stage Managers ❌ alone must keep Effort 3 off).
+
 ## 11/16/2026: Percussion check (live = build 2.19.0)
 - Mat's choices: percussion in 1st, 4th, 6th, 7th; two captains a day taking turns in order; names "First L." on the board;
   Mat confirms (board; the closing scoreboard); a miss caps Effort at 2 (same idea as the pencil check).

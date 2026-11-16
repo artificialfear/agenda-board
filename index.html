@@ -410,14 +410,18 @@
   /* 2.19.0 (Mat 11/16): Percussion Captains on the pack-up screen + the check on the closing scoreboard */
   #packup .p-perc { display: none; margin-top: 3.4vh; padding: 1.4vh 2.4vw; border-radius: 18px; background: #c9a227; color: #141c30;
     font-size: min(4.6vh, 3.2vw); line-height: 1.25; max-width: 88vw; }
-  #packup .p-perc.on { display: block; }
+  #packup .p-perc.on { display: flex; flex-direction: column; gap: 1.2vh; }
+  #packup .p-perc.two { font-size: min(3.8vh, 2.8vw); margin-top: 2.4vh; }
+  #packup .p-perc .pj-line + .pj-line { border-top: 2px solid rgba(20,28,48,.25); padding-top: 1.2vh; }
+  #packup.flash .p-perc .pj-line + .pj-line { border-top-color: rgba(201,162,39,.35); }
   #packup .p-perc small { display: block; font-size: .62em; font-family: "Segoe UI", Arial, sans-serif; font-weight: 600; margin-top: .4vh; }
   #packup.flash .p-perc { background: #141c30; color: #c9a227; }
-  #scores .s-perc { display: none; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 14px;
-    background: #141c30; border: 2px solid #34405e; font-size: 24px; }
+  #scores .s-perc { display: none; flex-direction: column; gap: 8px; margin-bottom: 12px; font-size: 24px; }
   #scores .s-perc.on { display: flex; }
-  #scores .s-perc.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
-  #scores .s-perc .pc-lab { color: #c9a227; letter-spacing: .04em; }
+  #scores .s-perc .pj { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 14px; border-radius: 14px;
+    background: #141c30; border: 2px solid #34405e; }
+  #scores .s-perc .pj.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
+  #scores .s-perc .pc-lab { color: #c9a227; letter-spacing: .04em; min-width: 9.5em; }
   #scores .s-perc .pc-cap { border: 1px dashed #6f7a93; background: none; color: #fff; border-radius: 999px; padding: 4px 14px; cursor: pointer;
     font: inherit; }
   #scores .s-perc .pc-q { color: #c9d0de; font-family: "Segoe UI", Arial, sans-serif; font-size: .7em; flex: 1; min-width: 12em; }
@@ -426,10 +430,19 @@
   #scores .s-perc .pc-b.ok.sel { background: #2e8b57; border-color: #3ddc84; }
   #scores .s-perc .pc-b.miss.sel { background: #b3372d; border-color: #ff8a7a; }
   #scores .s-perc .pc-st { color: #c9a227; font-size: .8em; white-space: nowrap; }
-  #scores .s-perc .pc-note { width: 100%; color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; }
+  #scores .s-perc .pc-note { color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 14px; }
   #scores .s-n.capped { opacity: .25; text-decoration: line-through; cursor: not-allowed; }
   @media (max-width: 1200px) { #scores .s-perc .pc-q { display: none; } #scores .s-perc .pc-st { margin-left: auto; } }
-  #scores.big .s-perc { font-size: 3.4vh; padding: .9vh 1.2vw; margin-bottom: 1vh; gap: 1vw; }
+  #scores.big .s-perc { font-size: 3.4vh; margin-bottom: 1vh; gap: .8vh; }
+  #scores.big .s-perc .pj { padding: .7vh 1.2vw; gap: 1vw; }
+  #scores.big.has-jobs2 .s-perc { font-size: 3vh; }
+  #scores.big.has-jobs2 .s-perc .pj { padding: .4vh 1vw; }
+  #scores.big.has-jobs2 .s-desc { font-size: 1.9vh; }
+  #scores.big.has-jobs2 .s-name { font-size: 3.8vh; }
+  #scores.big.has-jobs2 .s-val { font-size: 7.5vh; min-height: 9.5vh; }
+  #scores.big.has-jobs2 .s-n { font-size: 8vh; min-height: 9.5vh; }
+  #scores.big.has-jobs2 .s-grid { gap: .7vh 1vw; }
+  #scores.big.has-jobs2 .s-msg { margin-top: .4vh; min-height: 1.2em; }
   /* with the check showing, the full-screen scoreboard tightens up so all three categories still fit */
   #scores.big.has-perc .s-title { font-size: 5vh; }
   #scores.big.has-perc .s-head { margin-bottom: .6vh; }
@@ -775,7 +788,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.19.0"></script>
+<script src="rhythmtime.js?v=2.20.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1505,7 +1518,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.19.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.20.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2013,7 +2026,10 @@
   var REMOTE_SETTINGS = { "method book pdf link": "bookUrl", "playing test pin": "ptPin",
     "lunch & learn 8th": "ll8", "lunch & learn 7th": "ll7", "lunch & learn days": "llDays",
     // 2.19.0: each block's percussionists ("First L., First L., …"; blank = no percussion check for that block)
-    "percussion 1st": "perc1st", "percussion 3rd": "perc3rd", "percussion 4th": "perc4th", "percussion 6th": "perc6th", "percussion 7th": "perc7th" };
+    "percussion 1st": "perc1st", "percussion 3rd": "perc3rd", "percussion 4th": "perc4th", "percussion 6th": "perc6th", "percussion 7th": "perc7th",
+    // 2.20.0: Stage Managers (every non-percussionist, in turn order)
+    "stage managers 1st": "stage1st", "stage managers 3rd": "stage3rd", "stage managers 4th": "stage4th", "stage managers 6th": "stage6th",
+    "stage managers 7th": "stage7th" };
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2024,7 +2040,7 @@
       });
       // 2.19.0: the script leaves out blank rows, so a percussion list that's gone (or emptied) means "no check" for that block
       var have = {}; Object.keys(cfg).forEach(function (n) { have[REMOTE_SETTINGS[String(n).toLowerCase().trim()]] = true; });
-      ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th"].forEach(function (k) {
+      ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th", "stage1st", "stage3rd", "stage4th", "stage6th", "stage7th"].forEach(function (k) {
         if (!have[k] && settings[k]) { settings[k] = ""; changed = true; }
       });
       if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); }
@@ -2187,47 +2203,61 @@
   }, 5000);
   window.scoresSync();
 
-  // ===================== PERCUSSION CHECK (2.19.0, Mat 11/16) =====================
-  // Blocks with percussion (Board Settings rows "Percussion 1st" … "Percussion 7th": "First L., First L., …") get two
-  // Percussion Captains a day, taking turns down the list (one if the block has only one percussionist). The pack-up screen
-  // names them; the closing scoreboard asks "Sticks, mallets, timpani + mallet covers put away?" and Mat taps ✅ or ❌.
-  // ❌ = Effort can't be a 3 today (like the pencil check): a 3 already given drops to 2 and the 3 button is off.
-  // Tap a captain's name to swap in the next percussionist (absent). Streak = days in a row ✅ for that block.
-  // Kept on this board only (agendaBoard.perc); "Test end of class" never changes it.
+  // ===================== CLASS JOBS: PERCUSSION CAPTAINS (2.19.0) + STAGE MANAGERS (2.20.0, Mat 11/16) =====================
+  // Each job has a list per block in Board Settings ("Percussion 1st" … / "Stage Managers 1st" …: "First L., First L., …" in
+  // turn order; blank or missing = no such job in that block). Every day the next n students on the list are on duty (fewer if
+  // the list is shorter). The pack-up screen names them; the closing scoreboard asks for each job "… put away?" and Mat taps
+  // ✅ or ❌. Any ❌ = Effort can't be a 3 today (like the pencil check): a 3 already given drops to 2 and the 3 button is off.
+  // Tap a name to swap in the next student (absent). Streak = days in a row ✅ for that job + block.
+  // Kept on this board only (agendaBoard.perc); "Test end of class" never changes it. A new job = one more line in JOBS
+  // + its Board Settings rows (REMOTE_SETTINGS: "<rows name> <block>" → set + block).
+  var JOBS = [
+    { id: "perc", one: "Percussion Captain", many: "Percussion Captains", icon: "🥁", n: 2, set: "perc",
+      task: "Sticks, mallets, timpani + mallet covers put away", ask: "Sticks, mallets, timpani + mallet covers all put away?" },
+    { id: "stage", one: "Stage Manager", many: "Stage Managers", icon: "🪑", n: 2, set: "stage",
+      task: "Straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
+  ];
   var PERC_KEY = "agendaBoard.perc", PERC_BLOCKS = ["1st", "3rd", "4th", "6th", "7th"];
   var perc = (TEST ? null : load(PERC_KEY)) || {};
   perc.next = perc.next || {}; perc.day = perc.day || {}; perc.hist = perc.hist || {};
   function percSave() { if (!TEST) save(PERC_KEY, perc); }
-  function percList(blk) {
-    return String(settings["perc" + blk] || "").split(/[,;\n]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+  function jobOf(id) { for (var i = 0; i < JOBS.length; i++) if (JOBS[i].id === id) return JOBS[i]; return JOBS[0]; }
+  function jobKey(job, blk) { return job.id === "perc" ? blk : job.id + ":" + blk; }      // 2.19.0 percussion keys kept as they were
+  function jobList(job, blk) {
+    return String(settings[job.set + blk] || "").split(/[,;\n]+/).map(function (x) { return x.trim(); }).filter(Boolean);
   }
-  function percToday(blk) {
+  function jobsFor(blk) { return PERC_BLOCKS.indexOf(blk) < 0 ? [] : JOBS.filter(function (j) { return jobList(j, blk).length; }); }
+  function jobToday(job, blk) {
     if (PERC_BLOCKS.indexOf(blk) < 0) return null;
-    var list = percList(blk); if (!list.length) return null;
-    var td = ymd(now()), key = td + " " + blk, rec = perc.day[key];
+    var list = jobList(job, blk); if (!list.length) return null;
+    var td = ymd(now()), jk = jobKey(job, blk), key = td + " " + jk, rec = perc.day[key];
     if (!rec) {
       Object.keys(perc.day).forEach(function (k) { if (k.slice(0, td.length) !== td) delete perc.day[k]; });   // only today's
-      var i = (+perc.next[blk] || 0) % list.length, caps = [list[i]];
-      if (list.length > 1) caps.push(list[(i + 1) % list.length]);
-      perc.next[blk] = (i + caps.length) % list.length;
+      var i = (+perc.next[jk] || 0) % list.length, caps = [];
+      for (var c = 0; c < Math.min(job.n, list.length); c++) caps.push(list[(i + c) % list.length]);
+      perc.next[jk] = (i + caps.length) % list.length;
       rec = perc.day[key] = { caps: caps, r: "" };
       percSave();
     }
     return rec;
   }
-  function percStreak(blk) {
-    var h = perc.hist[blk] || [], n = 0;
+  function jobStreak(job, blk) {
+    var h = perc.hist[jobKey(job, blk)] || [], n = 0;
     for (var i = h.length - 1; i >= 0 && h[i].r === "ok"; i--) n++;
     return n;
   }
-  function percMissToday(blk) { var rec = blk && perc && perc.day[ymd(now()) + " " + blk]; return !!(rec && rec.r === "miss" && percList(blk).length); }
+  function percMissToday(blk) {
+    if (!blk || !perc) return false;
+    var td = ymd(now());
+    return JOBS.some(function (j) { var rec = perc.day[td + " " + jobKey(j, blk)]; return !!(rec && rec.r === "miss" && jobList(j, blk).length); });
+  }
   function n3Capped(lab) { return /^effort$/i.test(String(lab).trim()) && percMissToday(sc.block); }
-  function percSet(blk, r) {
-    var rec = percToday(blk); if (!rec) return;
+  function jobSet(job, blk, r) {
+    var rec = jobToday(job, blk); if (!rec) return;
     rec.r = rec.r === r ? "" : r;
-    var td = ymd(now()), h = (perc.hist[blk] || []).filter(function (x) { return x.d !== td; });
+    var td = ymd(now()), jk = jobKey(job, blk), h = (perc.hist[jk] || []).filter(function (x) { return x.d !== td; });
     if (rec.r) h.push({ d: td, r: rec.r });
-    perc.hist[blk] = h.slice(-120);
+    perc.hist[jk] = h.slice(-120);
     percSave();
     if (rec.r === "miss") {                                            // a 3 already given for Effort today → 2
       var d = sc.data[blk], c = d ? todayCol(d.days) : -1;
@@ -2238,49 +2268,59 @@
     sc.idleAt = Date.now();
     if (sc.block === blk) scoresPaint();
   }
-  function percSwap(blk, k) {
-    var rec = percToday(blk), list = percList(blk); if (!rec || list.length <= rec.caps.length) return;
-    var i = +perc.next[blk] || 0;
+  function jobSwap(job, blk, k) {
+    var rec = jobToday(job, blk), list = jobList(job, blk), jk = jobKey(job, blk);
+    if (!rec || list.length <= rec.caps.length) return;
+    var i = +perc.next[jk] || 0;
     for (var tries = 0; tries < list.length && rec.caps.indexOf(list[i % list.length]) >= 0; tries++) i++;
     rec.caps[k] = list[i % list.length];
-    perc.next[blk] = (i + 1) % list.length;
+    perc.next[jk] = (i + 1) % list.length;
     percSave(); sc.idleAt = Date.now();
     if (sc.block === blk) scoresPaint();
   }
-  function percCaps(rec) { return rec.caps.length > 1 ? rec.caps.slice(0, -1).join(", ") + " & " + rec.caps[rec.caps.length - 1] : rec.caps[0]; }
+  function jobNames(rec) { return rec.caps.length > 1 ? rec.caps.slice(0, -1).join(", ") + " & " + rec.caps[rec.caps.length - 1] : rec.caps[0]; }
   function percPaint() {
     var el = document.getElementById("sPerc"), d = sc.data[sc.block];
-    var rec = d && todayCol(d.days) >= 0 ? percToday(sc.block) : null;
-    el.classList.toggle("on", !!rec);
-    scoresEl.classList.toggle("has-perc", !!rec);
-    if (!rec) { el.innerHTML = ""; return; }
-    var st = percStreak(sc.block);
-    el.classList.toggle("up", !rec.r);
-    el.innerHTML = '<span class="pc-lab">🥁 Percussion Captain' + (rec.caps.length > 1 ? "s" : "") + "</span>" +
-      rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next percussionist">' + esc(n) + "</button>"; }).join("") +
-      '<span class="pc-q">Sticks, mallets, timpani + mallet covers all put away?</span>' +
-      '<button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✅ Yes</button>' +
-      '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">❌ No</button>' +
-      '<span class="pc-st">' + (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span>" +
-      (rec.r === "miss" ? '<div class="pc-note">Not put away: Effort can\'t be a 3 today.</div>' : "");
+    var jobs = d && todayCol(d.days) >= 0 ? jobsFor(sc.block) : [];
+    el.classList.toggle("on", jobs.length > 0);
+    scoresEl.classList.toggle("has-perc", jobs.length > 0);
+    scoresEl.classList.toggle("has-jobs2", jobs.length > 1);
+    el.innerHTML = jobs.map(function (job) {
+      var rec = jobToday(job, sc.block), st = jobStreak(job, sc.block);
+      return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><span class="pc-lab">' + job.icon + " " +
+        (rec.caps.length > 1 ? job.many : job.one) + "</span>" +
+        rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next one">' + esc(n) + "</button>"; }).join("") +
+        '<span class="pc-q">' + esc(job.ask) + "</span>" +
+        '<button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✅ Yes</button>' +
+        '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">❌ No</button>' +
+        '<span class="pc-st">' + (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span></div>";
+    }).join("") + (percMissToday(sc.block) ? '<div class="pc-note">Not done: Effort can\'t be a 3 today.</div>' : "");
   }
   document.getElementById("sPerc").addEventListener("click", function (e) {
     e.stopPropagation();
-    var b = e.target.closest && e.target.closest("button"); if (!b) return;
-    if (b.hasAttribute("data-pr")) percSet(sc.block, b.getAttribute("data-pr"));
-    else if (b.hasAttribute("data-k")) percSwap(sc.block, +b.getAttribute("data-k"));
+    var b = e.target.closest && e.target.closest("button"), row = b && b.closest(".pj"); if (!row) return;
+    var job = jobOf(row.getAttribute("data-j"));
+    if (b.hasAttribute("data-pr")) jobSet(job, sc.block, b.getAttribute("data-pr"));
+    else if (b.hasAttribute("data-k")) jobSwap(job, sc.block, +b.getAttribute("data-k"));
   });
-  // the pack-up screen: who the captains are + what to put away
+  // the pack-up screen: who's on duty for each job + what to do
   var percPackKey = "";
   function percPack(blk) {
-    var el = document.getElementById("packPerc"), rec = blk ? percToday(blk) : null;
-    var key = rec ? blk + "|" + rec.caps.join("|") : "";
+    var el = document.getElementById("packPerc"), jobs = blk ? jobsFor(blk) : [];
+    var recs = jobs.map(function (j) { return jobToday(j, blk); });
+    var key = blk + "|" + recs.map(function (r) { return r.caps.join(","); }).join("|");
     if (key === percPackKey) return;
     percPackKey = key;
-    el.classList.toggle("on", !!rec);
-    el.innerHTML = rec ? "🥁 Percussion Captain" + (rec.caps.length > 1 ? "s" : "") + ": " + esc(percCaps(rec)) +
-      "<small>Sticks, mallets, timpani + mallet covers put away</small>" : "";
+    el.classList.toggle("on", jobs.length > 0);
+    el.classList.toggle("two", jobs.length > 1);
+    el.innerHTML = jobs.map(function (j, i) {
+      return '<div class="pj-line">' + j.icon + " " + (recs[i].caps.length > 1 ? j.many : j.one) + ": " + esc(jobNames(recs[i])) +
+        "<small>" + esc(j.task) + "</small></div>";
+    }).join("");
   }
+  // 2.19.0 names, still used by tests
+  function percToday(blk, id) { return jobToday(jobOf(id || "perc"), blk); }
+  function percStreak(blk, id) { return jobStreak(jobOf(id || "perc"), blk); }
 
   // ===================== END OF CLASS: PACK-UP → CLOSING SCOREBOARD =====================
   // Goes by the class schedule (not by what's on screen), once per block per day.
@@ -2446,7 +2486,7 @@
 
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
-    perc: function (blk) { return { state: JSON.parse(JSON.stringify(perc)), today: blk ? percToday(blk) : null, streak: blk ? percStreak(blk) : 0 }; },
+    perc: function (blk, id) { return { state: JSON.parse(JSON.stringify(perc)), today: blk ? percToday(blk, id) : null, streak: blk ? percStreak(blk, id) : 0 }; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
       src: bookFrame.getAttribute("src") || "" }; },
@@ -2485,7 +2525,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.19.0";
+  var BUILD = "2.20.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2514,9 +2554,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.19.0"></script>
-<script src="ptest.js?v=2.19.0"></script>
-<script src="lunch.js?v=2.19.0"></script>
-<script src="rtap.js?v=2.19.0"></script>
+<script src="ptnet.js?v=2.20.0"></script>
+<script src="ptest.js?v=2.20.0"></script>
+<script src="lunch.js?v=2.20.0"></script>
+<script src="rtap.js?v=2.20.0"></script>
 </body>
 </html>

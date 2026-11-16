@@ -1,4 +1,4 @@
-"""Percussion check (2.19.0, Mat 11/16): two Percussion Captains a day per percussion block, named on the pack-up screen;
+"""Class jobs: Percussion Captains (2.19.0) + Stage Managers (2.20.0), Mat 11/16: two Percussion Captains a day per percussion block, named on the pack-up screen;
 the closing scoreboard asks if the gear is put away; ❌ = Effort can't be a 3 today. Fake names only.
 Run: python3 tests/perc_smoke.py [screenshot-folder]"""
 import http.server, json, socketserver, sys, threading
@@ -8,7 +8,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = []
-CFG = {"Percussion 1st": "Test A., Test B., Test C.", "Percussion 6th": "Solo S.", "Percussion 3rd": ""}
+CFG = {"Percussion 1st": "Test A., Test B., Test C.", "Percussion 6th": "Solo S.", "Percussion 3rd": "",
+       "Stage Managers 1st": "Wind A., Wind B., Wind C., Wind D., Wind E.", "Stage Managers 3rd": "Wind F., Wind G., Wind H."}
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -80,15 +81,18 @@ def main():
         txt = pg.inner_text("#packPerc")
         check("pack-up screen names 2 captains", pg.is_visible("#packPerc") and "Percussion Captains: Test A. & Test B." in txt
               and "mallets" in txt, txt)
+        check("pack-up screen names 2 Stage Managers", "Stage Managers: Wind A. & Wind B." in txt and "chairs + stands" in txt, txt)
+        check("pack-up screen fits", pg.evaluate("(() => { const e = document.getElementById('packup'); return e.scrollHeight <= e.clientHeight + 1 && [...e.children].every(c => c.getBoundingClientRect().bottom <= innerHeight); })()"))
         if shots: pg.screenshot(path=shots + "/perc_packup.png")
         # 2) 8:34 closing scoreboard: the check is there and lit (not answered yet)
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
-        check("scoreboard shows the check", pg.is_visible("#sPerc") and pg.evaluate("document.getElementById('sPerc').classList.contains('up')")
-              and pg.evaluate("[...document.querySelectorAll('#sPerc .pc-cap')].map(b => b.textContent)") == ["Test A.", "Test B."])
+        check("scoreboard shows the check", pg.is_visible("#sPerc") and pg.evaluate("document.querySelector(\"#sPerc .pj[data-j='perc']\").classList.contains('up')")
+              and pg.evaluate("[...document.querySelectorAll(\"#sPerc .pj[data-j='perc'] .pc-cap\")].map(b => b.textContent)") == ["Test A.", "Test B."])
+        check("scoreboard shows Stage Managers", pg.evaluate("[...document.querySelectorAll(\"#sPerc .pj[data-j='stage'] .pc-cap\")].map(b => b.textContent)") == ["Wind A.", "Wind B."])
         if shots: pg.screenshot(path=shots + "/perc_scoreboard.png")
         # Effort 3 given first, then ❌: it drops to 2 and 3 is off
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
-        CLICK(pg, "#sPerc .pc-b.miss"); pg.wait_for_timeout(600)
+        CLICK(pg, "#sPerc .pj[data-j='perc'] .pc-b.miss"); pg.wait_for_timeout(600)
         st = PERC(pg)
         capped = pg.evaluate("(() => { const b = document.querySelector(\"#sGrid button[data-r='0'][data-v='3']\"); return b.disabled && b.classList.contains('capped'); })()")
         check("❌ drops an Effort 3 to 2", state["values"][0][4] == "2" and [s["v"] for s in sets if s["row"] == "Effort"] == ["3", "2"], (state["values"][0], sets))
@@ -105,12 +109,24 @@ def main():
             if shots: pg.screenshot(path=shots + f"/perc_fit_{w}.png")
         pg.set_viewport_size({"width": 1600, "height": 900})
         # changed mind: ✅ → 3 allowed again (score itself stays where Mat put it)
-        CLICK(pg, "#sPerc .pc-b.ok"); pg.wait_for_timeout(300)
+        CLICK(pg, "#sPerc .pj[data-j='perc'] .pc-b.ok"); pg.wait_for_timeout(300)
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(500)
         st = PERC(pg)
         check("✅: Effort 3 allowed, streak 1", state["values"][0][4] == "3" and st["today"]["r"] == "ok" and st["streak"] == 1
               and "1 day in a row" in pg.inner_text("#sPerc"), (state["values"][0], st))
-        check("✅ isn't lit any more", not pg.evaluate("document.getElementById('sPerc').classList.contains('up')"))
+        check("✅ isn't lit any more", not pg.evaluate("document.querySelector(\"#sPerc .pj[data-j='perc']\").classList.contains('up')"))
+        # Stage Managers ❌ also caps Effort; each job has its own streak
+        SM = lambda what: CLICK(pg, "#sPerc .pj[data-j='stage'] .pc-b." + what)
+        SM("miss"); pg.wait_for_timeout(600)
+        CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
+        check("Stage Managers ❌ alone: Effort 3 stays off", state["values"][0][4] == "2"
+              and pg.evaluate("document.querySelector(\"#sGrid button[data-r='0'][data-v='3']\").disabled")
+              and "Effort can't be a 3" in pg.inner_text("#sPerc"))
+        check("Stage Managers ❌ caps Effort too", state["values"][0][4] == "2" and PERC(pg)["streak"] == 1
+              and pg.evaluate("window.__agendaBoard.perc('1st', 'stage').today.r") == "miss", state["values"][0])
+        SM("ok"); pg.wait_for_timeout(300)
+        CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(500)
+        check("both ✅: Effort 3 again, own streaks", state["values"][0][4] == "3" and pg.evaluate("window.__agendaBoard.perc('1st', 'stage').streak") == 1)
         check("no page errors (Fri)", not pg.errs, pg.errs)
         store = ctx.storage_state()
         ctx.close()
@@ -121,12 +137,13 @@ def main():
         pg.clock.fast_forward("00:15"); pg.wait_for_timeout(400)
         st = PERC(pg)
         check("next day: next two in turn", st["today"]["caps"] == ["Test C.", "Test A."] and st["streak"] == 1, st)
-        CLICK(pg, "#sPerc .pc-cap[data-k='1']"); pg.wait_for_timeout(300)
+        check("next day: next two Stage Managers", pg.evaluate("window.__agendaBoard.perc('1st', 'stage').today.caps") == ["Wind C.", "Wind D."])
+        CLICK(pg, "#sPerc .pj[data-j='perc'] .pc-cap[data-k='1']"); pg.wait_for_timeout(300)
         st = PERC(pg)
         check("tap a name: next one swaps in (absent)", st["today"]["caps"] == ["Test C.", "Test B."], st)
-        CLICK(pg, "#sPerc .pc-b.ok"); pg.wait_for_timeout(300)
+        CLICK(pg, "#sPerc .pj[data-j='perc'] .pc-b.ok"); pg.wait_for_timeout(300)
         check("streak 2 days", PERC(pg)["streak"] == 2 and "2 days in a row" in pg.inner_text("#sPerc"))
-        CLICK(pg, "#sPerc .pc-b.ok"); pg.wait_for_timeout(300)
+        CLICK(pg, "#sPerc .pj[data-j='perc'] .pc-b.ok"); pg.wait_for_timeout(300)
         check("tap ✅ again = not answered", PERC(pg)["today"]["r"] == "" and PERC(pg)["streak"] == 1)
         pg.reload(); pg.wait_for_timeout(300); pg.clock.run_for(2500); pg.wait_for_timeout(200)
         check("same captains after a reload", PERC(pg)["today"]["caps"] == ["Test C.", "Test B."])
@@ -137,14 +154,18 @@ def main():
         reset_values()
         ctx, pg = board("2026-11-06T10:13:50")       # regular 3rd ends 10:20 → pack-up 10:14
         pg.clock.fast_forward("00:15"); pg.wait_for_timeout(300)
-        check("3rd Block: no captains on pack-up", pg.evaluate("window.__agendaBoard.pack()")["open"] and not pg.is_visible("#packPerc"))
+        t3 = pg.inner_text("#packPerc")
+        check("3rd Block: Stage Managers only on pack-up", pg.evaluate("window.__agendaBoard.pack()")["open"] and "Stage Managers: Wind F. & Wind G." in t3
+              and "Percussion" not in t3, t3)
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
-        check("3rd Block: no check on the scoreboard", pg.evaluate("window.__agendaBoard.scores().open") and not pg.is_visible("#sPerc"))
+        check("3rd Block: Stage Managers only on the scoreboard", pg.evaluate("window.__agendaBoard.scores().open")
+              and pg.evaluate("[...document.querySelectorAll('#sPerc .pj')].map(e => e.dataset.j)") == ["stage"])
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
         check("3rd Block: Effort 3 as usual", state["values"][0][4] == "3")
         ctx.close()
         ctx, pg = board("2026-11-06T08:29:50")
         check("one percussionist → one captain", pg.evaluate("window.__agendaBoard.perc('6th').today.caps") == ["Solo S."])
+        check("no Stage Managers list → none", pg.evaluate("window.__agendaBoard.perc('6th', 'stage').today") is None)
         del CFG["Percussion 6th"]                         # Mat clears the row → the board drops it at the next settings check
         pg.clock.fast_forward("10:30"); pg.wait_for_timeout(300)
         check("emptied row turns the check off", pg.evaluate("window.__agendaBoard.perc('6th').today") is None
