@@ -1,5 +1,5 @@
 /**
- * AgendaFill.gs  v1.0  (Raven Band, 11/12/2026)
+ * AgendaFill.gs  v1.1  (Raven Band, 11/16/2026: FOCUS WALL text sized to fit its box)
  *
  * Fills the WORK SESSION and FOCUS WALL boxes on each block's Daily Rehearsal slide from Mat's weekly lesson plan.
  *
@@ -14,7 +14,8 @@
  *     no plan sent) is left exactly as it is. "Send to agenda" (today: true) also fills today's boxes right away.
  *   - WORK SESSION: everything under the heading is replaced, one line per item, keeping the box's font/bullets.
  *     If the items wouldn't fit the box, the text gets smaller (16 down to 12 pt).
- *   - FOCUS WALL: only the text after "Learning:", "Why:" and "Success:" changes (the bold labels stay). A blank
+ *   - FOCUS WALL: only the text after "Learning:", "Why:" and "Success:" changes (the bold labels stay); then the text
+ *     is sized to fit the box (12 pt, smaller for long weeks, never under 9 pt; the heading stays as it is). A blank
  *     value leaves that line as it is.
  *   - Boxes are found the same way the map finds them: the slide with "<block> Block Agenda" and the box whose
  *     text starts with "WORK SESSION" / "FOCUS WALL". Keep those headings and the agenda keeps working.
@@ -28,6 +29,7 @@ var AGENDA = {
   FOCUS_TAB: 'Agenda Focus',
   FILL_HOUR: 5, FILL_MINUTE: 40,
   BODY_SIZE: 16, MIN_SIZE: 12,          // WORK SESSION item font size, and the smallest it may shrink to
+  FOCUS_SIZE: 12, FOCUS_MIN: 9,          // FOCUS WALL text: 12 pt unless the week's wording needs smaller (11/16)
   FOCUS_LABELS: [['learning', 'Learning'], ['why', 'Why'], ['success', 'Success']],
   MAX_LINES: 12, MAX_LINE: 160          // sanity limits on what the generator may send
 };
@@ -204,7 +206,29 @@ function agendaSetFocus_(shape, f) {
     shape.getText().getRange(start, start + v.length).getTextStyle().setBold(false);
     changed = true;
   });
+  if (changed) agendaFitFocus_(shape);
   return changed;
+}
+
+/** 11/16: the Focus Wall text (labels + values, not the heading) gets the biggest size from 12 pt down to 9 pt that fits the
+ *  box. Calibrated on the real 245 x 148 pt boxes: 7th Block's 291 letters spilled at 12 and 11 pt and fit at 10.5. */
+function agendaFitFocus_(shape) {
+  var tr = shape.getText(), s = tr.asString(), nl = s.indexOf('\n');
+  if (nl < 0 || nl + 1 >= s.length) return null;
+  var size = agendaFocusSize_(shape, s.slice(nl + 1).replace(/\n+$/, '').split('\n'));
+  tr.getRange(nl + 1, s.length).getTextStyle().setFontSize(size);
+  return size;
+}
+function agendaFocusSize_(shape, paras) {
+  var w = Number(shape.getWidth()) || 0, hgt = Number(shape.getHeight()) || 0;
+  if (!w || !hgt) return AGENDA.FOCUS_SIZE;
+  var usable = w - 14, room = hgt - 14 - (14 * 1.2 + 4);              // insets; the FOCUS WALL heading line + its gap
+  for (var size = AGENDA.FOCUS_SIZE; size > AGENDA.FOCUS_MIN; size -= 0.5) {
+    var per = Math.max(8, Math.floor(usable / (size * 0.5)));          // Lato: about half the font size per letter
+    var lines = paras.reduce(function (n, p) { return n + Math.max(1, Math.ceil(p.length / per)); }, 0);
+    if (lines * size * 1.2 + paras.length * 4 <= room) return size;
+  }
+  return AGENDA.FOCUS_MIN;
 }
 
 // ---------------------------------------------------------------- setup

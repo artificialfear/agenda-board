@@ -1,5 +1,12 @@
 # Agenda Board — handoff
 
+## 11/16/2026 evening: slide text sizes (no board build change)
+- Closing tables on all 5 block slides: score cells set to 12 pt bold Lato = same as the Effort/Performance/Attitude labels
+  (were 10 pt Arial). ClosingScores keeps each cell's style on write, so no script change was needed.
+- Focus Wall boxes overflowed (7th Block worst). Text set to 11 pt (7th 10.5 pt) via the Slides connector, checked in a PDF
+  export. AgendaFill.gs v1.1 now sizes the Focus Wall text to fit (12 pt down to 9 pt, calibrated on the real 245 x 148 pt
+  boxes) whenever it changes the wording. Saved in the project + web app deployment @11 (same URL), live = main by SHA-256.
+
 ## 11/16/2026 (later): Stage Managers (live = build 2.20.0)
 - Mat tested the percussion check in 7th Block: worked well. Added Stage Managers: 2 a day, all five blocks, every
   non-percussionist in roster order (Board Settings rows 11-15), a ❌ caps Effort at 2 like percussion. Code = JOBS (class jobs).

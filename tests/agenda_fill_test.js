@@ -167,6 +167,29 @@ agendaFill_('2026-11-18'); a.ok(sw.st.slice(13, sw.t.length - 1).every(s => s.si
 P.push([new Date('2026-11-19T12:00:00'), '6th', 'Technique Builder #2\nJoy', 'x']);
 agendaFill_('2026-11-19'); a.ok(sw.st.slice(13, sw.t.length - 1).every(s => s.size === 16), 'back to 16 the next short day');
 
+// 11/16: FOCUS WALL text sized to fit its 245 x 148 pt box, calibrated on the real slides (made-up wording, same lengths):
+// 7th Block's 291 letters spilled at 12 and 11 pt and fit at 10.5; the shorter blocks fit at 11 or more.
+const fbox = { getWidth: () => 245, getHeight: () => 148 }, XL = n => 'x'.repeat(n);
+const long7 = [XL(105), XL(78), XL(107)], mid3 = [XL(73), XL(81), XL(110)], short1 = [XL(78), XL(76), XL(83)];
+a.equal(agendaFocusSize_(fbox, long7), 10.5, '7th-length week: 10.5');
+a.ok(agendaFocusSize_(fbox, mid3) >= 11, '3rd/4th-length week: 11 or more (' + agendaFocusSize_(fbox, mid3) + ')');
+a.ok(agendaFocusSize_(fbox, short1) >= 11, '1st-length week: 11 or more (' + agendaFocusSize_(fbox, short1) + ')');
+a.equal(agendaFocusSize_(fbox, [XL(20), XL(20), XL(20)]), 12, 'short week: 12');
+a.equal(agendaFocusSize_(fbox, [XL(300), XL(300), XL(300)]), 9, 'never below 9');
+a.equal(agendaFocusSize_({ getWidth: () => 0, getHeight: () => 0 }, long7), 12, 'no size info: 12');
+{ // on a shape: heading untouched, labels + values all one size; a short week goes back up to 12
+  const fb = mkText([['FOCUS WALL\n', { bold: true, size: 14, font: 'Oswald' }], ['Learning: ', { bold: true, size: 12, font: 'Lato' }],
+    ['old\n', { bold: false, size: 12, font: 'Lato' }], ['Why: ', { bold: true, size: 12, font: 'Lato' }], ['old\n', { bold: false, size: 12, font: 'Lato' }],
+    ['Success: ', { bold: true, size: 12, font: 'Lato' }], ['old\n', { bold: false, size: 12, font: 'Lato' }]]);
+  const fs2 = shape(fb, 245, 148).asShape();
+  a.ok(agendaSetFocus_(fs2, { learning: XL(95), why: XL(73), success: XL(98) }), 'focus changed');
+  a.ok(fb.st.slice(0, 11).every(x => x.size === 14 && x.font === 'Oswald'), 'heading stays 14 Oswald');
+  a.ok(fb.st.slice(11).every(x => x.size === 10.5), 'long week: all text 10.5');
+  a.ok(fb.st[11].bold && !fb.st[21].bold, 'labels stay bold, values plain');
+  agendaSetFocus_(fs2, { learning: 'Short.', why: 'Why?', success: 'I can.' });
+  a.ok(fb.st.slice(11).every(x => x.size === 12), 'short week: back to 12');
+}
+
 // "Send to agenda" (today: true) fills today right away; a date Mat typed as text in the sheet works too
 const realNow = Date; let fakeNow = TUE;
 global.Date = class extends realNow { constructor(...x) { if (x.length) super(...x); else super(fakeNow.getTime()); } static now() { return fakeNow.getTime(); } };
