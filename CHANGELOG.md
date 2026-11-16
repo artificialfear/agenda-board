@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.19.0 — 2026-11-16 (Mat)
+- **Percussion check** for the blocks with percussion (Board Settings rows "Percussion 1st/4th/6th/7th": "First L., …" in turn
+  order; blank or missing = no check, e.g. 3rd Block). Two **Percussion Captains** a day per block, taking turns down the list
+  (one if there's only one percussionist); the pack-up screen names them with "Sticks, mallets, timpani + mallet covers put away".
+- Closing scoreboard (full-screen and ☰ Closing scores): "🥁 Percussion Captains … all put away? ✅ Yes / ❌ No", lit gold until
+  answered. ❌ = Effort can't be a 3 today (like the pencil check): an Effort 3 already given drops to 2 (saved to the slide)
+  and the 3 button is off. Tapping the same answer again clears it. Tap a captain's name to swap in the next percussionist
+  (absent). 🔥 streak = days in a row ✅ for that block. The scoreboard tightens up so all three categories still fit.
+- Kept on this board (agendaBoard.perc: rotation, today's captains + answer, last 120 answers per block); "Test end of class"
+  never changes it.
+
 ## 2.18.0 — 2026-11-16 (Mat)
 - **Big QR for Tap along**: tap the QR on the Tap along card (it has a 🔍 badge) and it fills the screen (~85% of the height),
   with the 4-letter code, the tap page address and a live "N students ready" count, so the back of the room can scan it.

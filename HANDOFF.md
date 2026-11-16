@@ -1,5 +1,14 @@
 # Agenda Board — handoff
 
+## 11/16/2026: Percussion check (live = build 2.19.0)
+- Mat's choices: percussion in 1st, 4th, 6th, 7th; two captains a day taking turns in order; names "First L." on the board;
+  Mat confirms (board; the closing scoreboard); a miss caps Effort at 2 (same idea as the pencil check).
+- Lists live in Board Settings rows "Percussion <block>" (filled from the Band Ninja Tracker Instrument column on 11/16; Mat edits
+  them when rosters change). Board-only state in localStorage agendaBoard.perc, no Apps Script change (Chrome was offline).
+  Possible later: log answers to a sheet tab / roster from the Tracker automatically (needs a ClosingScores.gs deploy), a
+  ✅/❌ on the Playing Test remote.
+- Tests: python3 tests/perc_smoke.py (25), break-checked (Effort drop, rotation).
+
 ## 11/16/2026: build 2.18.0 = tap the Tap along QR → full-screen QR (#rtQrBig in rtap.js, state().qrBig). 2.17.1 = iPad zoom fix for tap.html + practice.html (nozoom.js; NoZoom.pad(el) on any new tap pad)
 
 ## Session of 11/14/2026 (live = build 2.17.0) — read this first
