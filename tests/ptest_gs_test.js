@@ -68,4 +68,13 @@ a.equal(doGet({ parameter: { k: 'nope', a: 'ptest', block: '1st' } }).ok, false,
 doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '', test: 'F Concert scale, ToE #72' } });
 a.equal(PT.vals.length, 1, 'blank score removes the row');
 a.ok(locks >= 3, 'saves take the lock');
+// v1.11: a REMINDERS "Playing Test Today" line must not beat the WORK SESSION line (Mat 11/17: the board showed "Today")
+const T = boardPtestText_;
+a.equal(T(['DID YOU KNOW?\nfact', 'REMINDERS\nPlaying Test Today', '6th Block Agenda', 'WORK SESSION\nPlaying Test: Technique Builder 3 (#9)']), 'Technique Builder 3 (#9)');
+a.equal(T(['REMINDERS\nPlaying Test Tomorrow!', 'WORK SESSION\nPlaying Test: Warm Up Set #1 (Interval Practice)']), 'Warm Up Set #1 (Interval Practice)');
+a.equal(T(['REMINDERS\nPlaying Test on Friday (11/20)', 'WORK SESSION\nBand Ninja: individual practice']), 'Playing test', 'only a day reminder → generic name');
+a.equal(T(['REMINDERS\nNo tutorial Tuesday', 'WORK SESSION\nBand Ninja']), '', 'no playing test');
+a.equal(T(['REMINDERS\nPlaying Test: Concert F scale']), 'Concert F scale', 'a real name in REMINDERS still works');
+a.equal(T(['WORK SESSION\nPlaying Test Day\n• Bb scale\n• Lightly Row']), 'Bb scale · Lightly Row');
+a.equal(T(['WORK SESSION\nPlaying Test: Friday Fanfare']), 'Friday Fanfare', 'a title that starts with a day word is kept');
 console.log('ptest checks ok');

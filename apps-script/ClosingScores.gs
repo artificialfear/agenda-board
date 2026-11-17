@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.10  (Raven Band, 11/17/2026)
+ * ClosingScores.gs  v1.11  (Raven Band, 11/17/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -53,6 +53,8 @@
  *       agenda-voices.json in Mat's private Drive folder "Agenda Board Voices" (made by tools/voice/make-voices.py).
  *       The file never leaves Google except to the board through this keyed link. have = the version the board
  *       already has; if it still matches, only {same:true} comes back. Drive is already used: no new permissions.
+ *   - v1.11 (Mat 11/17): Playing Test name: a REMINDERS line like "Playing Test Today" no longer wins over the WORK SESSION
+ *       line "Playing Test: Technique Builder 3 (#9)" (day words are skipped; WORK SESSION is read first).
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -511,14 +513,22 @@ function boardSlideTexts_(block) {
 }
 
 /** "Playing Test: F scale, ToE #72" → "F scale, ToE #72". A line that is only "Playing Test" takes the lines under it
- *  (same text box, up to 4, stopping at a blank line). '' = no playing test on the slide. */
+ *  (same text box, up to 4, stopping at a blank line). '' = no playing test on the slide.
+ *  v1.11 (Mat 11/17): a reminder like "Playing Test Today" / "Playing Test Tomorrow!" / "Playing Test on Friday" names a day,
+ *  not the test: it's skipped, and the WORK SESSION box is read first (it holds the real "Playing Test: …" line).
+ *  If only a day-word line exists, the board shows "Playing test". */
+var PT_WHEN_ = /^(?:is\s+|on\s+|this\s+|next\s+)?(?:today|tomorrow|tmrw|tonight|this\s+week|next\s+week|next\s+class|soon|coming\s+up|monday|tuesday|wednesday|thursday|friday|mon|tue|tues|wed|thu|thurs|fri|week|class)\b[\s!.,]*(?:\(?\s*\d{1,2}\/\d{1,2}\s*\)?)?[\s!.]*$/i;
 function boardPtestText_(texts) {
-  for (var i = 0; i < texts.length; i++) {
-    var lines = String(texts[i]).split(/\r?\n|\u000b/);
+  var order = texts.filter(function (t) { return /^\s*work\s+session/i.test(String(t)); })
+    .concat(texts.filter(function (t) { return !/^\s*work\s+session/i.test(String(t)); }));
+  var dayOnly = false;
+  for (var i = 0; i < order.length; i++) {
+    var lines = String(order[i]).split(/\r?\n|\u000b/);
     for (var j = 0; j < lines.length; j++) {
       var m = lines[j].match(/^\s*(?:[•·\-*]\s*)?playing[\s-]*tests?\b(?:\s*day)?\s*[:\-–—]?\s*(.*)$/i);
       if (!m) continue;
       var rest = m[1].trim();
+      if (rest && PT_WHEN_.test(rest)) { dayOnly = true; continue; }
       if (rest) return rest;
       var more = [];
       for (var k = j + 1; k < lines.length && more.length < 4; k++) {
@@ -529,7 +539,7 @@ function boardPtestText_(texts) {
       return more.join(' · ') || 'Playing test';
     }
   }
-  return '';
+  return dayOnly ? 'Playing test' : '';
 }
 
 /** Short id for a student (FNV-1a of the normalized full name, base 36). The board only ever sees ids + "First L.". */
