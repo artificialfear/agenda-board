@@ -446,6 +446,32 @@
     font-family: "Segoe UI", Arial, sans-serif; font-size: .62em; color: #c9d0de; }
   #scores .s-perc .pc-q, #jobsChk .s-perc .pc-q { flex: 1 1 auto; min-width: 0; }
   #scores .s-perc .pc-st, #jobsChk .s-perc .pc-st { flex: none; margin-left: 1em; color: #c9a227; font-weight: 600; white-space: nowrap; }
+  #scores .s-perc .pc-undo, #jobsChk .s-perc .pc-undo { flex: none; margin-left: 1em; padding: .15em .7em; border-radius: 999px; cursor: pointer;
+    background: transparent; color: #cfd8ea; border: 1px solid rgba(207,216,234,.45); font: inherit; font-size: .95em; }
+  /* 2.25.0: today's class jobs drawn on the agenda slide (over DID YOU KNOW?; on Band Ninja slides under STAY ON TASK).
+     Placed in slide units by slideJobsPaint(); --u = 1% of the slide's height. Tap a name twice to swap an absent student. */
+  #slideJobs { position: fixed; z-index: 6; display: none; box-sizing: border-box; background: #1f2a44; color: #fff;
+    font-family: "Lato", "Segoe UI", Arial, sans-serif; font-size: calc(var(--u) * 3); line-height: 1.25; overflow: hidden; }
+  #slideJobs.on { display: block; overflow: visible; }
+  /* the DID YOU KNOW? fact can run a line past its box: a strip just right of the WEEKLY QUOTE bar covers that line */
+  #slideJobs.on::after { content: ""; position: absolute; left: calc(var(--u) * 1.1); right: 0; top: 100%; height: calc(var(--u) * 1.3);
+    background: #1f2a44; }
+  #slideJobs.ninja::after { display: none; }
+  #slideJobs.ninja { background: #273657; border-radius: calc(var(--u) * 1.2); }
+  #slideJobs .sj-bar { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--u) * .7); background: #c9a227; }
+  #slideJobs .sj-in { position: absolute; inset: 0; padding-left: calc(var(--u) * 3.5); }
+  #slideJobs.ninja .sj-in { padding: calc(var(--u) * .9) calc(var(--u) * 1.5) 0 calc(var(--u) * 2.2); }
+  #slideJobs .sj-h { font: 600 calc(var(--u) * 3) "Oswald", "Arial Narrow", Arial, sans-serif; color: #c9a227; letter-spacing: .02em;
+    text-transform: uppercase; margin-bottom: calc(var(--u) * .3); }
+  #slideJobs.ninja .sj-h { font-size: calc(var(--u) * 2.4); margin-bottom: calc(var(--u) * .2); }
+  #slideJobs .sj-rows { display: block; }
+  #slideJobs.ninja .sj-rows { display: flex; }
+  #slideJobs .sj-r { white-space: nowrap; margin-bottom: calc(var(--u) * .25); }
+  #slideJobs.ninja .sj-r { flex: 1 1 0; min-width: 0; }
+  #slideJobs .sj-lab { color: #e6ebf5; }
+  #slideJobs .sj-n { display: inline-block; font: inherit; font-weight: 700; color: #fff; background: transparent; border: 0; padding: 0 .1em;
+    margin: 0; cursor: pointer; border-radius: .3em; }
+  #slideJobs .sj-n.ask { background: #c9a227; color: #1f2a44; padding: 0 .4em; }
   #scores .s-perc .pc-note, #jobsChk .s-perc .pc-note { margin-top: 6px; color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 16px; }
   /* 2.21.0 (Mat 11/17): Band Ninja days have no scoreboard, so the class jobs get their own check screen */
   #jobsChk { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; background: rgba(10,14,26,.6); }
@@ -594,6 +620,7 @@
   <div class="p-tap">Tap anywhere to close</div>
 </div>
 <div id="packPill" title="Show the pack-up steps"></div>
+<div id="slideJobs" aria-live="polite"></div>
 <div id="linePill" aria-live="polite"></div>
 <div id="testBar" role="status"><span id="testText"></span><button id="testExit">End test</button></div>
 
@@ -860,7 +887,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.24.0"></script>
+<script src="rhythmtime.js?v=2.25.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1092,6 +1119,7 @@
     if (window.bookSync) window.bookSync();
     if (window.mapSync) window.mapSync();
     if (window.ptestSync) window.ptestSync();
+    if (window.slideJobsSync) window.slideJobsSync();
   }
 
   function render(force) {
@@ -1590,7 +1618,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.24.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.25.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2116,7 +2144,7 @@
       ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th", "stage1st", "stage3rd", "stage4th", "stage6th", "stage7th"].forEach(function (k) {
         if (!have[k] && settings[k]) { settings[k] = ""; changed = true; }
       });
-      if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); }
+      if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); if (window.slideJobsSync) window.slideJobsSync(); }
       health.scriptFails = 0; refreshWarns();
     }).catch(function (e) {
       // An older script answers "Unknown block" (it's reachable); anything else counts as unreachable.
@@ -2313,9 +2341,16 @@
     var td = ymd(now()), jk = jobKey(job, blk), key = td + " " + jk, rec = perc.day[key];
     if (!rec) {
       Object.keys(perc.day).forEach(function (k) { if (k.slice(0, td.length) !== td) delete perc.day[k]; });   // only today's
-      var i = (+perc.next[jk] || 0) % list.length, caps = [];
-      for (var c = 0; c < Math.min(job.n, list.length); c++) caps.push(list[(i + c) % list.length]);
-      perc.next[jk] = (i + caps.length) % list.length;
+      // 2.25.0: students who were absent on their turn go first (perc.owe), then the rotation carries on
+      var i = (+perc.next[jk] || 0) % list.length, caps = [], want = Math.min(job.n, list.length);
+      perc.owe = perc.owe || {};
+      var owe = (perc.owe[jk] || []).filter(function (n) { return list.indexOf(n) >= 0; });
+      while (caps.length < want && owe.length) caps.push(owe.shift());
+      perc.owe[jk] = owe;
+      for (var tries = 0; caps.length < want && tries < list.length; tries++, i++) {
+        if (caps.indexOf(list[i % list.length]) < 0) caps.push(list[i % list.length]);
+      }
+      perc.next[jk] = i % list.length;
       rec = perc.day[key] = { caps: caps, r: "" };
       percSave();
     }
@@ -2380,16 +2415,36 @@
       scoresFlush();
     }).catch(function () {});
   }
+  // Absent: the next one in line steps in, and (2.25.0, Mat 11/17) the absent student does the job at the next class
+  // (perc.owe). rec.subs remembers each swap so a mistaken tap can be undone.
   function jobSwap(job, blk, k) {
     var rec = jobToday(job, blk), list = jobList(job, blk), jk = jobKey(job, blk);
     if (!rec || list.length <= rec.caps.length) return;
-    var i = +perc.next[jk] || 0;
+    var i = +perc.next[jk] || 0, out = rec.caps[k];
     for (var tries = 0; tries < list.length && rec.caps.indexOf(list[i % list.length]) >= 0; tries++) i++;
+    rec.subs = rec.subs || [];
+    rec.subs.push({ k: k, out: out, inn: list[i % list.length], next: +perc.next[jk] || 0 });
     rec.caps[k] = list[i % list.length];
     perc.next[jk] = (i + 1) % list.length;
+    perc.owe = perc.owe || {};
+    var owe = perc.owe[jk] = perc.owe[jk] || [];
+    if (owe.indexOf(out) < 0) owe.push(out);
+    jobChanged(blk);
+  }
+  function jobUndo(job, blk) {
+    var rec = jobToday(job, blk), jk = jobKey(job, blk), u = rec && rec.subs && rec.subs.pop();
+    if (!u) return;
+    rec.caps[u.k] = u.out; perc.next[jk] = u.next;
+    var owe = (perc.owe && perc.owe[jk]) || [], at = owe.lastIndexOf(u.out);
+    if (at >= 0) owe.splice(at, 1);
+    jobChanged(blk);
+  }
+  function jobChanged(blk) {
     percSave(); sc.idleAt = Date.now();
     jobsChkPaint();
     if (sc.block === blk) scoresPaint();
+    slideJobsPaint();
+    if (pack.name === blk) percPack(blk);
   }
   function jobNames(rec) { return rec.caps.length > 1 ? rec.caps.slice(0, -1).join(", ") + " & " + rec.caps[rec.caps.length - 1] : rec.caps[0]; }
   function jobRows(blk, phase) {
@@ -2397,11 +2452,13 @@
       var rec = jobToday(job, blk), st = jobStreak(job, blk);
       return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><div class="pc-top"><span class="pc-lab">' + job.icon + " " +
         (rec.caps.length > 1 ? job.many : job.one) + '</span><span class="pc-names">' +
-        rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next one">' + esc(n) + "</button>"; }).join("") +
+        rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next one (they go next class)">' + esc(n) + "</button>"; }).join("") +
         '</span><span class="pc-btns"><button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✓ Yes</button>' +
         '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">✗ No</button></span></div>' +
         '<div class="pc-sub"><span class="pc-q">' + esc(job.ask) + '</span><span class="pc-st">' +
-        (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span></div></div>";
+        (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span>" +
+        (rec.subs && rec.subs.length ? '<button class="pc-undo" data-undo="1">↺ Undo swap (' + esc(rec.subs[rec.subs.length - 1].out) + ")</button>" : "") +
+        "</div></div>";
     }).join("");
   }
   function percPaint() {
@@ -2426,6 +2483,7 @@
       var job = jobOf(row.getAttribute("data-j")), k = blk();
       if (b.hasAttribute("data-pr")) jobSet(job, k, b.getAttribute("data-pr"));
       else if (b.hasAttribute("data-k")) jobSwap(job, k, +b.getAttribute("data-k"));
+      else if (b.hasAttribute("data-undo")) jobUndo(job, k);
     };
   }
   document.getElementById("sPerc").addEventListener("click", jobsClick(function () { return sc.block; }));
@@ -2499,6 +2557,66 @@
         '</span><span class="pj-sep">: </span><span class="pj-names">' + esc(jobNames(recs[i])) + "</span><small>" + esc(j.task) + "</small></div>";
     }).join("");
   }
+  // 2.25.0 (Mat 11/17): today's jobs on the agenda slide all class long, so students know before pack-up.
+  // Regular slides: over the DID YOU KNOW? box (right column). Band Ninja slides: the empty strip under STAY ON TASK.
+  // Drawn by the board (not written into the deck): swaps show at once and no names go into the slides.
+  // Tap a name = "Absent?" (it turns gold); tap again within 4 s = the next one in line steps in (jobSwap).
+  var SJ_GEO = {
+    reg: { w: 9144000, h: 5143500, x: 5806440, y: 3584448, x2: 8915447, y2: 4335000 },        // rv*_factbar + DID YOU KNOW? text (to the WEEKLY QUOTE bar)
+    ninja: { w: 12191675, h: 6858000, x: 365760, y: 5650000, x2: 7955159, y2: 6290000 }      // under p*_i8 (STAY ON TASK)
+  };
+  var sjEl = document.getElementById("slideJobs"), sjAsk = null, sjAskT = null, sjKey = "";
+  function slideJobsPaint() {
+    var blk = shownKey, on = !!blk && blk !== "welcome" && document.body.classList.contains("on-agenda");
+    var jobs = on ? jobsFor(blk) : [];
+    if (!jobs.length) { sjEl.classList.remove("on"); sjKey = ""; return; }
+    var g = shownNinja ? SJ_GEO.ninja : SJ_GEO.reg;
+    var W = window.innerWidth, H = window.innerHeight, sh = Math.min(H, W * 9 / 16), sw = sh * 16 / 9, sx = (W - sw) / 2, sy = (H - sh) / 2;
+    sjEl.style.setProperty("--u", (sh / 100).toFixed(2) + "px");
+    sjEl.style.left = Math.round(sx + g.x / g.w * sw) + "px"; sjEl.style.top = Math.round(sy + g.y / g.h * sh) + "px";
+    sjEl.style.width = Math.round((g.x2 - g.x) / g.w * sw) + "px"; sjEl.style.height = Math.round((g.y2 - g.y) / g.h * sh) + "px";
+    sjEl.classList.toggle("ninja", shownNinja);
+    var recs = jobs.map(function (j) { return jobToday(j, blk); });
+    var key = blk + "|" + shownNinja + "|" + JSON.stringify(sjAsk) + "|" + recs.map(function (r) { return r.caps.join(","); }).join("|");
+    sjEl.classList.add("on");
+    if (key === sjKey) return;
+    sjKey = key;
+    sjEl.innerHTML = '<div class="sj-bar"></div><div class="sj-in"><div class="sj-h">Today\'s Jobs</div><div class="sj-rows">' +
+      jobs.map(function (j, i) {
+        var n = recs[i].caps;
+        return '<div class="sj-r" data-j="' + j.id + '"><span class="sj-lab">' + j.icon + " " + (n.length > 1 ? j.many : j.one) + ": </span>" +
+          n.map(function (name, k) {
+            var ask = sjAsk && sjAsk.j === j.id && sjAsk.k === k;
+            return (k ? (k === n.length - 1 ? " &amp; " : ", ") : "") + '<button class="sj-n' + (ask ? " ask" : "") + '" data-k="' + k + '">' +
+              (ask ? "Absent? Tap to swap" : esc(name)) + "</button>";
+          }).join("") + "</div>";
+      }).join("") + "</div></div>";
+    slideJobsFit();
+  }
+  // Long names: shrink the text until every line fits the box (never below 60%).
+  function slideJobsFit() {
+    sjEl.style.fontSize = "";
+    var base = parseFloat(getComputedStyle(sjEl).fontSize), f = base, rows = sjEl.querySelectorAll(".sj-r"), guard = 0;
+    function over() {
+      if (sjEl.querySelector(".sj-in").scrollHeight > sjEl.clientHeight + 1) return true;
+      for (var i = 0; i < rows.length; i++) if (rows[i].scrollWidth > rows[i].clientWidth + 1) return true;
+      return false;
+    }
+    while (over() && f > base * 0.6 && guard++ < 20) { f *= 0.93; sjEl.style.fontSize = f + "px"; }
+  }
+  sjEl.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var b = e.target.closest && e.target.closest(".sj-n"), row = b && b.closest(".sj-r"); if (!b || !row) return;
+    var j = row.getAttribute("data-j"), k = +b.getAttribute("data-k");
+    clearTimeout(sjAskT);
+    if (sjAsk && sjAsk.j === j && sjAsk.k === k) { sjAsk = null; jobSwap(jobOf(j), shownKey, k); return; }
+    sjAsk = { j: j, k: k }; slideJobsPaint();
+    sjAskT = setTimeout(function () { sjAsk = null; slideJobsPaint(); }, 4000);
+  });
+  window.addEventListener("resize", function () { sjKey = ""; slideJobsPaint(); });
+  setInterval(slideJobsPaint, 30000);
+  window.slideJobsSync = slideJobsPaint;
+
   // 2.23.0 (Mat 11/17): a moment after pack-up starts (once the screen stops flashing) the jobs card pulses, a bright
   // three-note chime plays, and the board says the names ("Percussion Captains: Jordan T. and Riley M. ...").
   // Board Settings "Say job names" = No turns the voice off (chime + pulse stay). Needs the one tap the chimes need.
@@ -2839,7 +2957,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.24.0";
+  var BUILD = "2.25.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2868,9 +2986,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.24.0"></script>
-<script src="ptest.js?v=2.24.0"></script>
-<script src="lunch.js?v=2.24.0"></script>
-<script src="rtap.js?v=2.24.0"></script>
+<script src="ptnet.js?v=2.25.0"></script>
+<script src="ptest.js?v=2.25.0"></script>
+<script src="lunch.js?v=2.25.0"></script>
+<script src="rtap.js?v=2.25.0"></script>
 </body>
 </html>

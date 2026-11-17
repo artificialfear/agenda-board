@@ -1,5 +1,13 @@
 # Agenda Board — handoff
 
+## 11/17/2026 midday: jobs on the slide + absent swaps (live = build 2.25.0)
+- Mat turned the spoken names off (Board Settings "Say job names" = No; the Amy clips stay in Drive, loaded but unused).
+- Mat chose: board-drawn card on the slide (not names written into the decks), absent = next in line, absent student goes next class.
+- #slideJobs / slideJobsPaint(): SJ_GEO in slide EMU (Daily deck DID YOU KNOW? box h*_2/rv*_factbar; Ninja deck under p*_i8).
+  If the slide layouts are ever rebuilt, update SJ_GEO. Two-tap swap on the card; one tap + Undo on the check screens.
+- perc.owe[jobKey] = absent students owed a turn (go first next day); rec.subs = swaps today (Undo). tests/perc_smoke.py 97 checks
+  (owed turn + two-tap confirm break-checked).
+
 ## 11/17/2026: AI voice for job names (live = build 2.24.0)
 - Mat chose voice Amy (Piper en_US-amy-low; models download from github.com/rhasspy/piper releases v0.0.2, Hugging Face is
   blocked here), a private Drive folder, and the whole roster (Board Settings perc + stage lists = 133 names, matches the Tracker).

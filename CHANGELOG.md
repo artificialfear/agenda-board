@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.25.0 — 2026-11-17 (Mat)
+- **Today's jobs on the agenda slide, all class.** The board draws a "TODAY'S JOBS" card on the slide: over the DID YOU KNOW?
+  box on regular agenda slides, and in the empty strip under STAY ON TASK on Band Ninja slides. Drawn by the board (not
+  written into the Google Slides), so swaps show at once and no student names go into the decks. Long names shrink to fit.
+- **Absent students.** Tap a name on the slide card: it turns gold ("Absent? Tap to swap"); tap again within 4 s and the next
+  one in line steps in. The absent student keeps the turn: they're on duty at that block's next class (before the rotation).
+  The 🥁 Jobs screen / scoreboard name pills swap the same way (one tap there) and now show "↺ Undo swap (name)".
+
 ## 2.24.0 — 2026-11-17 (Mat)
 - **AI voice for the jobs callout.** The names are now said by a natural AI voice (Piper "Amy", made offline here, nothing
   sent to any outside service) instead of the ViewBoard's built-in voice. One clip per student + phrase clips

@@ -315,6 +315,63 @@ def main():
               and len(pg.evaluate("window.__said || []")) == 1)
         ctx.close()
         del CFG["Say job names"]; VOICE["on"] = False
+
+        # 7) 2.25.0: today's jobs on the agenda slide all class; tap a name twice = absent → next in line, they go next class
+        SJ = lambda pg: pg.evaluate("""(() => { const e = document.getElementById('slideJobs'), r = e.getBoundingClientRect();
+          const W = innerWidth, H = innerHeight, sh = Math.min(H, W * 9 / 16), sw = sh * 16 / 9, sx = (W - sw) / 2, sy = (H - sh) / 2;
+          return { on: e.classList.contains('on') && r.width > 0, ninja: e.classList.contains('ninja'), text: e.innerText,
+            x: (r.left - sx) / sw, y: (r.top - sy) / sh, x2: (r.right - sx) / sw, y2: (r.bottom - sy) / sh,
+            fits: [...e.querySelectorAll('.sj-r')].every(x => x.scrollWidth <= x.clientWidth + 1) && (!e.querySelector('.sj-in') || e.querySelector('.sj-in').scrollHeight <= e.clientHeight + 1) }; })()""")
+        SJTAP = lambda pg, j, k: pg.evaluate(f"document.querySelector(\"#slideJobs .sj-r[data-j='{j}'] .sj-n[data-k='{k}']\").click()")
+        ctx, pg = board("2026-11-06T08:10:00")
+        sj = SJ(pg)
+        check("slide jobs: shown during class", sj["on"] and "Today's Jobs" in sj["text"].title().replace("’", "'") or "TODAY'S JOBS" in sj["text"].upper(), sj)
+        check("slide jobs: names on the slide", "Test A." in sj["text"] and "Test B." in sj["text"] and "Wind A." in sj["text"] and "Wind B." in sj["text"], sj["text"])
+        check("slide jobs: sits on DID YOU KNOW? (right column)", 0.62 < sj["x"] < 0.66 and 0.68 < sj["y"] < 0.71 and sj["x2"] < 0.99 and sj["y2"] < 0.85, sj)
+        for w, h in ((1600, 900), (1866, 816), (1024, 768)):
+            pg.set_viewport_size({"width": w, "height": h}); pg.wait_for_timeout(150)
+            check(f"slide jobs: text fits its box ({w}x{h})", SJ(pg)["fits"], SJ(pg))
+        pg.set_viewport_size({"width": 1600, "height": 900}); pg.wait_for_timeout(150)
+        SJTAP(pg, "stage", 0); pg.wait_for_timeout(150)
+        check("one tap = asks first, nothing swapped", "Absent?" in SJ(pg)["text"] and
+              pg.evaluate("window.__agendaBoard.perc('1st', 'stage').today.caps") == ["Wind A.", "Wind B."])
+        pg.clock.run_for(4500); pg.wait_for_timeout(150)
+        check("the ask goes away after 4 s", "Absent?" not in SJ(pg)["text"] and "Wind A." in SJ(pg)["text"])
+        SJTAP(pg, "stage", 0); pg.wait_for_timeout(100); SJTAP(pg, "stage", 0); pg.wait_for_timeout(200)
+        st = pg.evaluate("window.__agendaBoard.perc('1st', 'stage')")
+        check("second tap: next in line steps in", st["today"]["caps"] == ["Wind C.", "Wind B."] and "Wind C." in SJ(pg)["text"]
+              and "Wind A." not in SJ(pg)["text"], st["today"])
+        check("absent student owes the turn", st["state"]["owe"].get("stage:1st") == ["Wind A."], st["state"].get("owe"))
+        CLICK(pg, "#btnJobs"); pg.wait_for_timeout(200)
+        check("check screen offers Undo swap", "Undo swap (Wind A.)" in pg.inner_text("#jRows"), pg.inner_text("#jRows"))
+        CLICK(pg, "#jRows .pj[data-j='stage'] .pc-undo"); pg.wait_for_timeout(200)
+        st = pg.evaluate("window.__agendaBoard.perc('1st', 'stage')")
+        check("undo puts it back", st["today"]["caps"] == ["Wind A.", "Wind B."] and not st["state"]["owe"].get("stage:1st")
+              and "Wind A." in SJ(pg)["text"] and "Undo" not in pg.inner_text("#jRows"), (st["today"], st["state"].get("owe")))
+        CLICK(pg, "#jRows .pj[data-j='stage'] .pc-cap[data-k='0']"); pg.wait_for_timeout(200)     # swap from the check screen too
+        check("swap from the check screen updates the slide", "Wind C." in SJ(pg)["text"])
+        CLICK(pg, "#jClose"); pg.wait_for_timeout(200)
+        pg.clock.fast_forward("00:20:30"); pg.wait_for_timeout(400)                   # 8:30 pack-up
+        check("pack-up card shows the sub", "Wind C." in pg.inner_text("#packPerc") and "Wind A." not in pg.inner_text("#packPerc"), pg.inner_text("#packPerc"))
+        store = ctx.storage_state(); check("no page errors (slide jobs)", not pg.errs, pg.errs); ctx.close()
+        ctx, pg = board("2026-11-09T08:10:00", store)                                # Monday: Wind A. goes first, then the rotation
+        st = pg.evaluate("window.__agendaBoard.perc('1st', 'stage')")
+        check("next class: the absent student does it", st["today"]["caps"] == ["Wind A.", "Wind D."] and not st["state"]["owe"].get("stage:1st"), st)
+        ctx.close()
+        ctx, pg = board("2026-11-06T10:00:00")                                        # 3rd Block: Stage Managers only
+        sj = SJ(pg)
+        check("3rd Block: only the Stage Managers line", sj["on"] and "Wind F." in sj["text"] and "Percussion" not in sj["text"], sj["text"])
+        ctx.close()
+        ctx, pg = board("2026-11-10T08:00:00")                                        # Band Ninja day
+        pg.evaluate(NINJA); pg.reload(); pg.wait_for_timeout(300); pg.clock.run_for(2500); pg.wait_for_timeout(200)
+        sj = SJ(pg)
+        check("Ninja slide: jobs under STAY ON TASK", sj["on"] and sj["ninja"] and 0.02 < sj["x"] < 0.04 and 0.81 < sj["y"] < 0.84 and sj["y2"] < 0.925, sj)
+        check("Ninja slide: text fits", sj["fits"], sj)
+        if shots: pg.screenshot(path=shots + "/slide_jobs_ninja.png")
+        ctx.close()
+        ctx, pg = board("2026-11-06T06:30:00")                                        # before school: welcome screen
+        check("welcome screen: no jobs card", not SJ(pg)["on"])
+        ctx.close()
         browser.close()
     srv.shutdown()
     n = len(RESULTS); ok = sum(1 for r in RESULTS if r)
