@@ -82,7 +82,15 @@ def main():
         check("pack-up screen names 2 captains", pg.is_visible("#packPerc") and "Percussion Captains: Test A. & Test B." in txt
               and "mallets" in txt, txt)
         check("pack-up screen names 2 Stage Managers", "Stage Managers: Wind A. & Wind B." in txt and "chairs + stands" in txt, txt)
-        check("pack-up screen fits", pg.evaluate("(() => { const e = document.getElementById('packup'); return e.scrollHeight <= e.clientHeight + 1 && [...e.children].every(c => c.getBoundingClientRect().bottom <= innerHeight); })()"))
+        PFIT = """(() => { const e = document.getElementById('packup'), j = document.getElementById('packPerc').getBoundingClientRect(),
+          t = e.querySelector('.p-tap').getBoundingClientRect();
+          const apart = t.left >= j.right || t.right <= j.left || t.top >= j.bottom || t.bottom <= j.top;
+          return e.scrollHeight <= e.clientHeight + 1 && j.bottom <= innerHeight - 8 && apart; })()"""
+        for w, h in ((1600, 900), (1866, 816), (1920, 1080), (1366, 768), (1024, 768)):
+            pg.set_viewport_size({"width": w, "height": h}); pg.wait_for_timeout(150)
+            check(f"pack-up fits, hint clear of the jobs ({w}x{h})", pg.evaluate(PFIT))
+            if shots: pg.screenshot(path=shots + f"/perc_packup_{w}.png")
+        pg.set_viewport_size({"width": 1600, "height": 900})
         if shots: pg.screenshot(path=shots + "/perc_packup.png")
         # 2) 8:34 closing scoreboard: the check is there and lit (not answered yet)
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)

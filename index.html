@@ -483,6 +483,16 @@
   #scores.big.has-perc .s-val { font-size: 8.5vh; min-height: 11vh; }
   #scores.big.has-perc .s-n { font-size: 9vh; min-height: 11vh; }
   #packup .p-tap { position: absolute; bottom: 3vh; font-size: 2.4vh; opacity: .7; font-family: "Segoe UI", Arial, sans-serif; }
+  /* 2.22.3 (Mat 11/17): with class jobs on the screen, everything moves up and tightens so the jobs card sits clear of the
+     bottom, and "Tap anywhere to close" goes to the bottom-right corner instead of across the card. */
+  #packup.jobs { justify-content: flex-start; padding-top: 3vh; }
+  #packup.jobs .p-title { font-size: min(12.5vh, 9vw); }
+  #packup.jobs .p-bell { font-size: min(5vh, 3.6vw); margin: 1vh 0 2.4vh; }
+  #packup.jobs ol { font-size: min(5vh, 3.6vw); gap: 1.4vh; }
+  #packup.jobs .p-perc { margin-top: 2.6vh; }
+  #packup.jobs .p-perc { font-size: min(5vh, 3.4vw); }
+  #packup.jobs .p-perc.two { font-size: min(4.3vh, 3vw); margin-top: 2.4vh; }
+  #packup.jobs .p-tap { bottom: 2vh; right: 2.4vw; font-size: 2vh; }
   #packPill { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 22; display: none;
     background: #c9a227; color: #141c30; border-radius: 999px; padding: 10px 22px; cursor: pointer;
     font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em;
@@ -828,7 +838,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.22.2"></script>
+<script src="rhythmtime.js?v=2.22.3"></script>
 <script>
 (function () {
   "use strict";
@@ -1558,7 +1568,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.2").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.3").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2460,6 +2470,7 @@
     percPackKey = key;
     el.classList.toggle("on", jobs.length > 0);
     el.classList.toggle("two", jobs.length > 1);
+    packEl.classList.toggle("jobs", jobs.length > 0);
     el.innerHTML = jobs.map(function (j, i) {
       return '<div class="pj-line">' + j.icon + " " + (recs[i].caps.length > 1 ? j.many : j.one) + ": " + esc(jobNames(recs[i])) +
         "<small>" + esc(j.task) + "</small></div>";
@@ -2696,7 +2707,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.22.2";
+  var BUILD = "2.22.3";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2725,9 +2736,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.22.2"></script>
-<script src="ptest.js?v=2.22.2"></script>
-<script src="lunch.js?v=2.22.2"></script>
-<script src="rtap.js?v=2.22.2"></script>
+<script src="ptnet.js?v=2.22.3"></script>
+<script src="ptest.js?v=2.22.3"></script>
+<script src="lunch.js?v=2.22.3"></script>
+<script src="rtap.js?v=2.22.3"></script>
 </body>
 </html>

@@ -122,9 +122,9 @@
   <div class="pad off" id="pad">TAP</div>
   <div class="hint">Tap with the 4 count-off clicks too: that tunes this device. Space bar works on a Chromebook. Headphones in class, please! 🎧</div>
 </main>
-<script src="nozoom.js?v=2.22.2"></script>
-<script src="rhythmtime.js?v=2.22.2"></script>
-<script src="rtap.js?v=2.22.2"></script>
+<script src="nozoom.js?v=2.22.3"></script>
+<script src="rhythmtime.js?v=2.22.3"></script>
+<script src="rtap.js?v=2.22.3"></script>
 <script>
 (function () {
   "use strict";
@@ -183,7 +183,7 @@
   }
   var duosP = null;
   function duosGet() {
-    if (!duosP) duosP = fetch("rhythm-duos.json?v=2.22.2").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    if (!duosP) duosP = fetch("rhythm-duos.json?v=2.22.3").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (j) { duos = { lines: j.lines || {} }; return duos; })
       .catch(function (e) { duosP = null; prefs.duo = false; status("The two-part rhythms didn't load."); paint(); throw e; });
     return duosP;
@@ -403,7 +403,7 @@
   document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); });
 
   // ---------------------------------------------------------------- start
-  fetch("rhythm-counts.json?v=2.22.2").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+  fetch("rhythm-counts.json?v=2.22.3").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
     book = { lines: j.lines || {} };
     var want = String(q.get("r") || "");
     if (/^duo_/.test(want)) { duosGet().then(function () { if (duos.lines[want]) use(want); else newOne(); }); return; }

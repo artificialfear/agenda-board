@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.22.3 — 2026-11-17 (Mat)
+- Pack-up screen with class jobs: title, countdown and the 4 steps move up and tighten, the jobs card sits higher with bigger
+  names, and "Tap anywhere to close" moves to the bottom-right corner (it was printed across the Stage Managers line).
+  Checked at 1600×900, 1866×816, 1920×1080, 1366×768 and 1024×768.
+
 ## 2.22.2 — 2026-11-17 (Mat)
 - Class job rows (Class jobs check + closing scoreboard) were unstyled on the ViewBoard: their CSS used `:is()`, which the
   board's older browser drops. Rewritten without it, and a new test (tests/old_browser_test.js) stops `:is()/:where()/:has()`,
