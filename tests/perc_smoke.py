@@ -35,6 +35,10 @@ def main():
     url = f"http://127.0.0.1:{port}/index.html"
     state = {"days": ["MON", "TUES", "WED", "THURS", "FRI"], "rows": ["Effort", "Performance", "Attitude"]}
     sets = []
+    # 2.24.0: fake voice bundle (a beep for every clip; fake names only)
+    import base64
+    BEEP = base64.b64encode((ROOT / "tests/fixtures/voice-beep.mp3").read_bytes()).decode()
+    VOICE = {"on": False, "keys": [], "bad": [], "asks": []}
 
     def reset_values():
         state["values"] = [["", "", "", "", ""] for _ in range(3)]
@@ -44,6 +48,13 @@ def main():
         hdr = {"Access-Control-Allow-Origin": "*"}
         if q.get("a") == "config":
             return route.fulfill(status=200, content_type="application/json", headers=hdr, body=json.dumps({"ok": True, "config": CFG}))
+        if q.get("a") == "voices" and VOICE["on"]:
+            VOICE["asks"].append(q.get("have", ""))
+            if q.get("have") == "v1":
+                return route.fulfill(status=200, content_type="application/json", headers=hdr, body=json.dumps({"ok": True, "same": True, "ver": "v1"}))
+            clips = {k: ("AAAA" if k in VOICE["bad"] else BEEP) for k in VOICE["keys"]}
+            return route.fulfill(status=200, content_type="application/json", headers=hdr,
+                                 body=json.dumps({"ok": True, "ver": "v1", "voices": {"v": 1, "clips": clips}}))
         if q.get("a") == "set":
             sets.append(q)
             r = state["rows"].index(q["row"]); c = state["days"].index(q["day"]); state["values"][r][c] = q["v"]
@@ -270,6 +281,40 @@ def main():
         CLICK(pg, "#jRows .pj[data-j='perc'] .pc-b.miss"); CLICK(pg, "#jRows .pj[data-j='perc'] .pc-b.ok"); pg.wait_for_timeout(200)
         check("Ninja ❌ then ✅: no carry", not PERC(pg)["state"].get("carry", {}).get("1st"))
         ctx.close()
+
+        # 6) 2.24.0: the AI voice clips (from the private Drive bundle) play instead of the built-in voice
+        ALL = ["@percussion captains", "@stage managers", "@and", "test a", "test b", "wind a", "wind b"]
+        VOICE.update(on=True, keys=list(ALL), bad=[])
+        CALL = lambda pg: (pg.clock.fast_forward("00:15"), pg.wait_for_timeout(300), pg.clock.fast_forward("00:13"),
+                           pg.wait_for_timeout(300), pg.clock.run_for(1200), pg.wait_for_timeout(700))
+        ctx, pg = board("2026-11-06T08:29:50")
+        pg.clock.run_for(3000); pg.wait_for_timeout(300)
+        check("voice bundle loads (after 4 s)", pg.evaluate("window.__agendaBoard.voice()")["n"] == len(ALL), pg.evaluate("window.__agendaBoard.voice()"))
+        check("voice key: 'Test A.' → 'test a'", pg.evaluate("window.__agendaBoard.voiceKey('  Test  A. ')") == "test a")
+        CALL(pg)
+        v = pg.evaluate("window.__agendaBoard.voice()")
+        check("callout plays the AI clips in order", v["played"] == ["@percussion captains|test a|@and|test b|@stage managers|wind a|@and|wind b"], v)
+        check("…and not the built-in voice", not pg.evaluate("(window.__said || []).length"), pg.evaluate("window.__said"))
+        pg.clock.fast_forward("06:00:00"); pg.wait_for_timeout(300)
+        check("6-hour recheck sends what it has (no re-download)", VOICE["asks"][-1] == "v1" and pg.evaluate("window.__agendaBoard.voice()")["n"] == len(ALL), VOICE["asks"])
+        check("no page errors (voice)", not pg.errs, pg.errs)
+        ctx.close()
+        VOICE["keys"].remove("wind b")                    # a new student with no clip yet
+        ctx, pg = board("2026-11-06T08:29:50"); pg.clock.run_for(3000); CALL(pg)
+        check("a name without a clip → built-in voice for the whole callout", not pg.evaluate("window.__agendaBoard.voice()")["played"]
+              and pg.evaluate("window.__said || []") == ["Percussion Captains: Test A. and Test B. Stage Managers: Wind A. and Wind B."], pg.evaluate("window.__said"))
+        ctx.close()
+        VOICE.update(keys=list(ALL), bad=["test b"])       # a broken clip
+        ctx, pg = board("2026-11-06T08:29:50"); pg.clock.run_for(3000); CALL(pg)
+        check("a clip that won't play → built-in voice", not pg.evaluate("window.__agendaBoard.voice()")["played"]
+              and len(pg.evaluate("window.__said || []")) == 1, (pg.evaluate("window.__agendaBoard.voice()"), pg.evaluate("window.__said")))
+        ctx.close()
+        VOICE["bad"] = []; CFG["Say job names"] = "Built-in"
+        ctx, pg = board("2026-11-06T08:29:50"); pg.clock.run_for(3000); CALL(pg)
+        check("Say job names: Built-in → built-in voice", not pg.evaluate("window.__agendaBoard.voice()")["played"]
+              and len(pg.evaluate("window.__said || []")) == 1)
+        ctx.close()
+        del CFG["Say job names"]; VOICE["on"] = False
         browser.close()
     srv.shutdown()
     n = len(RESULTS); ok = sum(1 for r in RESULTS if r)

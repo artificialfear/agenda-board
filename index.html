@@ -860,7 +860,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.23.0"></script>
+<script src="rhythmtime.js?v=2.24.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1590,7 +1590,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.23.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.24.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2102,7 +2102,7 @@
     // 2.20.0: Stage Managers (every non-percussionist, in turn order)
     "stage managers 1st": "stage1st", "stage managers 3rd": "stage3rd", "stage managers 4th": "stage4th", "stage managers 6th": "stage6th",
     "stage managers 7th": "stage7th",
-    "say job names": "jobsSay" };                                   // 2.23.0: "No" = chime + pulse, no voice
+    "say job names": "jobsSay" };                                   // 2.23.0: "No" = chime + pulse, no voice; 2.24.0: "Built-in" = skip the AI voice
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2500,7 +2500,7 @@
     }).join("");
   }
   // 2.23.0 (Mat 11/17): a moment after pack-up starts (once the screen stops flashing) the jobs card pulses, a bright
-  // three-note chime plays, and the board says the names ("Percussion Captains: Marcus G. and Hudson H. ...").
+  // three-note chime plays, and the board says the names ("Percussion Captains: Jordan T. and Riley M. ...").
   // Board Settings "Say job names" = No turns the voice off (chime + pulse stay). Needs the one tap the chimes need.
   var JOBS_CALL_AT = 11000, jobsSaid = [];
   function jobsCallText(blk) {
@@ -2524,19 +2524,80 @@
       });
     } catch (e) {}
   }
+  // 2.24.0 (Mat 11/17): an AI voice ("Amy", made offline by tools/voice/make-voices.py) instead of the ViewBoard's built-in one.
+  // The clips hold real student names, so they live in Mat's private Drive folder and come only through the keyed
+  // Daily Slides link (a=voices). One clip per name ("jordan t") + phrase clips ("@stage managers", "@and"), played
+  // back to back. Any name without a clip (a new student) → the whole callout uses the built-in voice instead.
+  // Board Settings "Say job names": Yes = AI voice when it has every name, "Built-in" = always the built-in voice, No = no voice.
+  var voice = { ver: "", clips: null, bufs: {}, played: [], tries: 0 };
+  function voiceKey(name) { return String(name).toLowerCase().replace(/\s+/g, " ").trim().replace(/\.$/, "").trim(); }
+  function voiceLoad() {
+    if (!settings.closingUrl) return;
+    scoresCall({ a: "voices", have: voice.ver }).then(function (j) {
+      if (j.same) return;
+      if (j.voices && j.voices.clips) { voice.clips = j.voices.clips; voice.ver = String(j.ver || ""); voice.bufs = {}; }
+    }).catch(function () {
+      if (++voice.tries < 4) setTimeout(voiceLoad, 5 * 60000);          // an older script / a blip: try again later
+    });
+  }
+  setTimeout(voiceLoad, 4000);
+  setInterval(function () { voice.tries = 0; voiceLoad(); }, 6 * 3600000);
+  function voiceSeq(blk) {         // [[key, gap after (s)], ...] or null when any clip is missing
+    var seq = [];
+    jobsFor(blk).forEach(function (j, ji) {
+      var n = jobToday(j, blk).caps;
+      seq.push(["@" + (n.length > 1 ? j.many : j.one).toLowerCase(), 0.28]);
+      n.forEach(function (name, i) {
+        var last = i === n.length - 1;
+        seq.push([voiceKey(name), last ? 0.7 : (i === n.length - 2 ? 0.08 : 0.22)]);
+        if (i === n.length - 2) seq.push(["@and", 0.08]);
+      });
+    });
+    if (!voice.clips || !seq.length) return null;
+    for (var i = 0; i < seq.length; i++) if (!voice.clips[seq[i][0]]) return null;
+    return seq;
+  }
+  function voiceBuf(ctx, k) {
+    if (voice.bufs[k]) return Promise.resolve(voice.bufs[k]);
+    return new Promise(function (ok, bad) {
+      var bin = atob(voice.clips[k]), a = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+      ctx.decodeAudioData(a.buffer, function (b) { voice.bufs[k] = b; ok(b); }, function (e) { bad(e || new Error("decode")); });
+    });
+  }
+  function voicePlay(seq) {
+    var ctx = audio || new (window.AudioContext || window.webkitAudioContext)();
+    audio = ctx;
+    if (ctx.resume) try { ctx.resume(); } catch (e) {}
+    return Promise.all(seq.map(function (s) { return voiceBuf(ctx, s[0]); })).then(function (bufs) {
+      var t = ctx.currentTime + 0.05;
+      bufs.forEach(function (b, i) {
+        var src = ctx.createBufferSource(), g = ctx.createGain();
+        g.gain.value = 1.6;                                  // the clips are quiet next to the chime
+        src.buffer = b; src.connect(g); g.connect(ctx.destination); src.start(t);
+        t += b.duration + seq[i][1];
+      });
+      voice.played.push(seq.map(function (s) { return s[0]; }).join("|"));
+    });
+  }
+  function jobsSpeak(text) {
+    try {
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+      var u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.95; u.volume = 1;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); jobsSaid.push(text);
+    } catch (e) {}
+  }
   function jobsCallout(blk) {
     var el = document.getElementById("packPerc"); if (!jobsFor(blk).length) return;
     el.classList.remove("call"); void el.offsetWidth; el.classList.add("call");
     setTimeout(function () { el.classList.remove("call"); }, 2600);
     jobsChime();
-    if (/^(no|off|false|0)$/i.test(String(settings.jobsSay || "").trim())) return;
-    var text = jobsCallText(blk);
+    var say = String(settings.jobsSay || "").trim();
+    if (/^(no|off|false|0)$/i.test(say)) return;
+    var text = jobsCallText(blk), seq = /built/i.test(say) ? null : voiceSeq(blk);
     setTimeout(function () {
-      try {
-        if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
-        var u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.95; u.volume = 1;
-        window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); jobsSaid.push(text);
-      } catch (e) {}
+      if (!seq) return jobsSpeak(text);
+      voicePlay(seq).catch(function () { jobsSpeak(text); });
     }, 900);
   }
 
@@ -2737,6 +2798,8 @@
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
     jobsSaid: function () { return jobsSaid.slice(); },
+    voice: function () { return { ver: voice.ver, n: voice.clips ? Object.keys(voice.clips).length : 0, played: voice.played.slice() }; },
+    voiceKey: voiceKey,
     perc: function (blk, id) { return { state: JSON.parse(JSON.stringify(perc)), today: blk ? percToday(blk, id) : null, streak: blk ? percStreak(blk, id) : 0 }; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
@@ -2776,7 +2839,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.23.0";
+  var BUILD = "2.24.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2805,9 +2868,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.23.0"></script>
-<script src="ptest.js?v=2.23.0"></script>
-<script src="lunch.js?v=2.23.0"></script>
-<script src="rtap.js?v=2.23.0"></script>
+<script src="ptnet.js?v=2.24.0"></script>
+<script src="ptest.js?v=2.24.0"></script>
+<script src="lunch.js?v=2.24.0"></script>
+<script src="rtap.js?v=2.24.0"></script>
 </body>
 </html>

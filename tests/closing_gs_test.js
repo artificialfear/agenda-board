@@ -49,4 +49,12 @@ const bs={getLastRow:()=>bsRows.length,getRange:(r,c,nr,nc)=>({getDisplayValues:
 global.SpreadsheetApp={openById:()=>({getSheetByName:n=>n==='Board Settings'?bs:sh,insertSheet:()=>sh})};
 a.deepEqual(doGet({parameter:{a:'config',k:K}}).config,{'Method book PDF link':'https://drive.google.com/file/d/abc/view'});
 a.equal(doGet({parameter:{a:'config',k:'x'}}).ok,false);
+// v1.10 voices: the private Drive file as-is; have = same version → {same:true}; key required; a missing file → ok:false
+let vReads=0;global.DriveApp={getFileById:id=>{a.equal(id,CLOSING.VOICES_ID);return {getLastUpdated:()=>new Date(1700000000000),
+ getBlob:()=>({getDataAsString:()=>{vReads++;return '{"v":1,"clips":{"test a":"QUJD"}}';}})};}};
+r=doGet({parameter:{a:'voices',k:K}}); a.ok(r.ok); a.equal(r.ver,'1700000000000'); a.deepEqual(r.voices.clips,{'test a':'QUJD'}); a.equal(vReads,1);
+r=doGet({parameter:{a:'voices',k:K,have:'1700000000000'}}); a.ok(r.ok&&r.same); a.equal(r.voices,undefined); a.equal(vReads,1);
+a.equal(doGet({parameter:{a:'voices',k:'nope'}}).ok,false); a.equal(vReads,1);
+global.DriveApp={getFileById:()=>{throw new Error('File not found');}};
+r=doGet({parameter:{a:'voices',k:K}}); a.equal(r.ok,false); a.ok(/not found/.test(r.error));
 console.log('ClosingScores.gs checks ok');

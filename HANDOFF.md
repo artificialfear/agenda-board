@@ -1,5 +1,16 @@
 # Agenda Board — handoff
 
+## 11/17/2026: AI voice for job names (live = build 2.24.0)
+- Mat chose voice Amy (Piper en_US-amy-low; models download from github.com/rhasspy/piper releases v0.0.2, Hugging Face is
+  blocked here), a private Drive folder, and the whole roster (Board Settings perc + stage lists = 133 names, matches the Tracker).
+- Drive folder "Agenda Board Voices (private - student names)" id 1GwFK_zPbUZL4e6O4MUzWHqDf4OSa1AI9 (inherited sharing off,
+  owner only): agenda-voices.json (CLOSING.VOICES_ID 1kAZYFWl3nPqLUzw0Fs0flA5AWpLupmm8), voice-names.txt, voice-say-as.txt.
+- To redo/add names: download voice-names.txt + voice-say-as.txt, `pip install piper-tts --break-system-packages`, get the amy
+  model, run tools/voice/make-voices.py, then UPDATE the same Drive file (keep the id) — the board picks it up within 6 h / on reload.
+  Say-as uses raw espeak phonemes in [[ ]]; plain hyphenated respellings stress every syllable.
+- ClosingScores.gs v1.10 adds a=voices[&have=] (returns the file as-is, or {same:true}). No new permissions (DriveApp already used).
+- Never commit names, clips or the bundle. tests use tests/fixtures/voice-beep.mp3 + fake names. perc_smoke.py 77 checks (voice break-checked).
+
 ## 11/17/2026 morning wrap-up (live = build 2.23.0)
 - 2.22.2: the job rows were unstyled on the ViewBoard because the CSS used :is() (board browser ≈ Chrome 87). tests/old_browser_test.js
   now blocks :is/:where/:has, the aspect-ratio property, @container, color-mix and too-new emoji in index.html.

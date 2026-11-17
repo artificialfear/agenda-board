@@ -1,11 +1,22 @@
 # Changelog
 
+## 2.24.0 — 2026-11-17 (Mat)
+- **AI voice for the jobs callout.** The names are now said by a natural AI voice (Piper "Amy", made offline here, nothing
+  sent to any outside service) instead of the ViewBoard's built-in voice. One clip per student + phrase clips
+  ("Percussion Captains", "Stage Managers", "and"), played back to back.
+- The clips hold real student names, so they are NOT in this repo: they live in Mat's private Drive folder
+  "Agenda Board Voices (private - student names)" and reach the board only through the keyed Daily Slides link
+  (ClosingScores.gs v1.10, a=voices). The board fetches them at start-up and checks every 6 hours (re-downloads only when the file changes).
+- If any name in today's callout has no clip (a new student) or a clip won't play, the whole callout falls back to the built-in voice.
+- Board Settings "Say job names": Yes = AI voice, Built-in = always the built-in voice, No = chime + pulse only.
+- tools/voice/make-voices.py makes the bundle (names + say-as fixes read from files kept outside the repo).
+
 ## 2.23.0 — 2026-11-17 (Mat)
 - **Pack-up side by side** (screens wider than 3:2, like the ViewBoard): the 4 steps on the left (one line each, sized to the
   screen) and the class jobs card on the right, each job reading job / names (big) / what to do. 4:3 screens keep the
   stacked layout from 2.22.3.
 - **Jobs callout**: 11 s after pack-up starts (once the screen stops flashing) the jobs card pulses, a bright three-note
-  chime plays, and the board says the names out loud ("Percussion Captains: Marcus G. and Hudson H. Stage Managers: …"),
+  chime plays, and the board says the names out loud ("Percussion Captains: Jordan T. and Riley M. Stage Managers: …"),
   once per class. Board Settings row "Say job names" = No keeps the chime + pulse without the voice. The voice uses the
   ViewBoard's built-in speech; it needs the same one tap the chimes need.
 

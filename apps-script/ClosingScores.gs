@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.9  (Raven Band, 11/12/2026)
+ * ClosingScores.gs  v1.10  (Raven Band, 11/17/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -49,6 +49,10 @@
  *       e.g. "Joy (mm. 5-20)" or "Repertoire: Joy", which is how the generator writes them.
  *       setupMapPassport (run once) makes that trigger and adds each class's starting songs (How = "start",
  *       CLOSING.PASSPORT_START). Same spreadsheet + deck as before: no new permissions.
+ *   - v1.10 (Mat 11/17): a=voices[&have=]  the spoken-name clips for the board's pack-up callout: the file
+ *       agenda-voices.json in Mat's private Drive folder "Agenda Board Voices" (made by tools/voice/make-voices.py).
+ *       The file never leaves Google except to the board through this keyed link. have = the version the board
+ *       already has; if it still matches, only {same:true} comes back. Drive is already used: no new permissions.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -78,6 +82,7 @@ var CLOSING = {
   // Passport start (Mat 11/10): 8th grade finished Book 1; 7th grade through #80; both 6th grade classes through The Dreidel Song
   PASSPORT_START: { '1st': 'all', '3rd': '#80', '4th': '#80', '6th': 'The Dreidel Song', '7th': 'The Dreidel Song' },
   PLAYED_HOUR: 15,
+  VOICES_ID: '1kAZYFWl3nPqLUzw0Fs0flA5AWpLupmm8',  // agenda-voices.json (private Drive folder; holds student names, never shared)
   ADMIN_ID: '1FZRxwbaoUscTIzidpVT1f7xzz1j1XaJgG6fn67y-yyI',     // Admin - Band Ninja (Pass-Off Log)
   TRACKER_ID: '1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw',   // Band Ninja Tracker (Pass-Off Line, Pass-Off Targets)
   PTEST_TAB: 'Playing Tests',
@@ -100,6 +105,7 @@ function doGet(e) {
       out.ok = true;
       return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
     }
+    if (p.a === 'voices') return boardVoices_(String(p.have || ''));
     if (p.a === 'config' || p.a === 'stats' || p.a === 'line' || p.a === 'rhythm' || p.a === 'map' || p.a === 'today' || p.a === 'passport') {
       out = p.a === 'config' ? { config: boardSettings_() } :
             p.a === 'map' ? boardCached_('boardMap', 60, boardMap_) :
@@ -189,6 +195,14 @@ function rhythmPut_(files) {
 // ---------------------------------------------------------------- board settings
 
 /** "Board Settings" tab: column A = setting name, column B = value (row 1 = headers). Blank values are left out. */
+/** v1.10: the voice bundle as-is (no parse: it's ~1 MB). Version = the file's last-updated time. */
+function boardVoices_(have) {
+  var f = DriveApp.getFileById(CLOSING.VOICES_ID), ver = String(f.getLastUpdated().getTime());
+  var body = have === ver ? '{"ok":true,"same":true,"ver":"' + ver + '"}'
+                          : '{"ok":true,"ver":"' + ver + '","voices":' + f.getBlob().getDataAsString() + '}';
+  return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+}
+
 function boardSettings_() {
   var sh = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID).getSheetByName(CLOSING.BOARD_TAB);
   var out = {};
