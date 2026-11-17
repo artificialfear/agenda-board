@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.21.0 — 2026-11-17 (Mat)
+- **Class jobs on Band Ninja days.** No scoreboard on those days, so at closing-score time the board opens a **Class jobs check**
+  screen instead: the day's Percussion Captains and Stage Managers with ✅ / ❌, swap-a-name, streaks (pack-up says "Class jobs
+  check in …"). Close it with ✕; the 🥁 pill at the bottom brings it back until class change.
+- A ❌ on a Ninja day **carries to that block's next regular rehearsal**: Effort can't be a 3 there (a 3 already given drops to
+  2) and the scoreboard says why ("Class jobs weren't done on Tuesday (Band Ninja day) …"). Only that one rehearsal; ❌ then
+  ✅ on the Ninja day cancels it. (agendaBoard.perc.carry[block] = { from, used }.)
+
 ## 2.20.0 — 2026-11-16 (Mat)
 - **Stage Managers** (all five blocks): 2 a day straighten every row of chairs + stands, taking turns down the block's
   non-percussionists (Board Settings rows "Stage Managers 1st" … "7th", filled from the Band Ninja Tracker). Named on the pack-up

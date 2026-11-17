@@ -416,23 +416,36 @@
   #packup.flash .p-perc .pj-line + .pj-line { border-top-color: rgba(201,162,39,.35); }
   #packup .p-perc small { display: block; font-size: .62em; font-family: "Segoe UI", Arial, sans-serif; font-weight: 600; margin-top: .4vh; }
   #packup.flash .p-perc { background: #141c30; color: #c9a227; }
-  #scores .s-perc { display: none; flex-direction: column; gap: 8px; margin-bottom: 12px; font-size: 24px; }
-  #scores .s-perc.on { display: flex; }
-  #scores .s-perc .pj { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 14px; border-radius: 14px;
+  :is(#scores, #jobsChk) .s-perc { display: none; flex-direction: column; gap: 8px; margin-bottom: 12px; font-size: 24px; }
+  :is(#scores, #jobsChk) .s-perc.on { display: flex; }
+  :is(#scores, #jobsChk) .s-perc .pj { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 14px; border-radius: 14px;
     background: #141c30; border: 2px solid #34405e; }
-  #scores .s-perc .pj.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
-  #scores .s-perc .pc-lab { color: #c9a227; letter-spacing: .04em; min-width: 9.5em; }
-  #scores .s-perc .pc-cap { border: 1px dashed #6f7a93; background: none; color: #fff; border-radius: 999px; padding: 4px 14px; cursor: pointer;
+  :is(#scores, #jobsChk) .s-perc .pj.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
+  :is(#scores, #jobsChk) .s-perc .pc-lab { color: #c9a227; letter-spacing: .04em; min-width: 9.5em; }
+  :is(#scores, #jobsChk) .s-perc .pc-cap { border: 1px dashed #6f7a93; background: none; color: #fff; border-radius: 999px; padding: 4px 14px; cursor: pointer;
     font: inherit; }
-  #scores .s-perc .pc-q { color: #c9d0de; font-family: "Segoe UI", Arial, sans-serif; font-size: .7em; flex: 1; min-width: 12em; }
-  #scores .s-perc .pc-b { border: 2px solid #34405e; background: #1f2a44; color: #fff; border-radius: 12px; padding: 6px 16px; cursor: pointer;
+  :is(#scores, #jobsChk) .s-perc .pc-q { color: #c9d0de; font-family: "Segoe UI", Arial, sans-serif; font-size: .7em; flex: 1; min-width: 12em; }
+  :is(#scores, #jobsChk) .s-perc .pc-b { border: 2px solid #34405e; background: #1f2a44; color: #fff; border-radius: 12px; padding: 6px 16px; cursor: pointer;
     font: inherit; }
-  #scores .s-perc .pc-b.ok.sel { background: #2e8b57; border-color: #3ddc84; }
-  #scores .s-perc .pc-b.miss.sel { background: #b3372d; border-color: #ff8a7a; }
-  #scores .s-perc .pc-st { color: #c9a227; font-size: .8em; white-space: nowrap; }
-  #scores .s-perc .pc-note { color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 14px; }
+  :is(#scores, #jobsChk) .s-perc .pc-b.ok.sel { background: #2e8b57; border-color: #3ddc84; }
+  :is(#scores, #jobsChk) .s-perc .pc-b.miss.sel { background: #b3372d; border-color: #ff8a7a; }
+  :is(#scores, #jobsChk) .s-perc .pc-st { color: #c9a227; font-size: .8em; white-space: nowrap; }
+  :is(#scores, #jobsChk) .s-perc .pc-note { color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 14px; }
   #scores .s-n.capped { opacity: .25; text-decoration: line-through; cursor: not-allowed; }
-  @media (max-width: 1200px) { #scores .s-perc .pc-q { display: none; } #scores .s-perc .pc-st { margin-left: auto; } }
+  @media (max-width: 1200px) { :is(#scores, #jobsChk) .s-perc .pc-q { display: none; } :is(#scores, #jobsChk) .s-perc .pc-st { margin-left: auto; } }
+  /* 2.21.0 (Mat 11/17): Band Ninja days have no scoreboard, so the class jobs get their own check screen */
+  #jobsChk { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; background: rgba(10,14,26,.6); }
+  #jobsChk.open { display: flex; }
+  #jobsChk .j-card { width: min(1500px, 94vw); background: #1f2a44; color: #fff; border: 3px solid #c9a227; border-radius: 22px;
+    padding: 2.4vh 2vw 2.6vh; box-shadow: 0 10px 40px rgba(0,0,0,.5); font-family: "Oswald", "Arial Narrow", Arial, sans-serif; }
+  #jobsChk .j-head { display: flex; align-items: center; gap: 16px; margin-bottom: 2vh; }
+  #jobsChk .j-title { font-size: 6vh; letter-spacing: .03em; }
+  #jobsChk .j-title span { color: #c9a227; }
+  #jobsChk .j-sub { color: #c9d0de; font-size: 3vh; margin-left: auto; }
+  #jobsChk .j-x { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #34405e; background: #141c30; color: #fff; font-size: 22px; cursor: pointer; }
+  #jobsChk .s-perc { font-size: 4vh; gap: 1.6vh; }
+  #jobsChk .s-perc .pj { padding: 1.4vh 1.4vw; gap: 1.2vw; }
+  #jobsChk .j-foot { margin-top: 2vh; color: #c9d0de; font: 2.4vh "Segoe UI", Arial, sans-serif; }
   #scores.big .s-perc { font-size: 3.4vh; margin-bottom: 1vh; gap: .8vh; }
   #scores.big .s-perc .pj { padding: .7vh 1.2vw; gap: 1vw; }
   #scores.big.has-jobs2 .s-perc { font-size: 3vh; }
@@ -614,6 +627,14 @@
 </div>
 
 <!-- Closing scores: a student taps 1-3 for today; saved into the slide's CLOSING table -->
+<div id="jobsChk" role="dialog" aria-label="Class jobs check">
+  <div class="j-card">
+    <div class="j-head"><div class="j-title">CLASS <span>JOBS</span> CHECK</div><div class="j-sub" id="jSub"></div>
+      <button class="j-x" id="jClose" aria-label="Close">✕</button></div>
+    <div class="s-perc on" id="jRows" aria-live="polite"></div>
+    <div class="j-foot" id="jFoot"></div>
+  </div>
+</div>
 <div id="scores" role="dialog" aria-label="Closing scores">
   <div class="s-card">
     <div class="s-head">
@@ -788,7 +809,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.20.0"></script>
+<script src="rhythmtime.js?v=2.21.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1518,7 +1539,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.20.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.21.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2249,7 +2270,21 @@
   function percMissToday(blk) {
     if (!blk || !perc) return false;
     var td = ymd(now());
-    return JOBS.some(function (j) { var rec = perc.day[td + " " + jobKey(j, blk)]; return !!(rec && rec.r === "miss" && jobList(j, blk).length); });
+    return !!jobCarry(blk) ||
+      JOBS.some(function (j) { var rec = perc.day[td + " " + jobKey(j, blk)]; return !!(rec && rec.r === "miss" && jobList(j, blk).length); });
+  }
+  // 2.21.0: a ❌ on a Band Ninja day (no scores that day) carries to the block's next regular rehearsal: Effort can't be a 3
+  // there. perc.carry[blk] = { from: Ninja date, used: the day it applied }. It applies on the first regular (non-Ninja)
+  // day after `from`, all of that day, then it's done.
+  function jobCarry(blk) {
+    var c = perc && perc.carry && perc.carry[blk], d = now(), td = ymd(d);
+    if (!c || !(c.from < td) || isNinja(d) || (c.used && c.used !== td)) return null;
+    return c;
+  }
+  function jobCarryNote(blk) {
+    var c = jobCarry(blk); if (!c) return "";
+    var day = new Date(c.from + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" });
+    return "Class jobs weren't done on " + day + " (Band Ninja day): Effort can't be a 3 today.";
   }
   function n3Capped(lab) { return /^effort$/i.test(String(lab).trim()) && percMissToday(sc.block); }
   function jobSet(job, blk, r) {
@@ -2258,7 +2293,13 @@
     var td = ymd(now()), jk = jobKey(job, blk), h = (perc.hist[jk] || []).filter(function (x) { return x.d !== td; });
     if (rec.r) h.push({ d: td, r: rec.r });
     perc.hist[jk] = h.slice(-120);
+    if (isNinja(now())) {                                              // 2.21.0: Ninja day → carries to the next regular day
+      perc.carry = perc.carry || {};
+      var anyMiss = JOBS.some(function (j) { var x = perc.day[td + " " + jobKey(j, blk)]; return x && x.r === "miss"; });
+      if (anyMiss) perc.carry[blk] = { from: td }; else if (perc.carry[blk] && perc.carry[blk].from === td) delete perc.carry[blk];
+    }
     percSave();
+    jobsChkPaint();
     if (rec.r === "miss") {                                            // a 3 already given for Effort today → 2
       var d = sc.data[blk], c = d ? todayCol(d.days) : -1;
       if (d && c >= 0) d.rows.forEach(function (lab, r) {
@@ -2276,17 +2317,13 @@
     rec.caps[k] = list[i % list.length];
     perc.next[jk] = (i + 1) % list.length;
     percSave(); sc.idleAt = Date.now();
+    jobsChkPaint();
     if (sc.block === blk) scoresPaint();
   }
   function jobNames(rec) { return rec.caps.length > 1 ? rec.caps.slice(0, -1).join(", ") + " & " + rec.caps[rec.caps.length - 1] : rec.caps[0]; }
-  function percPaint() {
-    var el = document.getElementById("sPerc"), d = sc.data[sc.block];
-    var jobs = d && todayCol(d.days) >= 0 ? jobsFor(sc.block) : [];
-    el.classList.toggle("on", jobs.length > 0);
-    scoresEl.classList.toggle("has-perc", jobs.length > 0);
-    scoresEl.classList.toggle("has-jobs2", jobs.length > 1);
-    el.innerHTML = jobs.map(function (job) {
-      var rec = jobToday(job, sc.block), st = jobStreak(job, sc.block);
+  function jobRows(blk) {
+    return jobsFor(blk).map(function (job) {
+      var rec = jobToday(job, blk), st = jobStreak(job, blk);
       return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><span class="pc-lab">' + job.icon + " " +
         (rec.caps.length > 1 ? job.many : job.one) + "</span>" +
         rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next one">' + esc(n) + "</button>"; }).join("") +
@@ -2294,15 +2331,49 @@
         '<button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✅ Yes</button>' +
         '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">❌ No</button>' +
         '<span class="pc-st">' + (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span></div>";
-    }).join("") + (percMissToday(sc.block) ? '<div class="pc-note">Not done: Effort can\'t be a 3 today.</div>' : "");
+    }).join("");
   }
-  document.getElementById("sPerc").addEventListener("click", function (e) {
-    e.stopPropagation();
-    var b = e.target.closest && e.target.closest("button"), row = b && b.closest(".pj"); if (!row) return;
-    var job = jobOf(row.getAttribute("data-j"));
-    if (b.hasAttribute("data-pr")) jobSet(job, sc.block, b.getAttribute("data-pr"));
-    else if (b.hasAttribute("data-k")) jobSwap(job, sc.block, +b.getAttribute("data-k"));
-  });
+  function percPaint() {
+    var el = document.getElementById("sPerc"), d = sc.data[sc.block], open = d && todayCol(d.days) >= 0;
+    var jobs = open ? jobsFor(sc.block) : [], carry = open ? jobCarry(sc.block) : null;
+    if (carry && !carry.used) {                                         // first time today: an Effort 3 already given → 2
+      carry.used = ymd(now()); percSave();
+      var c = todayCol(d.days);
+      d.rows.forEach(function (lab, r) { if (/^effort$/i.test(String(lab).trim()) && (d.values[r] || [])[c] === "3") scoresTap(r, "2"); });
+    }
+    el.classList.toggle("on", jobs.length > 0 || !!carry);
+    scoresEl.classList.toggle("has-perc", jobs.length > 0 || !!carry);
+    scoresEl.classList.toggle("has-jobs2", jobs.length > 1);
+    var todayMiss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, sc.block)]; return x && x.r === "miss"; });
+    el.innerHTML = (jobs.length ? jobRows(sc.block) : "") +
+      (todayMiss ? '<div class="pc-note">Not done: Effort can\'t be a 3 today.</div>' : carry ? '<div class="pc-note">' + esc(jobCarryNote(sc.block)) + "</div>" : "");
+  }
+  function jobsClick(blk) {
+    return function (e) {
+      e.stopPropagation();
+      var b = e.target.closest && e.target.closest("button"), row = b && b.closest(".pj"); if (!row) return;
+      var job = jobOf(row.getAttribute("data-j")), k = blk();
+      if (b.hasAttribute("data-pr")) jobSet(job, k, b.getAttribute("data-pr"));
+      else if (b.hasAttribute("data-k")) jobSwap(job, k, +b.getAttribute("data-k"));
+    };
+  }
+  document.getElementById("sPerc").addEventListener("click", jobsClick(function () { return sc.block; }));
+  // 2.21.0: the Band Ninja day check screen (opens at closing-score time instead of the scoreboard)
+  var jobsEl = document.getElementById("jobsChk"), jobsBlk = null;
+  function jobsChkOpen(blk) { jobsBlk = blk; jobsEl.classList.add("open"); jobsChkPaint(); }
+  function jobsChkClose() { jobsEl.classList.remove("open"); }
+  function jobsChkPaint() {
+    if (!jobsBlk || !jobsEl.classList.contains("open")) return;
+    document.getElementById("jSub").textContent = jobsBlk + " Block · Band Ninja Day";
+    document.getElementById("jRows").innerHTML = jobRows(jobsBlk);
+    var miss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, jobsBlk)]; return x && x.r === "miss"; });
+    document.getElementById("jFoot").textContent = miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." :
+      "A ❌ today means Effort can't be a 3 at this block's next regular rehearsal.";
+  }
+  document.getElementById("jRows").addEventListener("click", jobsClick(function () { return jobsBlk; }));
+  document.getElementById("jClose").addEventListener("click", function (e) { e.stopPropagation(); jobsChkClose(); });
+  jobsEl.addEventListener("click", function (e) { if (e.target === jobsEl) jobsChkClose(); });
+
   // the pack-up screen: who's on duty for each job + what to do
   var percPackKey = "";
   function percPack(blk) {
@@ -2399,7 +2470,17 @@
       var left = packLeft(d), planned = scoreboardPlanned(d);
       var scoreAt = (+settings.scoreMinutes || 0) * 60000, packAt = (+settings.packMinutes || 0) * 60000;
       var inScore = planned && left <= scoreAt;
-      if (inScore) {
+      // 2.21.0: Band Ninja day with class jobs → the jobs check takes the scoreboard's place
+      var jobsPlanned = !planned && isNinja(d) && +settings.scoreMinutes > 0 && jobsFor(pack.name).length > 0;
+      if (jobsPlanned && left <= scoreAt) {
+        if (!packDone[key + " jobs"]) {
+          packDone[key + " jobs"] = true; save(PACK_KEY, packDone);
+          pack.phase = "jobs"; packClose(); jobsChkOpen(pack.name); scoreChime();
+        }
+        packClose();
+        packPill.textContent = "🥁 Class jobs check · class change in " + bellText(left);
+        packPill.classList.toggle("show", !jobsEl.classList.contains("open"));
+      } else if (inScore) {
         if (!packDone[key + " score"]) {
           packDone[key + " score"] = true; save(PACK_KEY, packDone);
           pack.phase = "score"; scoreboardOpen(); scoreChime();
@@ -2415,7 +2496,8 @@
           packEl.classList.add("open", "flash");
           packChime();
         }
-        var line = planned ? "Closing scores in " + bellText(left - scoreAt) : "Class change in " + bellText(left);
+        var line = planned ? "Closing scores in " + bellText(left - scoreAt) :
+          jobsPlanned ? "Class jobs check in " + bellText(left - scoreAt) : "Class change in " + bellText(left);
         packBell.textContent = line;
         // Band Ninja days have no rehearsal scores (Mat 11/10)
         packStep4.textContent = isNinja(d) ? "Have a seat and be ready for class change" : "Have a seat and be ready for rehearsal scores";
@@ -2424,7 +2506,7 @@
         if (packEl.classList.contains("open")) {
           if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
           // With a scoreboard coming it stays up as the countdown; without one it tucks away after 45 s.
-          if (!planned && d.getTime() - pack.shownAt > HOLD_OPEN) packClose();
+          if (!planned && !jobsPlanned && d.getTime() - pack.shownAt > HOLD_OPEN) packClose();
         }
         packPill.classList.toggle("show", !packEl.classList.contains("open"));
       } else {
@@ -2432,7 +2514,7 @@
       }
     } else {
       if (pack.block) {
-        pack.block = null; pack.name = null; packClose();
+        pack.block = null; pack.name = null; packClose(); jobsChkClose();
         if (scoresEl.classList.contains("big")) scoresClose();         // class change: back to the normal screen
       }
       packPill.classList.remove("show");
@@ -2442,6 +2524,7 @@
   packEl.addEventListener("click", function () { packClose(); packCheck(); });
   packPill.addEventListener("click", function () {
     if (packPill.textContent.indexOf("★") === 0) { scoresOpen(true, pack.name); packPill.classList.remove("show"); return; }
+    if (packPill.textContent.indexOf("🥁") === 0) { jobsChkOpen(pack.name); packPill.classList.remove("show"); return; }
     packEl.classList.add("open"); pack.shownAt = now().getTime() - HOLD_FLASH;
   });
   setInterval(packCheck, 1000);
@@ -2525,7 +2608,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.20.0";
+  var BUILD = "2.21.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2554,9 +2637,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.20.0"></script>
-<script src="ptest.js?v=2.20.0"></script>
-<script src="lunch.js?v=2.20.0"></script>
-<script src="rtap.js?v=2.20.0"></script>
+<script src="ptnet.js?v=2.21.0"></script>
+<script src="ptest.js?v=2.21.0"></script>
+<script src="lunch.js?v=2.21.0"></script>
+<script src="rtap.js?v=2.21.0"></script>
 </body>
 </html>

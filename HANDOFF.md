@@ -1,5 +1,9 @@
 # Agenda Board — handoff
 
+## 11/17/2026: class jobs on Band Ninja days (live = build 2.21.0)
+- Mat chose: on Ninja days a Class jobs check screen replaces the scoreboard; a ❌ caps Effort at 2 at that block's next
+  regular rehearsal (one rehearsal only). tests/perc_smoke.py now 43 checks (carry-over break-checked).
+
 ## 11/16/2026 evening: slide text sizes (no board build change)
 - Closing tables on all 5 block slides: score cells set to 12 pt bold Lato = same as the Effort/Performance/Attitude labels
   (were 10 pt Arial). ClosingScores keeps each cell's style on write, so no script change was needed.
