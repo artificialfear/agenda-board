@@ -1,5 +1,10 @@
 # Agenda Board — handoff
 
+## 11/17/2026 12:50: Playing Test name fix (ClosingScores v1.11, deployed @13, live hash = main)
+- Mat: the Playing Test screen said "Today". The 6th/7th REMINDERS box read "Playing Test Today" and was found before the
+  WORK SESSION line "Playing Test: Technique Builder 3 (#9)". boardPtestText_ now reads WORK SESSION first and skips lines whose
+  rest is only a day word (PT_WHEN_). Checked live: 6th → "Technique Builder 3 (#9)", 7th → "Warm Up Set #1 (Interval Practice)".
+
 ## 11/17/2026 midday: jobs on the slide + absent swaps (live = build 2.25.0)
 - Mat turned the spoken names off (Board Settings "Say job names" = No; the Amy clips stay in Drive, loaded but unused).
 - Mat chose: board-drawn card on the slide (not names written into the decks), absent = next in line, absent student goes next class.
