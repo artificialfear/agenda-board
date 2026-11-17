@@ -155,6 +155,12 @@
   body.can-score #btnScores, body.can-rhythm #btnRhythm { display: block; }
   body.timer-open #btnScores { display: none !important; }   /* not needed during warm-ups */
 
+  /* 2.22.0: 🥁 Jobs brings the class jobs check back any time on a day with jobs */
+  #btnJobs { display: none; background: #1f2a44; color: #c9a227; border: 2px solid #c9a227; border-radius: 999px; padding: 10px 18px;
+    cursor: pointer; font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  body.has-jobs #btnJobs { display: block; }
+  body.timer-open #btnJobs { display: none !important; }
+
   /* ---------- Method book ---------- */
   body.has-book #btnBook { display: block; }
   #btnBook { display: none; background: #1f2a44; color: #c9a227; border: 2px solid #c9a227; border-radius: 999px;
@@ -445,6 +451,9 @@
   #jobsChk .j-x { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #34405e; background: #141c30; color: #fff; font-size: 22px; cursor: pointer; }
   #jobsChk .s-perc { font-size: 4vh; gap: 1.6vh; }
   #jobsChk .s-perc .pj { padding: 1.4vh 1.4vw; gap: 1.2vw; }
+  #jobsChk .j-blk { border: 2px solid #34405e; background: #141c30; color: #fff; border-radius: 999px; padding: .4vh 1.1vw;
+    margin-left: .5vw; font: inherit; cursor: pointer; }
+  #jobsChk .j-blk.sel { background: #c9a227; color: #141c30; border-color: #c9a227; }
   #jobsChk .j-foot { margin-top: 2vh; color: #c9d0de; font: 2.4vh "Segoe UI", Arial, sans-serif; }
   #scores.big .s-perc { font-size: 3.4vh; margin-bottom: 1vh; gap: .8vh; }
   #scores.big .s-perc .pj { padding: .7vh 1.2vw; gap: 1vw; }
@@ -551,6 +560,7 @@
 <div id="leftBar">
   <button id="btnTimer" aria-label="Open the warm-up timer">⏱ Timer</button>
   <button id="btnScores" aria-label="Enter closing scores">★ Closing</button>
+  <button id="btnJobs" aria-label="Class jobs check">🥁 Jobs</button>
   <button id="btnRhythm" aria-label="Show the rhythm of the day big">♪ Rhythm</button>
   <button id="btnBook" aria-label="Show the method book">📖 Book</button>
   <button id="btnMap" aria-label="Open the world map">🌍 Map</button>
@@ -809,7 +819,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.21.0"></script>
+<script src="rhythmtime.js?v=2.22.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1539,7 +1549,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.21.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2235,8 +2245,10 @@
   var JOBS = [
     { id: "perc", one: "Percussion Captain", many: "Percussion Captains", icon: "🥁", n: 2, set: "perc",
       task: "Sticks, mallets, timpani + mallet covers put away", ask: "Sticks, mallets, timpani + mallet covers all put away?" },
-    { id: "stage", one: "Stage Manager", many: "Stage Managers", icon: "🪑", n: 2, set: "stage",
-      task: "Straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
+    // 2.22.0 (Mat 11/17): Stage Managers stay a moment after the bell, so they're checked right after class leaves.
+    // Icon 🎬: the ViewBoard's emoji font is too old for 🪑 (showed an empty box).
+    { id: "stage", one: "Stage Manager", many: "Stage Managers", icon: "🎬", n: 2, set: "stage", after: true,
+      task: "Stay after the bell to straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
   ];
   var PERC_KEY = "agendaBoard.perc", PERC_BLOCKS = ["1st", "3rd", "4th", "6th", "7th"];
   var perc = (TEST ? null : load(PERC_KEY)) || {};
@@ -2247,7 +2259,12 @@
   function jobList(job, blk) {
     return String(settings[job.set + blk] || "").split(/[,;\n]+/).map(function (x) { return x.trim(); }).filter(Boolean);
   }
-  function jobsFor(blk) { return PERC_BLOCKS.indexOf(blk) < 0 ? [] : JOBS.filter(function (j) { return jobList(j, blk).length; }); }
+  // phase "close" = checked at closing time (scoreboard / Ninja check), "after" = right after the bell, none = all
+  function jobsFor(blk, phase) {
+    return PERC_BLOCKS.indexOf(blk) < 0 ? [] : JOBS.filter(function (j) {
+      return jobList(j, blk).length && (!phase || (phase === "after") === !!j.after);
+    });
+  }
   function jobToday(job, blk) {
     if (PERC_BLOCKS.indexOf(blk) < 0) return null;
     var list = jobList(job, blk); if (!list.length) return null;
@@ -2293,21 +2310,33 @@
     var td = ymd(now()), jk = jobKey(job, blk), h = (perc.hist[jk] || []).filter(function (x) { return x.d !== td; });
     if (rec.r) h.push({ d: td, r: rec.r });
     perc.hist[jk] = h.slice(-120);
-    if (isNinja(now())) {                                              // 2.21.0: Ninja day → carries to the next regular day
+    var ninja = isNinja(now());
+    if (ninja) {                                                       // 2.21.0: Ninja day → carries to the next regular day
       perc.carry = perc.carry || {};
       var anyMiss = JOBS.some(function (j) { var x = perc.day[td + " " + jobKey(j, blk)]; return x && x.r === "miss"; });
       if (anyMiss) perc.carry[blk] = { from: td }; else if (perc.carry[blk] && perc.carry[blk].from === td) delete perc.carry[blk];
     }
     percSave();
     jobsChkPaint();
-    if (rec.r === "miss") {                                            // a 3 already given for Effort today → 2
-      var d = sc.data[blk], c = d ? todayCol(d.days) : -1;
-      if (d && c >= 0) d.rows.forEach(function (lab, r) {
-        if (/^effort$/i.test(String(lab).trim()) && (d.values[r] || [])[c] === "3" && sc.block === blk) scoresTap(r, "2");
-      });
-    }
+    if (rec.r === "miss" && !ninja) jobEffortCap(blk);                 // a 3 already given for Effort today → 2
     sc.idleAt = Date.now();
     if (sc.block === blk) scoresPaint();
+  }
+  // Today's Effort for that block: 3 → 2 on the slide. Works with the scoreboard closed too (Stage Managers are checked
+  // after the bell, when the scoreboard is already gone).
+  function jobEffortCap(blk) {
+    if (!settings.closingUrl) return;
+    (sc.data[blk] ? Promise.resolve(sc.data[blk]) : scoresLoad(blk)).then(function (d) {
+      var c = d ? todayCol(d.days) : -1; if (c < 0) return;
+      d.rows.forEach(function (lab, r) {
+        if (/^effort$/i.test(String(lab).trim()) && (d.values[r] || [])[c] === "3") {
+          d.values[r][c] = "2";
+          sc.queue.push({ block: blk, row: lab, day: d.days[c], v: "2" });
+        }
+      });
+      if (sc.block === blk) scoresPaint();
+      scoresFlush();
+    }).catch(function () {});
   }
   function jobSwap(job, blk, k) {
     var rec = jobToday(job, blk), list = jobList(job, blk), jk = jobKey(job, blk);
@@ -2321,8 +2350,8 @@
     if (sc.block === blk) scoresPaint();
   }
   function jobNames(rec) { return rec.caps.length > 1 ? rec.caps.slice(0, -1).join(", ") + " & " + rec.caps[rec.caps.length - 1] : rec.caps[0]; }
-  function jobRows(blk) {
-    return jobsFor(blk).map(function (job) {
+  function jobRows(blk, phase) {
+    return jobsFor(blk, phase).map(function (job) {
       var rec = jobToday(job, blk), st = jobStreak(job, blk);
       return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><span class="pc-lab">' + job.icon + " " +
         (rec.caps.length > 1 ? job.many : job.one) + "</span>" +
@@ -2335,7 +2364,7 @@
   }
   function percPaint() {
     var el = document.getElementById("sPerc"), d = sc.data[sc.block], open = d && todayCol(d.days) >= 0;
-    var jobs = open ? jobsFor(sc.block) : [], carry = open ? jobCarry(sc.block) : null;
+    var jobs = open ? jobsFor(sc.block, "close") : [], carry = open ? jobCarry(sc.block) : null;
     if (carry && !carry.used) {                                         // first time today: an Effort 3 already given → 2
       carry.used = ymd(now()); percSave();
       var c = todayCol(d.days);
@@ -2345,7 +2374,7 @@
     scoresEl.classList.toggle("has-perc", jobs.length > 0 || !!carry);
     scoresEl.classList.toggle("has-jobs2", jobs.length > 1);
     var todayMiss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, sc.block)]; return x && x.r === "miss"; });
-    el.innerHTML = (jobs.length ? jobRows(sc.block) : "") +
+    el.innerHTML = (jobs.length ? jobRows(sc.block, "close") : "") +
       (todayMiss ? '<div class="pc-note">Not done: Effort can\'t be a 3 today.</div>' : carry ? '<div class="pc-note">' + esc(jobCarryNote(sc.block)) + "</div>" : "");
   }
   function jobsClick(blk) {
@@ -2358,18 +2387,47 @@
     };
   }
   document.getElementById("sPerc").addEventListener("click", jobsClick(function () { return sc.block; }));
-  // 2.21.0: the Band Ninja day check screen (opens at closing-score time instead of the scoreboard)
-  var jobsEl = document.getElementById("jobsChk"), jobsBlk = null;
-  function jobsChkOpen(blk) { jobsBlk = blk; jobsEl.classList.add("open"); jobsChkPaint(); }
-  function jobsChkClose() { jobsEl.classList.remove("open"); }
+  // The check screen. mode "close": Band Ninja days at closing-score time (no scoreboard that day, 2.21.0);
+  // "after": right after the bell, for jobs done after class (Stage Managers, 2.22.0); "all": from the 🥁 Jobs button
+  // (any time today, with a chip per block that has jobs today).
+  var jobsEl = document.getElementById("jobsChk"), jobsBlk = null, jobsMode = "all", jobsUntil = 0, jobsLast = null;
+  function jobsChkOpen(blk, mode, until) {
+    jobsBlk = blk; jobsMode = mode || "all"; jobsUntil = until || 0; jobsLast = blk;
+    jobsEl.classList.add("open"); jobsChkPaint();
+  }
+  function jobsChkClose() { jobsEl.classList.remove("open"); jobsUntil = 0; }
+  function jobsTodayBlocks() {
+    var d = now(), st = scheduleState(d);
+    return (settings.schedules[st.type] || []).map(function (b) { return b[0]; })
+      .filter(function (b, i, a) { return a.indexOf(b) === i && jobsFor(b).length; });
+  }
   function jobsChkPaint() {
     if (!jobsBlk || !jobsEl.classList.contains("open")) return;
-    document.getElementById("jSub").textContent = jobsBlk + " Block · Band Ninja Day";
-    document.getElementById("jRows").innerHTML = jobRows(jobsBlk);
+    var ninja = isNinja(now()), phase = jobsMode === "close" ? "close" : jobsMode === "after" ? "after" : null;
+    var blocks = jobsMode === "all" ? jobsTodayBlocks() : [];
+    document.getElementById("jSub").innerHTML = blocks.length > 1 ? blocks.map(function (b) {
+      return '<button class="j-blk' + (b === jobsBlk ? " sel" : "") + '" data-b="' + esc(b) + '">' + esc(b) + "</button>"; }).join("") :
+      esc(jobsBlk + " Block" + (jobsMode === "after" ? " · after class" : "") + (ninja ? " · Band Ninja Day" : ""));
+    document.getElementById("jRows").innerHTML = jobRows(jobsBlk, phase);
     var miss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, jobsBlk)]; return x && x.r === "miss"; });
-    document.getElementById("jFoot").textContent = miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." :
-      "A ❌ today means Effort can't be a 3 at this block's next regular rehearsal.";
+    document.getElementById("jFoot").textContent = ninja
+      ? (miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." : "A ❌ today means Effort can't be a 3 at this block's next regular rehearsal.")
+      : (miss ? "Not done: Effort can't be a 3 today (a 3 already given is now a 2)." : "A ❌ means Effort can't be a 3 today (a 3 already given becomes a 2).");
   }
+  document.getElementById("jSub").addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".j-blk"); if (!b) return;
+    e.stopPropagation(); jobsBlk = b.getAttribute("data-b"); jobsLast = jobsBlk; jobsChkPaint();
+  });
+  // which block the 🥁 Jobs button opens: the one packing up, else the last one checked/ended today, else the one in session
+  function jobsDefaultBlock() {
+    var today = jobsTodayBlocks(); if (!today.length) return null;
+    if (pack.name && today.indexOf(pack.name) >= 0) return pack.name;
+    if (jobsLast && today.indexOf(jobsLast) >= 0) return jobsLast;
+    var d = now(), t = nowMins(d), st = scheduleState(d), best = null;
+    (settings.schedules[st.type] || []).forEach(function (b) { if (today.indexOf(b[0]) >= 0 && mins(b[1]) <= t) best = b[0]; });
+    return best || today[0];
+  }
+  document.getElementById("btnJobs").onclick = function () { var b = jobsDefaultBlock(); if (b) jobsChkOpen(b, "all"); };
   document.getElementById("jRows").addEventListener("click", jobsClick(function () { return jobsBlk; }));
   document.getElementById("jClose").addEventListener("click", function (e) { e.stopPropagation(); jobsChkClose(); });
   jobsEl.addEventListener("click", function (e) { if (e.target === jobsEl) jobsChkClose(); });
@@ -2471,11 +2529,11 @@
       var scoreAt = (+settings.scoreMinutes || 0) * 60000, packAt = (+settings.packMinutes || 0) * 60000;
       var inScore = planned && left <= scoreAt;
       // 2.21.0: Band Ninja day with class jobs → the jobs check takes the scoreboard's place
-      var jobsPlanned = !planned && isNinja(d) && +settings.scoreMinutes > 0 && jobsFor(pack.name).length > 0;
+      var jobsPlanned = !planned && isNinja(d) && +settings.scoreMinutes > 0 && jobsFor(pack.name, "close").length > 0;
       if (jobsPlanned && left <= scoreAt) {
         if (!packDone[key + " jobs"]) {
           packDone[key + " jobs"] = true; save(PACK_KEY, packDone);
-          pack.phase = "jobs"; packClose(); jobsChkOpen(pack.name); scoreChime();
+          pack.phase = "jobs"; packClose(); jobsChkOpen(pack.name, "close"); scoreChime();
         }
         packClose();
         packPill.textContent = "🥁 Class jobs check · class change in " + bellText(left);
@@ -2514,17 +2572,29 @@
       }
     } else {
       if (pack.block) {
+        var ended = pack.name, endedKey = pack.block, endedAt = pack.end;
         pack.block = null; pack.name = null; packClose(); jobsChkClose();
         if (scoresEl.classList.contains("big")) scoresClose();         // class change: back to the normal screen
+        // 2.22.0: jobs done after class (Stage Managers) are checked right after the bell, until the next block starts
+        // (at most 10 minutes); the 🥁 Jobs button brings it back after that.
+        if (ended && jobsFor(ended, "after").length && !packDone[endedKey + " after"] && endedAt && d.getTime() - endedAt < 5 * 60000) {
+          packDone[endedKey + " after"] = true; save(PACK_KEY, packDone);
+          var nextStart = Infinity, t0 = nowMins(d);
+          (settings.schedules[st.type] || []).forEach(function (b) { if (mins(b[1]) >= mins(endedKey.split(" ")[2]) && mins(b[1]) > t0 - 1) nextStart = Math.min(nextStart, mins(b[1])); });
+          var until = Math.min(endedAt + 10 * 60000, isFinite(nextStart) ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, nextStart).getTime() : Infinity);
+          jobsChkOpen(ended, "after", until);
+        }
       }
+      if (jobsUntil && d.getTime() >= jobsUntil) jobsChkClose();
       packPill.classList.remove("show");
     }
+    document.body.classList.toggle("has-jobs", jobsTodayBlocks().length > 0);   // 2.22.0: the 🥁 Jobs button
   }
   var packStep4 = document.getElementById("packStep4");
   packEl.addEventListener("click", function () { packClose(); packCheck(); });
   packPill.addEventListener("click", function () {
     if (packPill.textContent.indexOf("★") === 0) { scoresOpen(true, pack.name); packPill.classList.remove("show"); return; }
-    if (packPill.textContent.indexOf("🥁") === 0) { jobsChkOpen(pack.name); packPill.classList.remove("show"); return; }
+    if (packPill.textContent.indexOf("🥁") === 0) { jobsChkOpen(pack.name, "close"); packPill.classList.remove("show"); return; }
     packEl.classList.add("open"); pack.shownAt = now().getTime() - HOLD_FLASH;
   });
   setInterval(packCheck, 1000);
@@ -2608,7 +2678,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.21.0";
+  var BUILD = "2.22.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2637,9 +2707,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.21.0"></script>
-<script src="ptest.js?v=2.21.0"></script>
-<script src="lunch.js?v=2.21.0"></script>
-<script src="rtap.js?v=2.21.0"></script>
+<script src="ptnet.js?v=2.22.0"></script>
+<script src="ptest.js?v=2.22.0"></script>
+<script src="lunch.js?v=2.22.0"></script>
+<script src="rtap.js?v=2.22.0"></script>
 </body>
 </html>

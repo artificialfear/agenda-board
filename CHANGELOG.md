@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.22.0 — 2026-11-17 (Mat)
+- **Stage Managers stay after the bell.** Their check moved off the closing scoreboard: right after class leaves, the board opens
+  the Class jobs check with just the Stage Managers row ("1st Block · after class"). It closes by itself when the next block
+  starts (at most 10 minutes). A ❌ lowers that block's Effort 3 → 2 on the slide for today (on Ninja days it carries, as in
+  2.21.0). The pack-up line now says "Stay after the bell to straighten every row of chairs + stands".
+- **🥁 Jobs** button (bottom-left, next to ★ Closing) brings the check back any time that day: all jobs for the block that just
+  ended (or is packing up), with a chip per block that has jobs today.
+- Stage Managers icon 🪑 → 🎬: the ViewBoard's emoji font is too old for 🪑 (it showed an empty box).
+- Percussion Captains are unchanged (closing scoreboard / Ninja-day closing check).
+
 ## 2.21.0 — 2026-11-17 (Mat)
 - **Class jobs on Band Ninja days.** No scoreboard on those days, so at closing-score time the board opens a **Class jobs check**
   screen instead: the day's Percussion Captains and Stage Managers with ✅ / ❌, swap-a-name, streaks (pack-up says "Class jobs

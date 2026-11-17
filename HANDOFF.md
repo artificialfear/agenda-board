@@ -1,5 +1,11 @@
 # Agenda Board — handoff
 
+## 11/17/2026 later: Stage Managers after the bell (live = build 2.22.0)
+- Mat: 🪑 showed a blank box on the ViewBoard (→ 🎬); couldn't finish checking before it closed (→ 🥁 Jobs button + chips);
+  Stage Managers should stay a few seconds after class leaves (→ JOBS.after: checked in an after-bell screen, ❌ = Effort 3 → 2
+  via jobEffortCap, works with the scoreboard closed). Emoji rule: stick to old (≤ Unicode 9) emoji on the board.
+- tests/perc_smoke.py 50 checks, break-checked (after-class Effort drop).
+
 ## 11/17/2026: class jobs on Band Ninja days (live = build 2.21.0)
 - Mat chose: on Ninja days a Class jobs check screen replaces the scoreboard; a ❌ caps Effort at 2 at that block's next
   regular rehearsal (one rehearsal only). tests/perc_smoke.py now 43 checks (carry-over break-checked).

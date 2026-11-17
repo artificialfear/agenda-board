@@ -88,7 +88,8 @@ def main():
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
         check("scoreboard shows the check", pg.is_visible("#sPerc") and pg.evaluate("document.querySelector(\"#sPerc .pj[data-j='perc']\").classList.contains('up')")
               and pg.evaluate("[...document.querySelectorAll(\"#sPerc .pj[data-j='perc'] .pc-cap\")].map(b => b.textContent)") == ["Test A.", "Test B."])
-        check("scoreboard shows Stage Managers", pg.evaluate("[...document.querySelectorAll(\"#sPerc .pj[data-j='stage'] .pc-cap\")].map(b => b.textContent)") == ["Wind A.", "Wind B."])
+        check("Stage Managers not on the scoreboard (after the bell)", pg.evaluate("[...document.querySelectorAll('#sPerc .pj')].map(e => e.dataset.j)") == ["perc"])
+        check("Stage Managers icon is 🎬 (🪑 is a blank box on the ViewBoard)", "🎬 Stage Managers" in pg.inner_text("#packPerc"), pg.inner_text("#packPerc"))
         if shots: pg.screenshot(path=shots + "/perc_scoreboard.png")
         # Effort 3 given first, then ❌: it drops to 2 and 3 is off
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
@@ -115,18 +116,30 @@ def main():
         check("✅: Effort 3 allowed, streak 1", state["values"][0][4] == "3" and st["today"]["r"] == "ok" and st["streak"] == 1
               and "1 day in a row" in pg.inner_text("#sPerc"), (state["values"][0], st))
         check("✅ isn't lit any more", not pg.evaluate("document.querySelector(\"#sPerc .pj[data-j='perc']\").classList.contains('up')"))
-        # Stage Managers ❌ also caps Effort; each job has its own streak
-        SM = lambda what: CLICK(pg, "#sPerc .pj[data-j='stage'] .pc-b." + what)
-        SM("miss"); pg.wait_for_timeout(600)
-        CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
-        check("Stage Managers ❌ alone: Effort 3 stays off", state["values"][0][4] == "2"
-              and pg.evaluate("document.querySelector(\"#sGrid button[data-r='0'][data-v='3']\").disabled")
-              and "Effort can't be a 3" in pg.inner_text("#sPerc"))
-        check("Stage Managers ❌ caps Effort too", state["values"][0][4] == "2" and PERC(pg)["streak"] == 1
-              and pg.evaluate("window.__agendaBoard.perc('1st', 'stage').today.r") == "miss", state["values"][0])
-        SM("ok"); pg.wait_for_timeout(300)
-        CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(500)
-        check("both ✅: Effort 3 again, own streaks", state["values"][0][4] == "3" and pg.evaluate("window.__agendaBoard.perc('1st', 'stage').streak") == 1)
+        # 2.22.0: after the bell (8:36) the Stage Managers check opens on its own; ❌ = today's Effort 3 → 2 on the slide
+        sets.clear()
+        pg.clock.fast_forward("02:20"); pg.wait_for_timeout(600)
+        check("after the bell: Stage Managers check", pg.is_visible("#jobsChk") and not pg.evaluate("window.__agendaBoard.scores().open")
+              and pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["stage"]
+              and "after class" in pg.inner_text("#jSub"), pg.inner_text("#jSub"))
+        if shots: pg.screenshot(path=shots + "/perc_after.png")
+        CLICK(pg, "#jRows .pj[data-j='stage'] .pc-b.miss"); pg.wait_for_timeout(800)
+        check("after-class ❌: Effort 3 → 2 on the slide", state["values"][0][4] == "2" and [x["v"] for x in sets] == ["2"]
+              and PERC(pg)["streak"] == 1, (state["values"][0], sets))
+        check("after-class ❌ note", "a 3 already given is now a 2" in pg.inner_text("#jFoot"))
+        # it closes by itself when the next class starts (at most 10 minutes); 🥁 Jobs brings it back with block chips
+        pg.clock.fast_forward("10:00"); pg.wait_for_timeout(400)
+        check("closes by itself later", not pg.is_visible("#jobsChk"))
+        check("🥁 Jobs button shows", pg.evaluate("getComputedStyle(document.getElementById('btnJobs')).display") != "none")
+        CLICK(pg, "#btnJobs"); pg.wait_for_timeout(300)
+        check("🥁 Jobs reopens it (all jobs, last block)", pg.is_visible("#jobsChk")
+              and pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["perc", "stage"]
+              and pg.evaluate("[...document.querySelectorAll('#jSub .j-blk')].map(b => b.textContent)") == ["1st", "3rd", "6th"]
+              and pg.evaluate("document.querySelector('#jSub .j-blk.sel').textContent") == "1st")
+        CLICK(pg, "#jSub .j-blk[data-b='3rd']"); pg.wait_for_timeout(200)
+        check("block chip switches", pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["stage"])
+        if shots: pg.screenshot(path=shots + "/perc_jobs_menu.png")
+        CLICK(pg, "#jClose")
         check("no page errors (Fri)", not pg.errs, pg.errs)
         store = ctx.storage_state()
         ctx.close()
@@ -158,8 +171,7 @@ def main():
         check("3rd Block: Stage Managers only on pack-up", pg.evaluate("window.__agendaBoard.pack()")["open"] and "Stage Managers: Wind F. & Wind G." in t3
               and "Percussion" not in t3, t3)
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
-        check("3rd Block: Stage Managers only on the scoreboard", pg.evaluate("window.__agendaBoard.scores().open")
-              and pg.evaluate("[...document.querySelectorAll('#sPerc .pj')].map(e => e.dataset.j)") == ["stage"])
+        check("3rd Block: no jobs row on the scoreboard", pg.evaluate("window.__agendaBoard.scores().open") and not pg.is_visible("#sPerc"))
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
         check("3rd Block: Effort 3 as usual", state["values"][0][4] == "3")
         ctx.close()
@@ -181,9 +193,9 @@ def main():
               pg.inner_text("#packBell"))
         pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
         check("Ninja day: jobs check opens, no scoreboard", pg.is_visible("#jobsChk") and not pg.evaluate("window.__agendaBoard.scores().open")
-              and pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["perc", "stage"])
+              and pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["perc"])
         if shots: pg.screenshot(path=shots + "/perc_ninja.png")
-        CLICK(pg, "#jRows .pj[data-j='stage'] .pc-b.miss"); pg.wait_for_timeout(300)
+        CLICK(pg, "#jRows .pj[data-j='perc'] .pc-b.miss"); pg.wait_for_timeout(300)
         st = PERC(pg)
         check("Ninja ❌ carries to the next rehearsal", st["state"].get("carry", {}).get("1st", {}).get("from") == "2026-11-10"
               and "next regular rehearsal" in pg.inner_text("#jFoot") and not sets, (st["state"].get("carry"), sets))
@@ -191,6 +203,12 @@ def main():
         check("closed: the pill brings it back", pg.is_visible("#packPill") and pg.inner_text("#packPill").startswith("🥁"))
         CLICK(pg, "#packPill"); pg.wait_for_timeout(200)
         check("pill reopens the check", pg.is_visible("#jobsChk"))
+        pg.clock.fast_forward("02:30"); pg.wait_for_timeout(500)      # 8:25 bell → Stage Managers check, Ninja wording
+        check("Ninja day: Stage Managers after the bell", pg.is_visible("#jobsChk")
+              and pg.evaluate("[...document.querySelectorAll('#jRows .pj')].map(e => e.dataset.j)") == ["stage"]
+              and "next regular rehearsal" in pg.inner_text("#jFoot"))
+        CLICK(pg, "#jRows .pj[data-j='stage'] .pc-b.ok"); pg.wait_for_timeout(200)
+        check("Ninja day: stays carried (perc ❌), no slide writes", PERC(pg)["state"]["carry"]["1st"]["from"] == "2026-11-10" and not sets)
         check("no page errors (Ninja)", not pg.errs, pg.errs)
         store = ctx.storage_state(); ctx.close()
         # Wed 11/11: regular day. Effort already 3 → 2, the 3 is off, the note says why
