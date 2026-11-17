@@ -150,6 +150,8 @@ def main():
         s = page.evaluate("window.__ptest.state()")
         check("remote: score + Done moves the board", s["played"][-1] == "c3" and s["scores"]["c3"]["s"] == "3" and s["scores"]["c3"]["st"] == "ok", s)
         check("score saved through the script", any(x["a"] == "ptscore" and x["id"] == "c3" and x["s"] == "3" and x["note"] == "steady tempo" and x["test"] == "F Concert scale, ToE #72" for x in saved), saved)
+        check("2.26.0: the remote has 5 rubric buttons (5 Exceeds … 1 Beginning)", rem.evaluate("[...document.querySelectorAll('#main .scores')[0].querySelectorAll('button')].map(b => b.textContent).join('|')") == "5Exceeds|4Strong|3Meets|2Approaching|1Beginning")
+        check("2.26.0: each score is saved with sc=5 (the Hub's 1-5 grade table)", any(x["a"] == "ptscore" and x["id"] == "c3" and x.get("sc") == "5" for x in saved), saved)
         check("board never shows the score/note", "steady tempo" not in page.content())
         # spin from the remote
         before = page.evaluate("window.__ptest.state().now")

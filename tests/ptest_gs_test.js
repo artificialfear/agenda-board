@@ -24,7 +24,9 @@ global.SlidesApp = { PageElementType: { SHAPE: 'S', TABLE: 'T' }, openById: () =
 function mkTab(vals) {
   const t = { vals, getLastRow: () => vals.length, getLastColumn: () => (vals[0] || []).length,
     getRange: (r, c, nr, nc) => ({ getDisplayValues: () => vals.slice(r - 1, r - 1 + nr).map(x => x.slice(c - 1, c - 1 + nc).map(v => v == null ? '' : String(v))),
-      setValues(v) { v.forEach((line, i) => { vals[r - 1 + i] = (vals[r - 1 + i] || []).slice(0, c - 1).concat(line); }); return this; }, setFontWeight() { return this; } }),
+      setValues(v) { v.forEach((line, i) => { vals[r - 1 + i] = (vals[r - 1 + i] || []).slice(0, c - 1).concat(line); }); return this; }, setFontWeight() { return this; },
+      getValue: () => { const v = (vals[r - 1] || [])[c - 1]; return v == null ? '' : v; },
+      setValue(v) { (vals[r - 1] = vals[r - 1] || [])[c - 1] = v; return this; } }),
     setFrozenRows() {}, deleteRow(r) { vals.splice(r - 1, 1); } };
   return t;
 }
@@ -55,14 +57,25 @@ const mia = r.students.find(s => s.n === 'Mia L.').id;
 let out = doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '3', note: 'great tone', test: 'F Concert scale, ToE #72' } });
 a.ok(out.ok, out.error);
 const PT = tabs['Playing Tests'];
-a.deepEqual(PT.vals[0], ['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved'], 'tab made with headers');
+a.deepEqual(PT.vals[0], ['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved', 'Out Of'], 'tab made with headers (v1.11: + Out Of)');
+a.equal(PT.vals[1][7], 4, 'an older board (no sc=) saves on the 1-4 scale');
 a.deepEqual(PT.vals[1].slice(0, 6), [(d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), '1st', 'Lee, Mia', 'F Concert scale, ToE #72', 3, 'great tone'], 'full name saved in the sheet');
 doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '4', note: '', test: 'F Concert scale, ToE #72' } });
 a.equal(PT.vals.length, 2, 'a re-score replaces the row'); a.equal(PT.vals[1][4], 4);
 r = doGet({ parameter: { k: 'KEY', a: 'ptest', block: '1st' } });
 a.deepEqual(r.scores[mia], { s: '4', note: '', test: 'F Concert scale, ToE #72' }, "today's scores come back for the remote");
 a.equal(doGet({ parameter: { k: 'KEY', a: 'ptest', block: '3rd' } }).scores[mia], undefined, 'other blocks: none');
-a.equal(doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '5', test: 'x' } }).ok, false, '1-4 only');
+a.equal(doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '5', test: 'x' } }).ok, false, 'without sc=5: 1-4 only');
+// v1.11: the 1-5 rubric (board 2.25.0 sends sc=5)
+out = doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '5', note: '', test: 'F Concert scale, ToE #72', sc: '5' } });
+a.ok(out.ok, out.error);
+a.equal(PT.vals.length, 2, 'still one row for Mia'); a.equal(PT.vals[1][4], 5); a.equal(PT.vals[1][7], 5, 'Out Of = 5');
+a.equal(doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '6', test: 'x', sc: '5' } }).ok, false, '1-5 only');
+a.equal(doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '0', test: 'x', sc: '5' } }).ok, false, 'no 0');
+PT.vals[0].length = 7; PT.vals[0][7] = undefined;   // an older tab without the Out Of header
+doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '4', note: '', test: 'F Concert scale, ToE #72', sc: '5' } });
+a.equal(PT.vals[0][7], 'Out Of', 'an older tab gets the Out Of header on the next save');
+a.equal(PT.vals[1][7], 5);
 a.equal(doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: 'zzz', s: '2', test: 'x' } }).ok, false, 'unknown id refused');
 a.equal(doGet({ parameter: { k: 'nope', a: 'ptest', block: '1st' } }).ok, false, 'key required');
 doGet({ parameter: { k: 'KEY', a: 'ptscore', block: '1st', id: mia, s: '', test: 'F Concert scale, ToE #72' } });

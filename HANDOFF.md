@@ -1,5 +1,11 @@
 # Agenda Board — handoff
 
+## 11/17/2026 afternoon: playing tests 1–5 (build 2.26.0 + ClosingScores v1.12), branch pt-five, deploying (Hub v93 live)
+- Mat: "no way to earn an A without a perfect score". Remote: 5 Exceeds · 4 Strong · 3 Meets · 2 Approaching · 1 Beginning; board sends
+  sc=5; ClosingScores v1.12 writes "Playing Tests" column H "Out Of" (no sc = 4, so an older board still saves 1–4). Raven Band Hub v93
+  grades each score with its own table (old 1–4 scores keep their percent). Deploy: Hub first, then ClosingScores (clasp, deployment
+  AKfycbw9Th… same URL), then push main. Tests: ptest_gs_test.js (Out Of, header added to an old tab), ptest_smoke.py 31 (break-checked).
+
 ## 11/17/2026 12:50: Playing Test name fix (ClosingScores v1.11, deployed @13, live hash = main)
 - Mat: the Playing Test screen said "Today". The 6th/7th REMINDERS box read "Playing Test Today" and was found before the
   WORK SESSION line "Playing Test: Technique Builder 3 (#9)". boardPtestText_ now reads WORK SESSION first and skips lines whose

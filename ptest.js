@@ -19,7 +19,8 @@
   var CODE_KEY = "agendaBoard.ptCode";       // { date, code }
   var ROSTER_KEY = "agendaBoard.ptRoster";   // { block: { students, test, date } } (fast start / offline)
   var QUEUE_KEY = "agendaBoard.ptQueue";     // scores still to save: [{ date, block, id, s, note, test }]
-  var RUBRIC = { 4: "Exceeds", 3: "Meets", 2: "Approaching", 1: "Beginning" };
+  var RUBRIC = { 5: "Exceeds", 4: "Strong", 3: "Meets", 2: "Approaching", 1: "Beginning" };   // 1–5 since 2.26.0 (Mat 11/17)
+  var SCALE = 5;                       // sent with every score (sc=5) so the Hub knows which grade table it belongs to
   var COLORS = [["#c9a227", "#141c30"], ["#2a3858", "#ffffff"], ["#4a6aa5", "#ffffff"], ["#e3c766", "#141c30"], ["#33466e", "#ffffff"], ["#6d8cc7", "#141c30"]];
 
   function $(id) { return document.getElementById(id); }
@@ -467,7 +468,7 @@
     var it = q[0];
     flushing = true;
     var p = B.test ? new Promise(function (ok) { setTimeout(ok, 120); })       // board test mode: nothing is saved
-      : B.call({ a: "ptscore", block: it.block, id: it.id, s: it.s, note: it.note, test: it.test });
+      : B.call({ a: "ptscore", block: it.block, id: it.id, s: it.s, note: it.note, test: it.test, sc: SCALE });
     p.then(function () {
       var q2 = (load(QUEUE_KEY) || []).filter(function (x) { return !(x.date === it.date && x.block === it.block && x.id === it.id && x.s === it.s && x.note === it.note); });
       save(QUEUE_KEY, q2);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.0 — 2026-11-17 (Mat)
+- **Playing tests on a 1–5 rubric.** The remote's score buttons are 5 Exceeds · 4 Strong · 3 Meets · 2 Approaching · 1 Beginning
+  (was 4–1), so a strong-but-not-perfect playing test can still be an A (the Hub turns the score into a percent).
+- Every score is saved with its scale: ClosingScores.gs v1.12 writes column H "Out Of" (5; an older board without sc= saves 4).
+  Scores given before today keep their 1–4 meaning (Raven Band Hub v93 grades each score with its own table).
+
 ## 2.25.0 — 2026-11-17 (Mat)
 - **Today's jobs on the agenda slide, all class.** The board draws a "TODAY'S JOBS" card on the slide: over the DID YOU KNOW?
   box on regular agenda slides, and in the empty strip under STAY ON TASK on Band Ninja slides. Drawn by the board (not

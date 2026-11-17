@@ -32,7 +32,7 @@
   .now { border: 3px solid var(--gold); }
   .name { font: 600 34px/1.1 "Oswald", "Arial Narrow", Arial, sans-serif; }
   .name.empty { font-size: 20px; color: var(--soft); }
-  .scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
   .sc { border: 2px solid var(--line); background: var(--navy); color: #fff; border-radius: 14px; padding: 10px 4px; text-align: center; }
   .sc b { display: block; font: 600 30px/1 "Oswald", "Arial Narrow", Arial, sans-serif; }
   .sc small { display: block; font-size: 12px; color: var(--soft); margin-top: 4px; }
@@ -97,7 +97,8 @@
   var NET = window.PTNET, q = new URLSearchParams(location.search);
   var code = String(q.get("c") || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
   var PIN_KEY = "ptRemote.pin";
-  var RUBRIC = [[4, "Exceeds"], [3, "Meets"], [2, "Approaching"], [1, "Beginning"]];
+  // 1–5 since 2.26.0 (Mat 11/17: a 4 is an A without being perfect); scores saved before keep their 1–4 meaning in the Hub
+  var RUBRIC = [[5, "Exceeds"], [4, "Strong"], [3, "Meets"], [2, "Approaching"], [1, "Beginning"]];
   var peer = null, conn = null, connected = false, authed = false, retryT = null, openT = null;
   var st = null, pick = { id: null, s: "", note: "" }, typedPin = "", editId = null;
 

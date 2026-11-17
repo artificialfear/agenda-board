@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.11  (Raven Band, 11/17/2026)
+ * ClosingScores.gs  v1.12  (Raven Band, 11/17/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -41,7 +41,7 @@
  *       a=ptest&block=   the "Playing Test: …" line on that block's agenda slide (test = the rest of the line, or the lines
  *                        under it when the line is just "Playing Test") + the class list from the Band Ninja Tracker block tab
  *                        as "First L." with a short id each (full names never leave Google) + today's saved scores.
- *       a=ptscore&block=&id=&s=1-4&note=&test=   saves a score to the "Playing Tests" tab of the content sheet
+ *       a=ptscore&block=&id=&s=1-5&note=&test=&sc=5   saves a score to the "Playing Tests" tab of the content sheet
  *                        (Date | Block | Student | Test | Score | Note | Saved), one row per date + block + student + test;
  *                        s blank deletes that row. Same spreadsheets as before: no new permissions.
  *   - v1.9 (Mat 11/12): POST {k, a:'planPut', ...} = the week's agenda from the Lesson Plan Generator (AgendaFill.gs stores it
@@ -55,6 +55,9 @@
  *       already has; if it still matches, only {same:true} comes back. Drive is already used: no new permissions.
  *   - v1.11 (Mat 11/17): Playing Test name: a REMINDERS line like "Playing Test Today" no longer wins over the WORK SESSION
  *       line "Playing Test: Technique Builder 3 (#9)" (day words are skipped; WORK SESSION is read first).
+ *   - v1.12 (Mat 11/17): playing tests on a 1–5 rubric. a=ptscore takes sc=5 (board 2.26.0+) and writes column H "Out Of"
+ *       (5, or 4 from an older board); the Hub grades each score with the table for its scale, so older 1–4 scores keep their
+ *       percent. No new permissions.
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -103,7 +106,7 @@ function doGet(e) {
     if (!key || p.k !== key) throw new Error('Wrong or missing key. Paste the link from showClosingScoresLink again.');
     if (p.a === 'ptest' || p.a === 'ptscore') {
       out = p.a === 'ptest' ? boardPtest_(String(p.block || ''), new Date())
-                            : boardPtScore_(String(p.block || ''), String(p.id || ''), String(p.s == null ? '' : p.s), String(p.note || ''), String(p.test || ''), new Date());
+                            : boardPtScore_(String(p.block || ''), String(p.id || ''), String(p.s == null ? '' : p.s), String(p.note || ''), String(p.test || ''), new Date(), p.sc);
       out.ok = true;
       return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
     }
@@ -592,7 +595,7 @@ function boardPtSheet_() {
   var ss = SpreadsheetApp.openById(CLOSING.LOG_SHEET_ID), sh = ss.getSheetByName(CLOSING.PTEST_TAB);
   if (!sh) {
     sh = ss.insertSheet(CLOSING.PTEST_TAB);
-    sh.getRange(1, 1, 1, 7).setValues([['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved']]).setFontWeight('bold');
+    sh.getRange(1, 1, 1, 8).setValues([['Date', 'Block', 'Student', 'Test', 'Score', 'Note', 'Saved', 'Out Of']]).setFontWeight('bold');
     sh.setFrozenRows(1);
   }
   return sh;
@@ -619,10 +622,13 @@ function boardPtest_(block, now) {
 }
 
 /** a=ptscore: saves (or with s blank, removes) one student's score for today. Returns { saved: {id, s, note} }. */
-function boardPtScore_(block, id, s, note, test, now) {
+function boardPtScore_(block, id, s, note, test, now, sc) {
   if (CLOSING.BLOCKS.indexOf(block) < 0) throw new Error('Unknown block: ' + block);
   s = String(s).trim();
-  if (s !== '' && ['1', '2', '3', '4'].indexOf(s) < 0) throw new Error('Score must be 1, 2, 3 or 4.');
+  // v1.12 (Mat 11/17): boards from 2.26.0 send sc=5 (1–5 rubric); an older board (no sc) still saves 1–4. Column H "Out Of"
+  // tells the Hub which grade table a score uses, so scores given before the change keep their old percent.
+  var outOf = String(sc) === '5' ? 5 : 4;
+  if (s !== '' && !(/^[1-5]$/.test(s) && Number(s) <= outOf)) throw new Error('Score must be 1 to ' + outOf + '.');
   var st = boardPtRoster_(block).filter(function (x) { return x.id === id; })[0];
   if (!st) throw new Error('That student is not on the ' + block + ' Block list any more.');
   test = String(test || '').trim().slice(0, 200);
@@ -641,8 +647,9 @@ function boardPtScore_(block, id, s, note, test, now) {
     }
     if (s === '') { if (row) sh.deleteRow(row); }
     else {
-      var line = [today, block, st.full, test, Number(s), note, Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')];
-      sh.getRange(row || sh.getLastRow() + 1, 1, 1, 7).setValues([line]);
+      if (!String(sh.getRange(1, 8).getValue()).trim()) sh.getRange(1, 8).setValue('Out Of').setFontWeight('bold');
+      var line = [today, block, st.full, test, Number(s), note, Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), outOf];
+      sh.getRange(row || sh.getLastRow() + 1, 1, 1, 8).setValues([line]);
     }
   } finally { lock.releaseLock(); }
   return { saved: { id: id, s: s, note: note } };
