@@ -493,6 +493,26 @@
   #packup.jobs .p-perc { font-size: min(5vh, 3.4vw); }
   #packup.jobs .p-perc.two { font-size: min(4.3vh, 3vw); margin-top: 2.4vh; }
   #packup.jobs .p-tap { bottom: 2vh; right: 2.4vw; font-size: 2vh; }
+  #packup .p-body { display: flex; flex-direction: column; align-items: center; }
+  #packup .p-perc .pj-names { font-weight: 600; }
+  /* 2.23.0 (Mat 11/17): on a wide screen the steps and the jobs sit side by side (more room for both) and each job reads
+     job / names (big) / what to do. 4:3 screens keep the stacked layout. */
+  @media (min-aspect-ratio: 3/2) {
+    #packup.jobs .p-body { flex-direction: row; align-items: center; justify-content: center; width: 100%; max-width: 94vw; margin-top: 1.6vh; }
+    #packup.jobs .p-body ol { flex: 0 0 auto; font-size: min(5.6vh, 2.7vw); gap: 2vh; }
+    #packup.jobs .p-body li { white-space: nowrap; }
+    #packup.jobs .p-perc, #packup.jobs .p-perc.two { flex: 0 1 38%; margin: 0 0 0 3.5vw; text-align: left; max-width: none;
+      font-size: min(4.6vh, 2.5vw); padding: 2vh 2vw; }
+    #packup.jobs .p-perc .pj-line + .pj-line { padding-top: 1.8vh; margin-top: .6vh; }
+    #packup.jobs .p-perc .pj-lab { display: block; font-size: .78em; opacity: .9; }
+    #packup.jobs .p-perc .pj-sep { display: none; }
+    #packup.jobs .p-perc .pj-names { display: block; font-size: 1.3em; line-height: 1.15; }
+    #packup.jobs .p-perc small { font-size: .55em; }
+  }
+  /* 2.23.0: the jobs callout a moment after pack-up starts (chime + this pulse, and the names read out loud) */
+  @keyframes jobsCall { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+    50% { transform: scale(1.05); box-shadow: 0 0 40px 8px rgba(255,255,255,.55); } }
+  #packup .p-perc.call { animation: jobsCall .8s ease-in-out 3; }
   #packPill { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 22; display: none;
     background: #c9a227; color: #141c30; border-radius: 999px; padding: 10px 22px; cursor: pointer;
     font: 600 22px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em;
@@ -562,6 +582,7 @@
 <div id="packup" role="alert" title="Tap to close">
   <div class="p-title">Pack up time!</div>
   <div class="p-bell" id="packBell"></div>
+  <div class="p-body">
   <ol>
     <li><b>1</b>Pack up your instrument</li>
     <li><b>2</b>Straighten your chair</li>
@@ -569,6 +590,7 @@
     <li><b>4</b><span id="packStep4">Have a seat and be ready for rehearsal scores</span></li>
   </ol>
   <div class="p-perc" id="packPerc" aria-live="polite"></div>
+  </div>
   <div class="p-tap">Tap anywhere to close</div>
 </div>
 <div id="packPill" title="Show the pack-up steps"></div>
@@ -838,7 +860,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.22.3"></script>
+<script src="rhythmtime.js?v=2.23.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1568,7 +1590,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.3").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.23.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2079,7 +2101,8 @@
     "percussion 1st": "perc1st", "percussion 3rd": "perc3rd", "percussion 4th": "perc4th", "percussion 6th": "perc6th", "percussion 7th": "perc7th",
     // 2.20.0: Stage Managers (every non-percussionist, in turn order)
     "stage managers 1st": "stage1st", "stage managers 3rd": "stage3rd", "stage managers 4th": "stage4th", "stage managers 6th": "stage6th",
-    "stage managers 7th": "stage7th" };
+    "stage managers 7th": "stage7th",
+    "say job names": "jobsSay" };                                   // 2.23.0: "No" = chime + pulse, no voice
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2472,10 +2495,51 @@
     el.classList.toggle("two", jobs.length > 1);
     packEl.classList.toggle("jobs", jobs.length > 0);
     el.innerHTML = jobs.map(function (j, i) {
-      return '<div class="pj-line">' + j.icon + " " + (recs[i].caps.length > 1 ? j.many : j.one) + ": " + esc(jobNames(recs[i])) +
-        "<small>" + esc(j.task) + "</small></div>";
+      return '<div class="pj-line"><span class="pj-lab">' + j.icon + " " + (recs[i].caps.length > 1 ? j.many : j.one) +
+        '</span><span class="pj-sep">: </span><span class="pj-names">' + esc(jobNames(recs[i])) + "</span><small>" + esc(j.task) + "</small></div>";
     }).join("");
   }
+  // 2.23.0 (Mat 11/17): a moment after pack-up starts (once the screen stops flashing) the jobs card pulses, a bright
+  // three-note chime plays, and the board says the names ("Percussion Captains: Marcus G. and Hudson H. ...").
+  // Board Settings "Say job names" = No turns the voice off (chime + pulse stay). Needs the one tap the chimes need.
+  var JOBS_CALL_AT = 11000, jobsSaid = [];
+  function jobsCallText(blk) {
+    return jobsFor(blk).map(function (j) {
+      var rec = jobToday(j, blk), n = rec.caps;
+      var t = (n.length > 1 ? j.many : j.one) + ": " + (n.length > 1 ? n.slice(0, -1).join(", ") + " and " + n[n.length - 1] : n[0]);
+      return /\.$/.test(t) ? t : t + ".";
+    }).join(" ");
+  }
+  function jobsChime() {
+    try {
+      var ctx = audio || new (window.AudioContext || window.webkitAudioContext)();
+      audio = ctx;
+      [[0, 1175], [0.16, 1397], [0.32, 1760]].forEach(function (n) {
+        var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + n[0];
+        o.type = "sine"; o.frequency.value = n[1];
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+        o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.75);
+      });
+    } catch (e) {}
+  }
+  function jobsCallout(blk) {
+    var el = document.getElementById("packPerc"); if (!jobsFor(blk).length) return;
+    el.classList.remove("call"); void el.offsetWidth; el.classList.add("call");
+    setTimeout(function () { el.classList.remove("call"); }, 2600);
+    jobsChime();
+    if (/^(no|off|false|0)$/i.test(String(settings.jobsSay || "").trim())) return;
+    var text = jobsCallText(blk);
+    setTimeout(function () {
+      try {
+        if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+        var u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.95; u.volume = 1;
+        window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); jobsSaid.push(text);
+      } catch (e) {}
+    }, 900);
+  }
+
   // 2.19.0 names, still used by tests
   function percToday(blk, id) { return jobToday(jobOf(id || "perc"), blk); }
   function percStreak(blk, id) { return jobStreak(jobOf(id || "perc"), blk); }
@@ -2589,6 +2653,10 @@
         // Band Ninja days have no rehearsal scores (Mat 11/10)
         packStep4.textContent = isNinja(d) ? "Have a seat and be ready for class change" : "Have a seat and be ready for rehearsal scores";
         percPack(pack.name);
+        if (packEl.classList.contains("open") && !packDone[key + " call"] && d.getTime() - pack.shownAt >= JOBS_CALL_AT && jobsFor(pack.name).length) {
+          packDone[key + " call"] = true; save(PACK_KEY, packDone);
+          jobsCallout(pack.name);
+        }
         packPill.textContent = "🎒 Pack up · " + line.charAt(0).toLowerCase() + line.slice(1);
         if (packEl.classList.contains("open")) {
           if (d.getTime() - pack.shownAt > HOLD_FLASH) packEl.classList.remove("flash");
@@ -2668,6 +2736,7 @@
 
   // Exposed for tests only
   window.__agendaBoard = { scheduleState: scheduleState, dayType: dayType, settings: function () { return settings; },
+    jobsSaid: function () { return jobsSaid.slice(); },
     perc: function (blk, id) { return { state: JSON.parse(JSON.stringify(perc)), today: blk ? percToday(blk, id) : null, streak: blk ? percStreak(blk, id) : 0 }; },
     shown: function () { return shownKey; }, ninja: function () { return shownNinja; }, slideUrl: slideUrl,
     book: function () { return { has: document.body.classList.contains("has-book"), open: bookEl.classList.contains("open"),
@@ -2707,7 +2776,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.22.3";
+  var BUILD = "2.23.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2736,9 +2805,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.22.3"></script>
-<script src="ptest.js?v=2.22.3"></script>
-<script src="lunch.js?v=2.22.3"></script>
-<script src="rtap.js?v=2.22.3"></script>
+<script src="ptnet.js?v=2.23.0"></script>
+<script src="ptest.js?v=2.23.0"></script>
+<script src="lunch.js?v=2.23.0"></script>
+<script src="rtap.js?v=2.23.0"></script>
 </body>
 </html>

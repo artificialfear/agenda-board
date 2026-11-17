@@ -1,5 +1,12 @@
 # Agenda Board — handoff
 
+## 11/17/2026 morning wrap-up (live = build 2.23.0)
+- 2.22.2: the job rows were unstyled on the ViewBoard because the CSS used :is() (board browser ≈ Chrome 87). tests/old_browser_test.js
+  now blocks :is/:where/:has, the aspect-ratio property, @container, color-mix and too-new emoji in index.html.
+- 2.22.3 + 2.23.0: pack-up with jobs = compact; wide screens (min-aspect-ratio 3/2) put steps and jobs side by side; jobs callout
+  11 s in (pulse + chime + speechSynthesis of the names; Board Settings "Say job names" = No turns the voice off).
+- tests/perc_smoke.py: 68 checks (callout break-checked).
+
 ## 11/17/2026 later: Stage Managers after the bell (live = build 2.22.0)
 - Mat: 🪑 showed a blank box on the ViewBoard (→ 🎬); couldn't finish checking before it closed (→ 🥁 Jobs button + chips);
   Stage Managers should stay a few seconds after class leaves (→ JOBS.after: checked in an after-bell screen, ❌ = Effort 3 → 2

@@ -4,7 +4,7 @@
 const fs = require('fs'), path = require('path'), a = require('assert');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const css = (html.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');   // comments don't count
-['\\:is\\(', '\\:where\\(', '\\:has\\(', 'aspect-ratio', '@container', 'color-mix\\('].forEach(p => {
+['\\:is\\(', '\\:where\\(', '\\:has\\(', '(?<![-\\w])aspect-ratio\\s*:', '@container', 'color-mix\\('].forEach(p => {   // (min-aspect-ratio) media queries are old and fine
   const m = css.match(new RegExp('^.*' + p + '.*$', 'm'));
   a.ok(!m, 'index.html CSS uses ' + p.replace(/\\/g, '') + ' (too new for the ViewBoard): ' + (m && m[0].trim()));
 });

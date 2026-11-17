@@ -51,7 +51,9 @@ def main():
             return route.fulfill(status=200, content_type="application/json", headers=hdr, body=json.dumps(dict(state, ok=True, block=q.get("block"))))
         route.fulfill(status=200, content_type="application/json", headers=hdr, body=json.dumps({"ok": False, "error": "Unknown block"}))
 
-    init = "if (!localStorage.getItem('agendaBoard.settings')) localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))"
+    # speech: record what the board says instead of speaking
+    speech = "Object.defineProperty(window, 'speechSynthesis', { value: { speak(u) { (window.__said = window.__said || []).push(u.text); }, cancel() {} } });"
+    init = speech + "if (!localStorage.getItem('agendaBoard.settings')) localStorage.setItem('agendaBoard.settings', JSON.stringify({closingUrl: 'https://script.google.com/macros/s/X/exec?k=KEY'}))"
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -78,7 +80,7 @@ def main():
         ctx, pg = board("2026-11-06T08:29:50")
         check("percussion lists come from Board Settings", pg.evaluate("window.__agendaBoard.settings().perc1st") == CFG["Percussion 1st"])
         pg.clock.fast_forward("00:15"); pg.wait_for_timeout(200)
-        txt = pg.inner_text("#packPerc")
+        txt = pg.evaluate("document.getElementById('packPerc').textContent")
         check("pack-up screen names 2 captains", pg.is_visible("#packPerc") and "Percussion Captains: Test A. & Test B." in txt
               and "mallets" in txt, txt)
         check("pack-up screen names 2 Stage Managers", "Stage Managers: Wind A. & Wind B." in txt and "chairs + stands" in txt, txt)
@@ -92,8 +94,29 @@ def main():
             if shots: pg.screenshot(path=shots + f"/perc_packup_{w}.png")
         pg.set_viewport_size({"width": 1600, "height": 900})
         if shots: pg.screenshot(path=shots + "/perc_packup.png")
+        SIDE = """(() => { const o = document.querySelector('#packup ol').getBoundingClientRect(), j = document.getElementById('packPerc').getBoundingClientRect();
+          return { side: j.left >= o.right - 2 && j.top < o.bottom && j.bottom > o.top, below: j.top >= o.bottom - 2 }; })()"""
+        for w, h, want in ((1600, 900, "side"), (1866, 816, "side"), (1920, 1080, "side"), (1024, 768, "below")):
+            pg.set_viewport_size({"width": w, "height": h}); pg.wait_for_timeout(120)
+            lay = pg.evaluate(SIDE)
+            lay["oneLine"] = pg.evaluate("[...document.querySelectorAll('#packup li')].every(li => li.getBoundingClientRect().height < parseFloat(getComputedStyle(li).fontSize) * 2)")
+            lay["fits"] = pg.evaluate("document.getElementById('packPerc').getBoundingClientRect().right <= innerWidth")
+            check(f"pack-up: steps on one line, nothing off screen ({w}x{h})", lay["oneLine"] and lay["fits"], lay)
+            check(f"pack-up: jobs {'beside' if want == 'side' else 'below'} the steps ({w}x{h})", lay[want], lay)
+        pg.set_viewport_size({"width": 1600, "height": 900})
+        # 2.23.0: once the flashing stops (11 s) the jobs card pulses, a chime plays and the names are said, once
+        check("no callout during the flash", not pg.evaluate("(window.__said || []).length") and
+              not pg.evaluate("document.getElementById('packPerc').classList.contains('call')"))
+        pg.clock.fast_forward("00:13"); pg.wait_for_timeout(300)
+        check("callout: jobs card pulses", pg.evaluate("document.getElementById('packPerc').classList.contains('call')"))
+        pg.clock.run_for(1200); pg.wait_for_timeout(200)
+        said = pg.evaluate("window.__said || []")
+        check("callout: names said out loud", said == ["Percussion Captains: Test A. and Test B. Stage Managers: Wind A. and Wind B."], said)
+        if shots: pg.screenshot(path=shots + "/perc_callout.png")
+        pg.clock.fast_forward("00:35"); pg.wait_for_timeout(200)
+        check("callout only once", len(pg.evaluate("window.__said || []")) == 1)
         # 2) 8:34 closing scoreboard: the check is there and lit (not answered yet)
-        pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
+        pg.clock.fast_forward("03:10"); pg.wait_for_timeout(400)
         check("scoreboard shows the check", pg.is_visible("#sPerc") and pg.evaluate("document.querySelector(\"#sPerc .pj[data-j='perc']\").classList.contains('up')")
               and pg.evaluate("[...document.querySelectorAll(\"#sPerc .pj[data-j='perc'] .pc-cap\")].map(b => b.textContent)") == ["Test A.", "Test B."])
         check("Stage Managers not on the scoreboard (after the bell)", pg.evaluate("[...document.querySelectorAll('#sPerc .pj')].map(e => e.dataset.j)") == ["perc"])
@@ -175,12 +198,16 @@ def main():
 
         # 4) 3rd Block (no percussion): nothing shows. 6th Block with one percussionist: one captain
         reset_values()
+        CFG["Say job names"] = "No"
         ctx, pg = board("2026-11-06T10:13:50")       # regular 3rd ends 10:20 → pack-up 10:14
         pg.clock.fast_forward("00:15"); pg.wait_for_timeout(300)
-        t3 = pg.inner_text("#packPerc")
+        t3 = pg.evaluate("document.getElementById('packPerc').textContent")
         check("3rd Block: Stage Managers only on pack-up", pg.evaluate("window.__agendaBoard.pack()")["open"] and "Stage Managers: Wind F. & Wind G." in t3
               and "Percussion" not in t3, t3)
-        pg.clock.fast_forward("04:00"); pg.wait_for_timeout(400)
+        pg.clock.fast_forward("00:12"); pg.wait_for_timeout(300); pg.clock.run_for(1500)
+        check("Say job names: No → pulse, no voice", pg.evaluate("window.__agendaBoard.jobsSaid()") == [] and not pg.evaluate("(window.__said || []).length"))
+        del CFG["Say job names"]
+        pg.clock.fast_forward("03:45"); pg.wait_for_timeout(400)
         check("3rd Block: no jobs row on the scoreboard", pg.evaluate("window.__agendaBoard.scores().open") and not pg.is_visible("#sPerc"))
         CLICK(pg, "#sGrid button[data-r='0'][data-v='3']"); pg.wait_for_timeout(400)
         check("3rd Block: Effort 3 as usual", state["values"][0][4] == "3")

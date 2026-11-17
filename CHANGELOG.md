@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.23.0 — 2026-11-17 (Mat)
+- **Pack-up side by side** (screens wider than 3:2, like the ViewBoard): the 4 steps on the left (one line each, sized to the
+  screen) and the class jobs card on the right, each job reading job / names (big) / what to do. 4:3 screens keep the
+  stacked layout from 2.22.3.
+- **Jobs callout**: 11 s after pack-up starts (once the screen stops flashing) the jobs card pulses, a bright three-note
+  chime plays, and the board says the names out loud ("Percussion Captains: Marcus G. and Hudson H. Stage Managers: …"),
+  once per class. Board Settings row "Say job names" = No keeps the chime + pulse without the voice. The voice uses the
+  ViewBoard's built-in speech; it needs the same one tap the chimes need.
+
 ## 2.22.3 — 2026-11-17 (Mat)
 - Pack-up screen with class jobs: title, countdown and the 4 steps move up and tighten, the jobs card sits higher with bigger
   names, and "Tap anywhere to close" moves to the bottom-right corner (it was printed across the Stage Managers line).
