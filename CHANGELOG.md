@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.22.1 — 2026-11-17 (Mat)
+- Stage Managers line reads "Stay after class to straighten every row of chairs + stands".
+- The after-class check closes itself 2 s after it's answered (🥁 Jobs to change an answer).
+
 ## 2.22.0 — 2026-11-17 (Mat)
 - **Stage Managers stay after the bell.** Their check moved off the closing scoreboard: right after class leaves, the board opens
   the Class jobs check with just the Stage Managers row ("1st Block · after class"). It closes by itself when the next block

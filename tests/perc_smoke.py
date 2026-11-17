@@ -127,6 +127,8 @@ def main():
         check("after-class ❌: Effort 3 → 2 on the slide", state["values"][0][4] == "2" and [x["v"] for x in sets] == ["2"]
               and PERC(pg)["streak"] == 1, (state["values"][0], sets))
         check("after-class ❌ note", "a 3 already given is now a 2" in pg.inner_text("#jFoot"))
+        pg.clock.fast_forward("00:03"); pg.wait_for_timeout(300)
+        check("answered: closes itself after 2 s", not pg.is_visible("#jobsChk"))
         # it closes by itself when the next class starts (at most 10 minutes); 🥁 Jobs brings it back with block chips
         pg.clock.fast_forward("10:00"); pg.wait_for_timeout(400)
         check("closes by itself later", not pg.is_visible("#jobsChk"))

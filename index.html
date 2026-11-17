@@ -819,7 +819,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.22.0"></script>
+<script src="rhythmtime.js?v=2.22.1"></script>
 <script>
 (function () {
   "use strict";
@@ -1549,7 +1549,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.1").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2248,7 +2248,7 @@
     // 2.22.0 (Mat 11/17): Stage Managers stay a moment after the bell, so they're checked right after class leaves.
     // Icon 🎬: the ViewBoard's emoji font is too old for 🪑 (showed an empty box).
     { id: "stage", one: "Stage Manager", many: "Stage Managers", icon: "🎬", n: 2, set: "stage", after: true,
-      task: "Stay after the bell to straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
+      task: "Stay after class to straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
   ];
   var PERC_KEY = "agendaBoard.perc", PERC_BLOCKS = ["1st", "3rd", "4th", "6th", "7th"];
   var perc = (TEST ? null : load(PERC_KEY)) || {};
@@ -2395,7 +2395,15 @@
     jobsBlk = blk; jobsMode = mode || "all"; jobsUntil = until || 0; jobsLast = blk;
     jobsEl.classList.add("open"); jobsChkPaint();
   }
-  function jobsChkClose() { jobsEl.classList.remove("open"); jobsUntil = 0; }
+  function jobsChkClose() { jobsEl.classList.remove("open"); jobsUntil = 0; clearTimeout(jobsAutoT); }
+  // 2.22.1: the after-class check closes itself 2 s after every row on it is answered (🥁 Jobs to change an answer)
+  var jobsAutoT = null;
+  function jobsAutoClose() {
+    clearTimeout(jobsAutoT);
+    if (jobsMode !== "after" || !jobsEl.classList.contains("open")) return;
+    var td = ymd(now()), done = jobsFor(jobsBlk, "after").every(function (j) { var x = perc.day[td + " " + jobKey(j, jobsBlk)]; return x && x.r; });
+    if (done) jobsAutoT = setTimeout(jobsChkClose, 2000);
+  }
   function jobsTodayBlocks() {
     var d = now(), st = scheduleState(d);
     return (settings.schedules[st.type] || []).map(function (b) { return b[0]; })
@@ -2409,6 +2417,7 @@
       return '<button class="j-blk' + (b === jobsBlk ? " sel" : "") + '" data-b="' + esc(b) + '">' + esc(b) + "</button>"; }).join("") :
       esc(jobsBlk + " Block" + (jobsMode === "after" ? " · after class" : "") + (ninja ? " · Band Ninja Day" : ""));
     document.getElementById("jRows").innerHTML = jobRows(jobsBlk, phase);
+    jobsAutoClose();
     var miss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, jobsBlk)]; return x && x.r === "miss"; });
     document.getElementById("jFoot").textContent = ninja
       ? (miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." : "A ❌ today means Effort can't be a 3 at this block's next regular rehearsal.")
@@ -2678,7 +2687,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.22.0";
+  var BUILD = "2.22.1";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2707,9 +2716,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.22.0"></script>
-<script src="ptest.js?v=2.22.0"></script>
-<script src="lunch.js?v=2.22.0"></script>
-<script src="rtap.js?v=2.22.0"></script>
+<script src="ptnet.js?v=2.22.1"></script>
+<script src="ptest.js?v=2.22.1"></script>
+<script src="lunch.js?v=2.22.1"></script>
+<script src="rtap.js?v=2.22.1"></script>
 </body>
 </html>
