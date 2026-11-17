@@ -9,6 +9,7 @@
   model, run tools/voice/make-voices.py, then UPDATE the same Drive file (keep the id) — the board picks it up within 6 h / on reload.
   Say-as uses raw espeak phonemes in [[ ]]; plain hyphenated respellings stress every syllable.
 - ClosingScores.gs v1.10 adds a=voices[&have=] (returns the file as-is, or {same:true}). No new permissions (DriveApp already used).
+  Deployed @12 (same URL) via Chrome "Browser 1" (macOS); live hash = main; live a=voices returned 138 clips, have= → same.
 - Never commit names, clips or the bundle. tests use tests/fixtures/voice-beep.mp3 + fake names. perc_smoke.py 77 checks (voice break-checked).
 
 ## 11/17/2026 morning wrap-up (live = build 2.23.0)
