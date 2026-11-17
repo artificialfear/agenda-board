@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## 11/17/2026 afternoon: playing tests 1–5 (build 2.26.0 + ClosingScores v1.12), branch pt-five, deploying (Hub v93 live)
+## 11/17/2026 afternoon: playing tests 1–5 (build 2.26.0 + ClosingScores v1.12), DEPLOYED (Hub v93, ClosingScores v1.12 @14, build 2.26.0 on main)
 - Mat: "no way to earn an A without a perfect score". Remote: 5 Exceeds · 4 Strong · 3 Meets · 2 Approaching · 1 Beginning; board sends
   sc=5; ClosingScores v1.12 writes "Playing Tests" column H "Out Of" (no sc = 4, so an older board still saves 1–4). Raven Band Hub v93
   grades each score with its own table (old 1–4 scores keep their percent). Deploy: Hub first, then ClosingScores (clasp, deployment
