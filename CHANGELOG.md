@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.22.2 — 2026-11-17 (Mat)
+- Class job rows (Class jobs check + closing scoreboard) were unstyled on the ViewBoard: their CSS used `:is()`, which the
+  board's older browser drops. Rewritten without it, and a new test (tests/old_browser_test.js) stops `:is()/:where()/:has()`,
+  aspect-ratio and too-new emoji from coming back into index.html.
+- New row layout: line 1 = job · name pills (same font) · ✓ Yes / ✗ No pinned to the right; line 2 (small) = the question ·
+  🔥 streak. Nothing wraps into the buttons anymore. Footnotes say "A “No”" to match the buttons.
+
 ## 2.22.1 — 2026-11-17 (Mat)
 - Stage Managers line reads "Stay after class to straighten every row of chairs + stands".
 - The after-class check closes itself 2 s after it's answered (🥁 Jobs to change an answer).

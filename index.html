@@ -422,23 +422,31 @@
   #packup.flash .p-perc .pj-line + .pj-line { border-top-color: rgba(201,162,39,.35); }
   #packup .p-perc small { display: block; font-size: .62em; font-family: "Segoe UI", Arial, sans-serif; font-weight: 600; margin-top: .4vh; }
   #packup.flash .p-perc { background: #141c30; color: #c9a227; }
-  :is(#scores, #jobsChk) .s-perc { display: none; flex-direction: column; gap: 8px; margin-bottom: 12px; font-size: 24px; }
-  :is(#scores, #jobsChk) .s-perc.on { display: flex; }
-  :is(#scores, #jobsChk) .s-perc .pj { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 14px; border-radius: 14px;
-    background: #141c30; border: 2px solid #34405e; }
-  :is(#scores, #jobsChk) .s-perc .pj.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
-  :is(#scores, #jobsChk) .s-perc .pc-lab { color: #c9a227; letter-spacing: .04em; min-width: 9.5em; }
-  :is(#scores, #jobsChk) .s-perc .pc-cap { border: 1px dashed #6f7a93; background: none; color: #fff; border-radius: 999px; padding: 4px 14px; cursor: pointer;
-    font: inherit; }
-  :is(#scores, #jobsChk) .s-perc .pc-q { color: #c9d0de; font-family: "Segoe UI", Arial, sans-serif; font-size: .7em; flex: 1; min-width: 12em; }
-  :is(#scores, #jobsChk) .s-perc .pc-b { border: 2px solid #34405e; background: #1f2a44; color: #fff; border-radius: 12px; padding: 6px 16px; cursor: pointer;
-    font: inherit; }
-  :is(#scores, #jobsChk) .s-perc .pc-b.ok.sel { background: #2e8b57; border-color: #3ddc84; }
-  :is(#scores, #jobsChk) .s-perc .pc-b.miss.sel { background: #b3372d; border-color: #ff8a7a; }
-  :is(#scores, #jobsChk) .s-perc .pc-st { color: #c9a227; font-size: .8em; white-space: nowrap; }
-  :is(#scores, #jobsChk) .s-perc .pc-note { color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 14px; }
-  #scores .s-n.capped { opacity: .25; text-decoration: line-through; cursor: not-allowed; }
-  @media (max-width: 1200px) { :is(#scores, #jobsChk) .s-perc .pc-q { display: none; } :is(#scores, #jobsChk) .s-perc .pc-st { margin-left: auto; } }
+  /* Class job rows (closing scoreboard + Class jobs check). 2.22.2: written without :is(), which the ViewBoard's older
+     browser ignores (the rows showed up unstyled). Line 1: job · names · Yes/No (pinned right); line 2: question · streak. */
+  #scores .s-perc, #jobsChk .s-perc { display: none; flex-direction: column; margin-bottom: 12px; font-size: 24px; }
+  #scores .s-perc.on, #jobsChk .s-perc.on { display: flex; }
+  #scores .s-perc .pj, #jobsChk .s-perc .pj { padding: 8px 16px 10px; border-radius: 14px; background: #141c30; border: 2px solid #34405e; }
+  #scores .s-perc .pj + .pj, #jobsChk .s-perc .pj + .pj { margin-top: 8px; }
+  #scores .s-perc .pj.up, #jobsChk .s-perc .pj.up { border-color: #c9a227; box-shadow: 0 0 22px rgba(201,162,39,.45); }
+  #scores .s-perc .pc-top, #jobsChk .s-perc .pc-top { display: flex; align-items: center; }
+  #scores .s-perc .pc-lab, #jobsChk .s-perc .pc-lab { flex: none; color: #c9a227; letter-spacing: .03em; white-space: nowrap; margin-right: .7em; }
+  #scores .s-perc .pc-names, #jobsChk .s-perc .pc-names { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; }
+  #scores .s-perc .pc-cap, #jobsChk .s-perc .pc-cap { -webkit-appearance: none; appearance: none; font-family: inherit; font-weight: 600; font-size: .9em;
+    line-height: 1.25; color: #fff; background: #1f2a44; border: 2px solid #4a5677; border-radius: 999px; padding: .08em .75em; margin: .08em .45em .08em 0;
+    cursor: pointer; white-space: nowrap; }
+  #scores .s-perc .pc-btns, #jobsChk .s-perc .pc-btns { flex: none; display: flex; margin-left: .6em; }
+  #scores .s-perc .pc-b, #jobsChk .s-perc .pc-b { -webkit-appearance: none; appearance: none; font-family: inherit; font-weight: 600; font-size: .9em;
+    line-height: 1.25; min-width: 3.6em; padding: .1em .8em; margin-left: .45em; border-radius: .45em; border: 2px solid; background: transparent; cursor: pointer; }
+  #scores .s-perc .pc-b.ok, #jobsChk .s-perc .pc-b.ok { color: #3ddc84; border-color: #2e8b57; }
+  #scores .s-perc .pc-b.miss, #jobsChk .s-perc .pc-b.miss { color: #ff8a7a; border-color: #b3372d; }
+  #scores .s-perc .pc-b.ok.sel, #jobsChk .s-perc .pc-b.ok.sel { background: #2e8b57; border-color: #3ddc84; color: #fff; }
+  #scores .s-perc .pc-b.miss.sel, #jobsChk .s-perc .pc-b.miss.sel { background: #b3372d; border-color: #ff8a7a; color: #fff; }
+  #scores .s-perc .pc-sub, #jobsChk .s-perc .pc-sub { display: flex; align-items: baseline; margin-top: .25em;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: .62em; color: #c9d0de; }
+  #scores .s-perc .pc-q, #jobsChk .s-perc .pc-q { flex: 1 1 auto; min-width: 0; }
+  #scores .s-perc .pc-st, #jobsChk .s-perc .pc-st { flex: none; margin-left: 1em; color: #c9a227; font-weight: 600; white-space: nowrap; }
+  #scores .s-perc .pc-note, #jobsChk .s-perc .pc-note { margin-top: 6px; color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 16px; }
   /* 2.21.0 (Mat 11/17): Band Ninja days have no scoreboard, so the class jobs get their own check screen */
   #jobsChk { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; background: rgba(10,14,26,.6); }
   #jobsChk.open { display: flex; }
@@ -449,16 +457,17 @@
   #jobsChk .j-title span { color: #c9a227; }
   #jobsChk .j-sub { color: #c9d0de; font-size: 3vh; margin-left: auto; }
   #jobsChk .j-x { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #34405e; background: #141c30; color: #fff; font-size: 22px; cursor: pointer; }
-  #jobsChk .s-perc { font-size: 4vh; gap: 1.6vh; }
-  #jobsChk .s-perc .pj { padding: 1.4vh 1.4vw; gap: 1.2vw; }
+  #jobsChk .s-perc { font-size: 4.4vh; }
+  #jobsChk .s-perc .pj { padding: 1.4vh 1.6vw 1.6vh; }
+  #jobsChk .s-perc .pj + .pj { margin-top: 1.6vh; }
   #jobsChk .j-blk { border: 2px solid #34405e; background: #141c30; color: #fff; border-radius: 999px; padding: .4vh 1.1vw;
     margin-left: .5vw; font: inherit; cursor: pointer; }
   #jobsChk .j-blk.sel { background: #c9a227; color: #141c30; border-color: #c9a227; }
   #jobsChk .j-foot { margin-top: 2vh; color: #c9d0de; font: 2.4vh "Segoe UI", Arial, sans-serif; }
-  #scores.big .s-perc { font-size: 3.4vh; margin-bottom: 1vh; gap: .8vh; }
-  #scores.big .s-perc .pj { padding: .7vh 1.2vw; gap: 1vw; }
+  #scores.big .s-perc { font-size: 3.4vh; margin-bottom: 1vh; }
+  #scores.big .s-perc .pj { padding: .6vh 1.2vw .8vh; }
   #scores.big.has-jobs2 .s-perc { font-size: 3vh; }
-  #scores.big.has-jobs2 .s-perc .pj { padding: .4vh 1vw; }
+  #scores.big.has-jobs2 .s-perc .pj { padding: .4vh 1vw .5vh; }
   #scores.big.has-jobs2 .s-desc { font-size: 1.9vh; }
   #scores.big.has-jobs2 .s-name { font-size: 3.8vh; }
   #scores.big.has-jobs2 .s-val { font-size: 7.5vh; min-height: 9.5vh; }
@@ -819,7 +828,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.22.1"></script>
+<script src="rhythmtime.js?v=2.22.2"></script>
 <script>
 (function () {
   "use strict";
@@ -1549,7 +1558,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.1").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.22.2").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2246,7 +2255,7 @@
     { id: "perc", one: "Percussion Captain", many: "Percussion Captains", icon: "🥁", n: 2, set: "perc",
       task: "Sticks, mallets, timpani + mallet covers put away", ask: "Sticks, mallets, timpani + mallet covers all put away?" },
     // 2.22.0 (Mat 11/17): Stage Managers stay a moment after the bell, so they're checked right after class leaves.
-    // Icon 🎬: the ViewBoard's emoji font is too old for 🪑 (showed an empty box).
+    // Icon 🎬: the ViewBoard's emoji font is too old for the chair emoji (showed an empty box).
     { id: "stage", one: "Stage Manager", many: "Stage Managers", icon: "🎬", n: 2, set: "stage", after: true,
       task: "Stay after class to straighten every row of chairs + stands", ask: "Every row of chairs + stands straight?" }
   ];
@@ -2353,13 +2362,13 @@
   function jobRows(blk, phase) {
     return jobsFor(blk, phase).map(function (job) {
       var rec = jobToday(job, blk), st = jobStreak(job, blk);
-      return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><span class="pc-lab">' + job.icon + " " +
-        (rec.caps.length > 1 ? job.many : job.one) + "</span>" +
+      return '<div class="pj' + (rec.r ? "" : " up") + '" data-j="' + job.id + '"><div class="pc-top"><span class="pc-lab">' + job.icon + " " +
+        (rec.caps.length > 1 ? job.many : job.one) + '</span><span class="pc-names">' +
         rec.caps.map(function (n, k) { return '<button class="pc-cap" data-k="' + k + '" title="Absent? Tap to swap in the next one">' + esc(n) + "</button>"; }).join("") +
-        '<span class="pc-q">' + esc(job.ask) + "</span>" +
-        '<button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✅ Yes</button>' +
-        '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">❌ No</button>' +
-        '<span class="pc-st">' + (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span></div>";
+        '</span><span class="pc-btns"><button class="pc-b ok' + (rec.r === "ok" ? " sel" : "") + '" data-pr="ok">✓ Yes</button>' +
+        '<button class="pc-b miss' + (rec.r === "miss" ? " sel" : "") + '" data-pr="miss">✗ No</button></span></div>' +
+        '<div class="pc-sub"><span class="pc-q">' + esc(job.ask) + '</span><span class="pc-st">' +
+        (rec.r === "miss" ? "Streak reset" : st ? "🔥 " + st + " day" + (st === 1 ? "" : "s") + " in a row" : "") + "</span></div></div>";
     }).join("");
   }
   function percPaint() {
@@ -2420,8 +2429,8 @@
     jobsAutoClose();
     var miss = JOBS.some(function (j) { var x = perc.day[ymd(now()) + " " + jobKey(j, jobsBlk)]; return x && x.r === "miss"; });
     document.getElementById("jFoot").textContent = ninja
-      ? (miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." : "A ❌ today means Effort can't be a 3 at this block's next regular rehearsal.")
-      : (miss ? "Not done: Effort can't be a 3 today (a 3 already given is now a 2)." : "A ❌ means Effort can't be a 3 today (a 3 already given becomes a 2).");
+      ? (miss ? "Not done: Effort can't be a 3 at this block's next regular rehearsal." : "A “No” today means Effort can't be a 3 at this block's next regular rehearsal.")
+      : (miss ? "Not done: Effort can't be a 3 today (a 3 already given is now a 2)." : "A “No” means Effort can't be a 3 today (a 3 already given becomes a 2).");
   }
   document.getElementById("jSub").addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest(".j-blk"); if (!b) return;
@@ -2687,7 +2696,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.22.1";
+  var BUILD = "2.22.2";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -2716,9 +2725,9 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.22.1"></script>
-<script src="ptest.js?v=2.22.1"></script>
-<script src="lunch.js?v=2.22.1"></script>
-<script src="rtap.js?v=2.22.1"></script>
+<script src="ptnet.js?v=2.22.2"></script>
+<script src="ptest.js?v=2.22.2"></script>
+<script src="lunch.js?v=2.22.2"></script>
+<script src="rtap.js?v=2.22.2"></script>
 </body>
 </html>
