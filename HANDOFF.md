@@ -1,5 +1,10 @@
 # Agenda Board — handoff
 
+## 11/17/2026 late: passport test fix (live = build 2.27.1)
+- smoke "map: class passport" failed since 11/17: fixture stamp dated 2026-11-10 + real clock → NEW expired. Pinned with
+  page.clock.set_fixed_time; map NEW cutoff now local date (was UTC). smoke.py 66 checks (UTC bug break-checked).
+  Watch for other tests that use fixed dates with the real clock.
+
 ## 11/17/2026 evening: hide the slide jobs card (live = build 2.27.0)
 - Tap the card (not a name) → sjHid[block + date] → #slideJobs.min (transparent, pointer-events none, only .sj-tab "🥁 JOBS").
   Tab brings it back; in memory only (a reload shows the card again). perc_smoke.py 102 checks (hide break-checked).

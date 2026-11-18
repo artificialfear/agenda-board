@@ -868,7 +868,9 @@ def main():
         ok = st["n"] == 1 and st["d"] > 2000 and st["pe"] == "none" and st["last"] and st2 == 1
         print(("PASS" if ok else "FAIL"), f"{'map: U.S. state lines':34s}" + ("" if ok else f" {st} {st2}"))
         failures += 0 if ok else 1
-        # passport
+        # passport (the clock is pinned: the fixture's concert is 2026-11-10, and NEW means "in the last 7 days" — with the real
+        # clock this check started failing on 11/17. 22:03 ET = the next day in UTC: 11/10 must still be NEW by the local calendar.)
+        page.clock.set_fixed_time("2026-11-17T22:03:00-05:00")
         page.goto(f"http://127.0.0.1:{PORT}/map/?mode=passport&block=3rd"); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(600)
         pp = page.evaluate("window.__map.passport()"); cnt = page.inner_text("#passCount"); lst = page.inner_text("#passList")
         stampOn = page.evaluate("Array.from(document.querySelectorAll('path.land.stamp')).map(p => p.querySelector('title').textContent).sort()")
@@ -880,6 +882,11 @@ def main():
         ok = (pp["block"] == "3rd" and stampOn == ["Italy", "Russia", "United States of America"] and dimN > 100 and "3 countries" in cnt and "♪ 3 songs" in cnt
               and "NEW" in lst and "3rd block played (1)" in itc.lower() and "Carnival of Venice" in itc and "1 country" in cnt1 and remembered == "1st")
         print(("PASS" if ok else "FAIL"), f"{'map: class passport':34s}" + ("" if ok else f" {stampOn} {dimN} {cnt!r} {lst!r} {itc[:80]!r} {cnt1!r} {remembered}"))
+        failures += 0 if ok else 1
+        page.clock.set_fixed_time("2026-11-18T09:00:00-05:00"); page.reload(); page.wait_for_function("!!window.__map", timeout=8000); page.wait_for_timeout(400)
+        page.click("#passBlocks [data-pb='3rd']"); page.wait_for_timeout(200); lst8 = page.inner_text("#passList")
+        ok = "NEW" not in lst8 and "USA" in lst8
+        print(("PASS" if ok else "FAIL"), f"{'map: passport NEW ends after 7 days':34s}" + ("" if ok else f" {lst8!r}"))
         failures += 0 if ok else 1
         # mystery teams: 1 clue = 4 points, 2 clues = 3; tapping a team reveals; scores kept for today
         page.evaluate("window.__map.setMode('mystery')"); page.wait_for_timeout(200)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.27.1 — 2026-11-17 (Mat)
+- World map passport: the NEW tag ("stamped in the last 7 days") now uses the local calendar. It used UTC, so after 7 pm
+  a country lost its NEW tag a day early (only visible in the evening, never in class).
+- The passport test failed from 11/17 on because its sample concert was dated 11/10 and the test used the real clock (NEW
+  ran out). The test now pins the date, and a new check makes sure NEW really ends after 7 days.
+
 ## 2.27.0 — 2026-11-17 (Mat)
 - **Hide the jobs card.** Tap the TODAY'S JOBS card on the slide (anywhere but a name) and it gets out of the way for the rest of
   that class, so DID YOU KNOW? shows again. A small gold "🥁 JOBS" tab stays in the corner; tap it to bring the card back.

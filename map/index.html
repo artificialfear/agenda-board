@@ -897,7 +897,9 @@
     var st = passStamped(), names = Object.keys(st), songs = names.reduce(function (n, k) { return n + st[k].songs.length; }, 0);
     var g = BLOCKS.filter(function (x) { return x.b === passBlock; })[0].g;
     $("passCount").innerHTML = passData ? '🌍 ' + names.length + (names.length === 1 ? " country" : " countries") + '<small>' + passBlock + ' Block (' + g + ') · ♪ ' + songs + (songs === 1 ? " song" : " songs") + '</small>' : "";
-    var week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+    // NEW = stamped in the last 7 days, by the local calendar (2.27.1: was UTC, so after 7 pm a stamp lost NEW a day early)
+    var w = new Date(Date.now() - 7 * 864e5), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    var week = w.getFullYear() + "-" + pad(w.getMonth() + 1) + "-" + pad(w.getDate());
     $("passList").innerHTML = names.sort(function (a, b) { return st[b].songs.length - st[a].songs.length || a.localeCompare(b); }).map(function (n) {
       return '<button data-pc="' + esc(n) + '">' + ((COUNTRIES[n] || {}).flag || "🌍") + " " + esc(shortName(n)) + (st[n].last >= week ? ' <span class="new">NEW</span>' : "") + '<span class="c">♪' + st[n].songs.length + '</span></button>';
     }).join("");
