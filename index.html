@@ -472,6 +472,14 @@
   #slideJobs .sj-n { display: inline-block; font: inherit; font-weight: 700; color: #fff; background: transparent; border: 0; padding: 0 .1em;
     margin: 0; cursor: pointer; border-radius: .3em; }
   #slideJobs .sj-n.ask { background: #c9a227; color: #1f2a44; padding: 0 .4em; }
+  /* 2.27.0: tap the card (not a name) = hide it for this class so DID YOU KNOW? shows; a small tab brings it back */
+  #slideJobs .sj-x { position: absolute; top: calc(var(--u) * .4); right: calc(var(--u) * .6); color: rgba(230,235,245,.45);
+    font-size: calc(var(--u) * 2.2); line-height: 1; }
+  #slideJobs.min { background: transparent; pointer-events: none; }
+  #slideJobs.min::after { display: none; }
+  #slideJobs .sj-tab { position: absolute; top: calc(var(--u) * .3); right: calc(var(--u) * .4); pointer-events: auto; cursor: pointer;
+    font: 600 calc(var(--u) * 2) "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .03em; text-transform: uppercase;
+    color: #1f2a44; background: #c9a227; border: 0; border-radius: 999px; padding: calc(var(--u) * .25) calc(var(--u) * 1.1); opacity: .9; }
   #scores .s-perc .pc-note, #jobsChk .s-perc .pc-note { margin-top: 6px; color: #ffb4a8; font: .62em "Segoe UI", Arial, sans-serif; padding-left: 16px; }
   /* 2.21.0 (Mat 11/17): Band Ninja days have no scoreboard, so the class jobs get their own check screen */
   #jobsChk { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; background: rgba(10,14,26,.6); }
@@ -2565,7 +2573,8 @@
     reg: { w: 9144000, h: 5143500, x: 5806440, y: 3584448, x2: 8915447, y2: 4335000 },        // rv*_factbar + DID YOU KNOW? text (to the WEEKLY QUOTE bar)
     ninja: { w: 12191675, h: 6858000, x: 365760, y: 5650000, x2: 7955159, y2: 6290000 }      // under p*_i8 (STAY ON TASK)
   };
-  var sjEl = document.getElementById("slideJobs"), sjAsk = null, sjAskT = null, sjKey = "";
+  var sjEl = document.getElementById("slideJobs"), sjAsk = null, sjAskT = null, sjKey = "", sjHid = {};
+  function sjHideKey(blk) { return blk + " " + new Date().toDateString(); }
   function slideJobsPaint() {
     var blk = shownKey, on = !!blk && blk !== "welcome" && document.body.classList.contains("on-agenda");
     var jobs = on ? jobsFor(blk) : [];
@@ -2576,12 +2585,15 @@
     sjEl.style.left = Math.round(sx + g.x / g.w * sw) + "px"; sjEl.style.top = Math.round(sy + g.y / g.h * sh) + "px";
     sjEl.style.width = Math.round((g.x2 - g.x) / g.w * sw) + "px"; sjEl.style.height = Math.round((g.y2 - g.y) / g.h * sh) + "px";
     sjEl.classList.toggle("ninja", shownNinja);
+    var hid = !!sjHid[sjHideKey(blk)];
+    sjEl.classList.toggle("min", hid);
     var recs = jobs.map(function (j) { return jobToday(j, blk); });
-    var key = blk + "|" + shownNinja + "|" + JSON.stringify(sjAsk) + "|" + recs.map(function (r) { return r.caps.join(","); }).join("|");
+    var key = blk + "|" + shownNinja + "|" + hid + "|" + JSON.stringify(sjAsk) + "|" + recs.map(function (r) { return r.caps.join(","); }).join("|");
     sjEl.classList.add("on");
     if (key === sjKey) return;
     sjKey = key;
-    sjEl.innerHTML = '<div class="sj-bar"></div><div class="sj-in"><div class="sj-h">Today\'s Jobs</div><div class="sj-rows">' +
+    if (hid) { sjEl.innerHTML = '<button class="sj-tab" title="Show today\'s jobs">' + jobs[0].icon + " Jobs</button>"; return; }
+    sjEl.innerHTML = '<div class="sj-bar"></div><span class="sj-x" aria-hidden="true">✕</span><div class="sj-in"><div class="sj-h">Today\'s Jobs</div><div class="sj-rows">' +
       jobs.map(function (j, i) {
         var n = recs[i].caps;
         return '<div class="sj-r" data-j="' + j.id + '"><span class="sj-lab">' + j.icon + " " + (n.length > 1 ? j.many : j.one) + ": </span>" +
@@ -2606,7 +2618,11 @@
   }
   sjEl.addEventListener("click", function (e) {
     e.stopPropagation();
-    var b = e.target.closest && e.target.closest(".sj-n"), row = b && b.closest(".sj-r"); if (!b || !row) return;
+    if (e.target.closest && e.target.closest(".sj-tab")) { delete sjHid[sjHideKey(shownKey)]; slideJobsPaint(); return; }
+    var b = e.target.closest && e.target.closest(".sj-n"), row = b && b.closest(".sj-r");
+    if (!b || !row) {                                     // the card, not a name: hide it for this class (DID YOU KNOW? shows)
+      clearTimeout(sjAskT); sjAsk = null; sjHid[sjHideKey(shownKey)] = 1; slideJobsPaint(); return;
+    }
     var j = row.getAttribute("data-j"), k = +b.getAttribute("data-k");
     clearTimeout(sjAskT);
     if (sjAsk && sjAsk.j === j && sjAsk.k === k) { sjAsk = null; jobSwap(jobOf(j), shownKey, k); return; }
@@ -2957,7 +2973,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.26.0";
+  var BUILD = "2.27.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {

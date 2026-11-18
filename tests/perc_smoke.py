@@ -342,6 +342,15 @@ def main():
         check("second tap: next in line steps in", st["today"]["caps"] == ["Wind C.", "Wind B."] and "Wind C." in SJ(pg)["text"]
               and "Wind A." not in SJ(pg)["text"], st["today"])
         check("absent student owes the turn", st["state"]["owe"].get("stage:1st") == ["Wind A."], st["state"].get("owe"))
+        # 2.27.0: tap the card (not a name) → hidden for this class, DID YOU KNOW? shows; the Jobs tab brings it back
+        pg.evaluate("document.querySelector('#slideJobs .sj-h').click()"); pg.wait_for_timeout(150)
+        mn = pg.evaluate("(() => { const e = document.getElementById('slideJobs'); return { min: e.classList.contains('min'), bg: getComputedStyle(e).backgroundColor, tab: !!e.querySelector('.sj-tab'), names: !!e.querySelector('.sj-n'), pe: getComputedStyle(e).pointerEvents }; })()")
+        check("tap the card: it hides (see-through, only a Jobs tab)", mn["min"] and mn["tab"] and not mn["names"] and mn["bg"] in ("rgba(0, 0, 0, 0)", "transparent") and mn["pe"] == "none", mn)
+        check("hiding doesn't swap anyone", pg.evaluate("window.__agendaBoard.perc('1st', 'stage').today.caps") == ["Wind C.", "Wind B."])
+        pg.clock.run_for(31000); pg.wait_for_timeout(150)
+        check("stays hidden (30 s repaint)", pg.evaluate("document.getElementById('slideJobs').classList.contains('min')"))
+        pg.evaluate("document.querySelector('#slideJobs .sj-tab').click()"); pg.wait_for_timeout(150)
+        check("Jobs tab brings the card back", not pg.evaluate("document.getElementById('slideJobs').classList.contains('min')") and "Wind C." in SJ(pg)["text"])
         CLICK(pg, "#btnJobs"); pg.wait_for_timeout(200)
         check("check screen offers Undo swap", "Undo swap (Wind A.)" in pg.inner_text("#jRows"), pg.inner_text("#jRows"))
         CLICK(pg, "#jRows .pj[data-j='stage'] .pc-undo"); pg.wait_for_timeout(200)
@@ -355,6 +364,7 @@ def main():
         check("pack-up card shows the sub", "Wind C." in pg.inner_text("#packPerc") and "Wind A." not in pg.inner_text("#packPerc"), pg.inner_text("#packPerc"))
         store = ctx.storage_state(); check("no page errors (slide jobs)", not pg.errs, pg.errs); ctx.close()
         ctx, pg = board("2026-11-09T08:10:00", store)                                # Monday: Wind A. goes first, then the rotation
+        check("next class: the card is back (hiding lasts one class)", SJ(pg)["on"] and not pg.evaluate("document.getElementById('slideJobs').classList.contains('min')"))
         st = pg.evaluate("window.__agendaBoard.perc('1st', 'stage')")
         check("next class: the absent student does it", st["today"]["caps"] == ["Wind A.", "Wind D."] and not st["state"]["owe"].get("stage:1st"), st)
         ctx.close()

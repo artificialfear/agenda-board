@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.27.0 — 2026-11-17 (Mat)
+- **Hide the jobs card.** Tap the TODAY'S JOBS card on the slide (anywhere but a name) and it gets out of the way for the rest of
+  that class, so DID YOU KNOW? shows again. A small gold "🥁 JOBS" tab stays in the corner; tap it to bring the card back.
+  Next class (or tomorrow) the card is back on its own. Names still swap with two taps; the pack-up screen still shows the jobs.
+
 ## 2.26.0 — 2026-11-17 (Mat)
 - **Playing tests on a 1–5 rubric.** The remote's score buttons are 5 Exceeds · 4 Strong · 3 Meets · 2 Approaching · 1 Beginning
   (was 4–1), so a strong-but-not-perfect playing test can still be an A (the Hub turns the score into a percent).
