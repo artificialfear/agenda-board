@@ -1,5 +1,5 @@
 /**
- * AgendaFill.gs  v1.1  (Raven Band, 11/16/2026: FOCUS WALL text sized to fit its box)
+ * AgendaFill.gs  v1.2  (Raven Band, 11/17/2026: daily warm-up first in WORK SESSION; 4 items fit at 16 pt)
  *
  * Fills the WORK SESSION and FOCUS WALL boxes on each block's Daily Rehearsal slide from Mat's weekly lesson plan.
  *
@@ -14,6 +14,10 @@
  *     no plan sent) is left exactly as it is. "Send to agenda" (today: true) also fills today's boxes right away.
  *   - WORK SESSION: everything under the heading is replaced, one line per item, keeping the box's font/bullets.
  *     If the items wouldn't fit the box, the text gets smaller (16 down to 12 pt).
+ *   - v1.2 (Mat 11/17): each block's daily warm-up goes first, from the Content Pool "Board Settings" rows
+ *     "Warm-up 1st" … "Warm-up 7th" (blank row = no warm-up; a plan that already lists it doesn't get it twice).
+ *     Items are spaced tighter (92% lines, 1 pt gap) so 4 one-line items fit the box at 16 pt; the size estimate now
+ *     counts that spacing (v1.1 under-counted, so 4 items still spilled out after shrinking).
  *   - FOCUS WALL: only the text after "Learning:", "Why:" and "Success:" changes (the bold labels stay); then the text
  *     is sized to fit the box (12 pt, smaller for long weeks, never under 9 pt; the heading stays as it is). A blank
  *     value leaves that line as it is.
@@ -29,6 +33,8 @@ var AGENDA = {
   FOCUS_TAB: 'Agenda Focus',
   FILL_HOUR: 5, FILL_MINUTE: 40,
   BODY_SIZE: 16, MIN_SIZE: 12,          // WORK SESSION item font size, and the smallest it may shrink to
+  ITEM_SPACING: 92, ITEM_GAP: 1, HEAD_GAP: 2,   // v1.2: item line spacing (%), pt after each item, pt after the heading
+  WARMUP_KEY: 'Warm-up ',                // v1.2: Board Settings row "Warm-up 1st" etc.
   FOCUS_SIZE: 12, FOCUS_MIN: 9,          // FOCUS WALL text: 12 pt unless the week's wording needs smaller (11/16)
   FOCUS_LABELS: [['learning', 'Learning'], ['why', 'Why'], ['success', 'Success']],
   MAX_LINES: 12, MAX_LINE: 160          // sanity limits on what the generator may send
@@ -129,6 +135,8 @@ function agendaFill_(ymd) {
   });
   var done = [];
   if (!Object.keys(work).length && !Object.keys(focus).length) return done;
+  var cfg = boardSettings_();
+  Object.keys(work).forEach(function (b) { work[b] = agendaWarmup_(work[b], cfg[AGENDA.WARMUP_KEY + b]); });
   var slides = SlidesApp.openById(CLOSING.SLIDES_ID).getSlides();
   CLOSING.BLOCKS.forEach(function (b) {
     if (!work[b] && !focus[b]) return;
@@ -138,6 +146,14 @@ function agendaFill_(ymd) {
     if (focus[b] && box.focus && agendaSetFocus_(box.focus, focus[b])) done.push(b + ' focus');
   });
   return done;
+}
+
+/** v1.2: the block's warm-up first, unless it's blank or the plan already has that line. */
+function agendaWarmup_(lines, warm) {
+  warm = String(warm || '').replace(/\s+/g, ' ').trim();
+  var norm = function (x) { return String(x).toLowerCase().replace(/[^a-z0-9#]+/g, ''); };
+  if (!warm || lines.some(function (l) { return norm(l) === norm(warm); })) return lines;
+  return [warm].concat(lines);
 }
 
 /** { work: Shape, focus: Shape } on the block's slide, or null if there is no such slide. */
@@ -164,22 +180,36 @@ function agendaSetWork_(shape, lines) {
   var tr = shape.getText(), s = tr.asString(), h = s.indexOf('\n');
   if (h < 0) return false;
   var body = lines.join('\n'), start = h + 1, end = tr.getLength() - 1;   // the box's last newline always stays
-  if (s.slice(start, end) === body) return false;
-  var size = agendaFitSize_(shape, lines);
+  var same = s.slice(start, end) === body, size = agendaFitSize_(shape, lines);
   var empty = end <= start;
-  if (!empty) tr.getRange(start, end).setText(body);                   // keeps the first item's font + bullets
-  else tr.insertText(h, '\n' + body);                                  // heading only: new lines go before its newline
-  var st = shape.getText().getRange(start, start + body.length).getTextStyle();   // fresh range: the old one is stale after an edit
+  if (!same) {
+    if (!empty) tr.getRange(start, end).setText(body);                 // keeps the first item's font + bullets
+    else tr.insertText(h, '\n' + body);                                // heading only: new lines go before its newline
+  }
+  var t2 = shape.getText(), items = t2.getRange(start, start + body.length);   // fresh ranges: old ones are stale after an edit
+  var st = items.getTextStyle();
   st.setBold(false); st.setFontSize(size);
   if (empty) st.setFontFamily('Lato');                                 // would otherwise copy the heading's font
-  return true;
+  // v1.2: tight spacing so 4 items fit; the heading's own line break stays heading-sized (it was 16 pt on 1st Block)
+  // (Apps Script refused setLineSpacing(92) with "Invalid argument: spacing" on 11/17, so the 92% line spacing was set on the
+  //  boxes once through the Slides API; the items inherit it like the bullets. Each call is tried on its own so one refusal
+  //  never stops the fill.)
+  if (items.getParagraphStyle) {
+    var tryIt = function (f) { try { f(); } catch (e) { Logger.log('Work Session spacing: ' + e); } };
+    tryIt(function () { items.getParagraphStyle().setSpaceAbove(0).setSpaceBelow(AGENDA.ITEM_GAP); });
+    tryIt(function () { items.getParagraphStyle().setLineSpacing(AGENDA.ITEM_SPACING); });
+    tryIt(function () { t2.getRange(0, h + 1).getParagraphStyle().setSpaceAbove(0).setSpaceBelow(AGENDA.HEAD_GAP); });
+    tryIt(function () { t2.getRange(h, h + 1).getTextStyle().setFontSize(14); });
+  }
+  return !same;
 }
 
-/** Font size so the items fit the box: BODY_SIZE unless they'd overflow, then smaller, never below MIN_SIZE. */
+/** Font size so the items fit the box: BODY_SIZE unless they'd overflow, then smaller, never below MIN_SIZE.
+ *  v1.2: Lato's line is 1.2 x its size; items at ITEM_SPACING % + ITEM_GAP; heading 14 pt + HEAD_GAP; 7.2 pt insets top and bottom. */
 function agendaFitSize_(shape, lines) {
   var w = Number(shape.getWidth()) || 0, hgt = Number(shape.getHeight()) || 0;
   if (!w || !hgt) return AGENDA.BODY_SIZE;
-  var usable = Math.max(40, w - 36 - 14), room = hgt - 14 * 1.25 - 14;   // bullet indent + insets; heading line + insets
+  var usable = Math.max(40, w - 36 - 14), room = hgt - (14 * 1.2 + AGENDA.HEAD_GAP) - 14.4;   // bullet indent + insets; heading; insets
   for (var size = AGENDA.BODY_SIZE; size > AGENDA.MIN_SIZE; size--) {
     if (agendaTextHeight_(lines, size, usable) <= room) return size;
   }
@@ -187,7 +217,14 @@ function agendaFitSize_(shape, lines) {
 }
 function agendaTextHeight_(lines, size, usable) {
   var perLine = Math.max(8, Math.floor(usable / (size * 0.5)));        // Lato: about half the font size per letter
-  return lines.reduce(function (n, l) { return n + Math.max(1, Math.ceil(l.length / perLine)); }, 0) * size * 1.25;
+  var rows = lines.reduce(function (n, l) { return n + Math.max(1, Math.ceil(l.length / perLine)); }, 0);
+  return rows * size * 1.2 * AGENDA.ITEM_SPACING / 100 + lines.length * AGENDA.ITEM_GAP;
+}
+
+/** Run from the editor the evening before to see tomorrow's WORK SESSION / FOCUS WALL now (the morning run does the same). */
+function agendaFillTomorrow() {
+  var d = new Date(); d.setDate(d.getDate() + (d.getDay() === 5 ? 3 : d.getDay() === 6 ? 2 : 1));
+  Logger.log('Filled: ' + (agendaFill_(Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd')).join(', ') || 'nothing planned'));
 }
 
 /** Sets the text after "Learning:", "Why:", "Success:" (labels and their style stay). true if anything changed. */

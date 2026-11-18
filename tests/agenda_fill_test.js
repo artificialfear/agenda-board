@@ -39,6 +39,11 @@ function range(buf, s, e) {
       const set = k => v => { for (let i = s; i < e; i++) buf.st[i][k] = v; return T; };
       const T = { setBold: set('bold'), setFontSize: set('size'), setFontFamily: set('font') };
       return T;
+    },
+    getParagraphStyle() {   // v1.2: line spacing / gaps, kept per character like the text style
+      const set = k => v => { for (let i = s; i < e; i++) buf.st[i][k] = v; return P; };
+      const P = { setLineSpacing: v => { if (global.__noLS) throw new Error('Invalid argument: spacing'); return set('ls')(v); }, setSpaceAbove: set('sa'), setSpaceBelow: set('sb') };
+      return P;
     }
   };
   return R;
@@ -206,4 +211,36 @@ global.Date = realNow;
 // line cleanup: blanks dropped, newlines inside an item flattened, at most 12 items
 a.deepEqual(agendaCleanLines_([' a ', '', null, 'b\nc']), ['a', 'b c']);
 a.equal(agendaCleanLines_(Array.from({ length: 20 }, (_, i) => 'x' + i)).length, 12);
+// v1.2 (Mat 11/17): each block's daily warm-up goes first (Board Settings "Warm-up 1st" …), never twice, blank = none
+tabs['Board Settings'] = mkTab([['Setting', 'Value'], ['Warm-up 1st', 'Foundations Book pg. 4, 10, 31'], ['Warm-up 3rd', 'Technique Builder #3'],
+  ['Warm-up 4th', 'Technique Builder #3'], ['Warm-up 6th', 'Technique Builder #2'], ['Warm-up 7th', 'Warm-Up Set #1']]);
+P.push([new Date('2026-11-23T12:00:00'), '3rd', 'ToE Book 1 #42 "Made-up Forty-Two"\nJoy', 'x'],
+       [new Date('2026-11-23T12:00:00'), '6th', 'technique builder #2\nJoy', 'x'],
+       [new Date('2026-11-23T12:00:00'), '1st', 'Band Ninja: individual practice/pass-offs', 'x']);
+agendaFill_('2026-11-23');
+a.equal(workOf('3rd'), 'WORK SESSION\nTechnique Builder #3\nToE Book 1 #42 "Made-up Forty-Two"\nJoy\n', 'warm-up first');
+a.equal(workOf('6th'), 'WORK SESSION\ntechnique builder #2\nJoy\n', 'plan already has the warm-up: not added twice');
+a.equal(workOf('1st'), 'WORK SESSION\nFoundations Book pg. 4, 10, 31\nBand Ninja: individual practice/pass-offs\n', 'Band Ninja days too');
+a.equal(workOf('4th').indexOf('Technique Builder #3\nTechnique Builder'), -1, 'no plan row for 4th that day: left alone');
+tabs['Board Settings'].vals[3][1] = '';
+P.push([new Date('2026-11-24T12:00:00'), '4th', 'Joy', 'x']);
+agendaFill_('2026-11-24'); a.equal(workOf('4th'), 'WORK SESSION\nJoy\n', 'blank warm-up row: no warm-up');
+// spacing: items 92% / 1 pt gap, heading 2 pt gap, heading's line break heading-sized
+const w3 = shapes['3rd'].work, i3 = w3.t.indexOf('\n') + 1;
+a.ok(w3.st.slice(i3, w3.t.length - 1).every(c => c.ls === 92 && c.sb === 1 && c.sa === 0), 'items: tight spacing');
+a.ok(w3.st.slice(0, i3).every(c => c.sb === 2), 'heading: 2 pt gap'); a.equal(w3.st[i3 - 1].size, 14, "heading's line break is 14 pt");
+// Apps Script refused setLineSpacing(92) on the real deck (11/17): a refused spacing call must not stop the fill
+global.__noLS = true;
+P.push([new Date('2026-11-25T12:00:00'), '3rd', 'Joy\nMade-up Winter March', 'x'], [new Date('2026-11-25T12:00:00'), '7th', 'Joy', 'x']);
+a.deepEqual(agendaFill_('2026-11-25').filter(x => !/focus/.test(x)), ['3rd', '7th'], 'both blocks still filled');
+a.equal(workOf('7th'), 'WORK SESSION\nWarm-Up Set #1\nJoy\n'); a.ok(logs.some(l => /spacing/i.test(l)), 'refusal logged');
+const w7 = shapes['7th'].work; a.ok(w7.st.slice(w7.t.indexOf('\n') + 1, w7.t.length - 1).every(c => c.sb === 1), 'the gaps still set');
+global.__noLS = false;
+// the real boxes after the 11/17 resize (108 pt tall; 1st Block 295 pt wide next to its QR code, the others 407 pt)
+const real1 = l => agendaFitSize_({ getWidth: () => 295, getHeight: () => 108 }, l), realW = l => agendaFitSize_({ getWidth: () => 407, getHeight: () => 108 }, l);
+a.equal(real1(['Foundations Book pg. 4, 10, 31', 'ToE Book 2 #46 "Minka, Minka"', 'A Cartoon Christmas', 'Joy (mm. 5–20)']), 16, '1st: 4 one-line items at 16 pt');
+a.equal(realW(['Technique Builder #3', 'ToE Book 1 #82 "Sight-Reading Challenge: Theme from "Orpheus in the Underworld""', 'Secret Agent Sugar Plum']), 16, '3 items, one wraps: 16 pt');
+a.ok(realW(['Technique Builder #3', 'ToE Book 1 #82 "Sight-Reading Challenge: Theme from "Orpheus in the Underworld""', 'Secret Agent Sugar Plum', 'Music Theory: key signatures']) < 16, '5 lines: smaller');
+a.ok(real1(['a', 'b', 'c', 'd', 'e']) < 16, '5 items: smaller');
+a.ok(agendaFitSize_({ getWidth: () => 407, getHeight: () => 102 }, ['a', 'b', 'c', 'd']) < 16, 'the old 102 pt box: 4 items did NOT fit at 16 (what Mat saw spill)');
 console.log('agenda_fill_test: all passed');

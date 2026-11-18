@@ -1,5 +1,11 @@
 # Agenda Board — handoff
 
+## 11/17/2026 10:30 PM: AgendaFill v1.2 (warm-ups + Work Session fit), deployed @15, live hash = main
+- Board Settings rows 18–22 "Warm-up <block>" (row 17 left blank). Work Session text boxes resized (y 1938528, h 1371600 = the card;
+  scaleX 1.7221 except 1st Block 1.2497 next to its QR). Line spacing 92% set via Slides API (Apps Script setLineSpacing throws);
+  if the boxes are ever rebuilt, set it again or the 4th item may spill. Ran agendaFillTomorrow at 10:30 PM: 11/18 is on the slides.
+- Not done: the closing table can't get shorter by API (its height is cell padding, not the 20 pt min row height).
+
 ## 11/17/2026 late: passport test fix (live = build 2.27.1)
 - smoke "map: class passport" failed since 11/17: fixture stamp dated 2026-11-10 + real clock → NEW expired. Pinned with
   page.clock.set_fixed_time; map NEW cutoff now local date (was UTC). smoke.py 66 checks (UTC bug break-checked).

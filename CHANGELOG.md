@@ -1,5 +1,15 @@
 # Changelog
 
+## AgendaFill v1.2 — 2026-11-17 (Mat) — Daily Slides script (deployment @15), no board change
+- **Daily warm-up first in WORK SESSION.** Board Settings rows "Warm-up 1st" … "Warm-up 7th" (Foundations Book pg. 4, 10, 31 /
+  Technique Builder #3 / #3 / #2 / Warm-Up Set #1). Added every morning at the top of the plan's items; not added twice if the plan
+  already lists it; blank row = none. Band Ninja and Playing Test days too.
+- **4 items fit at 16 pt.** WORK SESSION text boxes now fill their whole background card (108 pt tall, was 102), and on every
+  block but 1st (QR code) they're wider (407 pt) so fewer items wrap. Items: 92% line spacing + 1 pt gap. The size estimate was
+  wrong in v1.1 (no paragraph gaps counted), which is why 4 items still spilled; it now counts them and shrinks only when needed.
+  Apps Script refuses setLineSpacing ("Invalid argument: spacing"), so 92% was set once through the Slides API and items inherit it.
+- agendaFillTomorrow(): run from the editor to see tomorrow's slides the evening before.
+
 ## 2.27.1 — 2026-11-17 (Mat)
 - World map passport: the NEW tag ("stamped in the last 7 days") now uses the local calendar. It used UTC, so after 7 pm
   a country lost its NEW tag a day early (only visible in the evening, never in class).
