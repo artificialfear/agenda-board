@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## 11/18/2026 10:30 PM: playing test make-ups (build 2.28.0 + ClosingScores v1.13)
+## 11/18/2026 10:30 PM: playing test make-ups (build 2.28.0 + ClosingScores v1.13, deployed @16, live hash = main; live a=ptest 6th → makeup Technique Builder 3 (#9) 11/17)
 - Neriah S. (6th) make-up on 11/18 saved as "Playing test"; I renamed that row (Playing Tests D82) to "Technique Builder 3 (#9)".
 - a=ptest returns makeup {test, date} = block's latest non-generic test before today, ≤30 days (boardPtMakeup_). ptest.js
   testText: slide name (not generic) → typed menu text → makeup → "Playing test"; makeupNote() labels board (#ptTestH) + remote.
