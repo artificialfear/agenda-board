@@ -85,6 +85,43 @@
     font: 600 clamp(14px, 1.3vw, 22px) "Segoe UI", Arial, sans-serif; display: flex; align-items: center; gap: 12px; white-space: nowrap; }
   #welcome .warn button { border: 0; border-radius: 999px; padding: 6px 12px; background: #c9a227; color: #141c30;
     font: inherit; cursor: pointer; }
+  /* ---------- 2.29.0 welcome: drifting notes + seasonal themes (season.js) ---------- */
+  #welcome > * { position: relative; z-index: 1; }
+  #welcome > #wxFx { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  #wxFx .wx { position: absolute; top: 0; left: 0; line-height: 1; will-change: transform;
+    animation-timing-function: linear; animation-iteration-count: infinite; }
+  #wxFx .wx-in { display: inline-block; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+  #wxFx .wx-rise { animation-name: wxRise; }
+  #wxFx .wx-fall { animation-name: wxFall; }
+  #wxFx .wx-fall .wx-in { animation-name: wxSway; }
+  #wxFx .wx-flit { animation-name: wxFlit; }
+  #wxFx .wx-flit .wx-in { animation-name: wxBob; }
+  #wxFx .wx-twinkle { animation: none; }
+  #wxFx .wx-twinkle .wx-in { animation-name: wxTwinkle; opacity: 0; }
+  #wxFx .note, #wxFx .sparkle { color: var(--accent); }
+  #wxFx .snow { color: var(--snow, #ffffff); }
+  @keyframes wxRise { from { transform: translate3d(0, 105vh, 0); } to { transform: translate3d(0, -12vh, 0); } }
+  @keyframes wxFall { from { transform: translate3d(0, -12vh, 0); } to { transform: translate3d(0, 105vh, 0); } }
+  @keyframes wxFlit { from { transform: translate3d(-8vw, 0, 0); } to { transform: translate3d(106vw, 0, 0); } }
+  @keyframes wxSway { 0%, 100% { transform: translate3d(-1.6vw, 0, 0) rotate(-14deg); } 50% { transform: translate3d(1.6vw, 0, 0) rotate(14deg); } }
+  @keyframes wxBob { 0%, 100% { transform: translate3d(0, -1.5vh, 0); } 50% { transform: translate3d(0, 1.5vh, 0); } }
+  @keyframes wxTwinkle { 0%, 100% { opacity: 0; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { #wxFx { display: none; } }
+  #welcome .wx-banner { margin-top: 2.6vh; padding: .35em 1.2em; border: 2px solid var(--accent); border-radius: 999px;
+    font: 600 clamp(18px, 2.4vw, 46px) "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .05em; color: var(--ink);
+    box-shadow: 0 0 26px rgba(201,162,39,.35); }
+  /* Season palettes: only the welcome screen (its own variables), so overlays keep the usual colors */
+  #welcome.s-fall      { --bg: #2f2a3a; --bg-deep: #191520; --accent: #e08a2c; }
+  #welcome.s-halloween { --bg: #2a1d40; --bg-deep: #120b1e; --accent: #ff8c1a; }
+  #welcome.s-winter    { --bg: #1e3456; --bg-deep: #0e1a30; --accent: #8fd0ff; }
+  #welcome.s-holidays  { --bg: #1b3046; --bg-deep: #0d1826; --accent: #e0b23a; }
+  #welcome.s-concert   { --bg: #23305a; --bg-deep: #10162b; --accent: #f0c23a; }
+  :root[data-theme="light"] #welcome          { --snow: #9db4d3; }
+  :root[data-theme="light"] #welcome.s-fall      { --bg: #fbf3e8; --bg-deep: #efdfc8; --accent: #b8631a; }
+  :root[data-theme="light"] #welcome.s-halloween { --bg: #f6effb; --bg-deep: #e6d8f0; --accent: #c8650a; }
+  :root[data-theme="light"] #welcome.s-winter    { --bg: #f1f6fc; --bg-deep: #dce8f5; --accent: #2f7fbf; }
+  :root[data-theme="light"] #welcome.s-holidays  { --bg: #f6f8f4; --bg-deep: #e3eadf; --accent: #b23a32; }
+  :root[data-theme="light"] #welcome.s-concert   { --bg: #f7f5ee; --bg-deep: #ebe5d2; --accent: #a8851a; }
   /* ---------- Corner controls ---------- */
   #corner { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 20;
     opacity: .18; transition: opacity .2s; }
@@ -601,10 +638,12 @@
 </div>
 
 <div id="welcome">
+  <div id="wxFx" aria-hidden="true"></div>
   <div class="brand"><img src="assets/raven-logo.png?v=1.1.0" alt=""><span class="word">Raven <span class="gold">Band</span></span><img src="assets/raven-logo.png?v=1.1.0" alt=""></div>
   <div class="rule"></div>
   <div class="clock" id="clock">--:--</div>
   <div class="date" id="date"></div>
+  <div class="wx-banner" id="wxBanner" style="display:none"></div>
   <div class="next" id="next"></div>
   <div id="stats" class="stats" aria-label="Pass-offs this week"></div>
   <div id="warns" class="warns"></div>
@@ -895,7 +934,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.28.0"></script>
+<script src="rhythmtime.js?v=2.29.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1626,7 +1665,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.28.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.29.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2138,7 +2177,9 @@
     // 2.20.0: Stage Managers (every non-percussionist, in turn order)
     "stage managers 1st": "stage1st", "stage managers 3rd": "stage3rd", "stage managers 4th": "stage4th", "stage managers 6th": "stage6th",
     "stage managers 7th": "stage7th",
-    "say job names": "jobsSay" };                                   // 2.23.0: "No" = chime + pulse, no voice; 2.24.0: "Built-in" = skip the AI voice
+    "say job names": "jobsSay",                                     // 2.23.0: "No" = chime + pulse, no voice; 2.24.0: "Built-in" = skip the AI voice
+    // 2.29.0 (season.js): welcome screen look. Blank/missing = Auto, no concerts, animation On
+    "seasonal theme": "season", "concert dates": "concerts", "welcome animation": "welcomeFx" };
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2149,10 +2190,11 @@
       });
       // 2.19.0: the script leaves out blank rows, so a percussion list that's gone (or emptied) means "no check" for that block
       var have = {}; Object.keys(cfg).forEach(function (n) { have[REMOTE_SETTINGS[String(n).toLowerCase().trim()]] = true; });
-      ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th", "stage1st", "stage3rd", "stage4th", "stage6th", "stage7th"].forEach(function (k) {
+      ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th", "stage1st", "stage3rd", "stage4th", "stage6th", "stage7th",
+       "season", "concerts", "welcomeFx"].forEach(function (k) {
         if (!have[k] && settings[k]) { settings[k] = ""; changed = true; }
       });
-      if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); if (window.slideJobsSync) window.slideJobsSync(); }
+      if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); if (window.slideJobsSync) window.slideJobsSync(); if (window.seasonSync) window.seasonSync(); }
       health.scriptFails = 0; refreshWarns();
     }).catch(function (e) {
       // An older script answers "Unknown block" (it's reachable); anything else counts as unreachable.
@@ -2973,7 +3015,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.28.0";
+  var BUILD = "2.29.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -3002,9 +3044,10 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.28.0"></script>
-<script src="ptest.js?v=2.28.0"></script>
-<script src="lunch.js?v=2.28.0"></script>
-<script src="rtap.js?v=2.28.0"></script>
+<script src="ptnet.js?v=2.29.0"></script>
+<script src="ptest.js?v=2.29.0"></script>
+<script src="lunch.js?v=2.29.0"></script>
+<script src="rtap.js?v=2.29.0"></script>
+<script src="season.js?v=2.29.0"></script>
 </body>
 </html>

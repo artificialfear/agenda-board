@@ -1,4 +1,4 @@
-# Dojo → Rhythm Practice button (2.16.0, Mat 11/14)
+# Dojo → Rhythm Practice button (2.16.0, Mat 11/14) — DEPLOYED 11/18 as Dojo v82 (Arcade tab; see HANDOFF.md)
 
 The practice page lives on this site: `practice.html`. The Band Ninja Dojo only needs a button that opens it with the
 student's level, so the right rhythms come up first:

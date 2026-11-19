@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## ▶ START HERE — session summary 11/18/2026 (live: board 2.28.0, ClosingScores v1.13 @16, AgendaFill v1.2)
+## ▶ START HERE — session summary 11/18/2026 (live: board 2.29.0, ClosingScores v1.13 @16, AgendaFill v1.2, Dojo v82)
 **Where things are**
 - Apps Script project "Class Agenda – Daily Slide Updater" 1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG (ClosingScores.gs,
   AgendaFill.gs, NinjaGoals.gs, Code.gs — Code.gs not in repo); web app deployment AKfycbw9… @16. Daily Rehearsal deck
@@ -30,9 +30,21 @@
   push); Mat hasn't answered.
 - Voice pronunciation review pending (only if voice comes back).
 - Rebuilt Work Session boxes need 92% line spacing re-applied; changed slide layouts need SJ_GEO updated.
-- Not deployed: Dojo "Rhythm Practice" button. Untested in class: 2.15–2.28, especially slide jobs card, make-ups, warm-ups.
+- Untested in class: 2.15–2.29, especially slide jobs card, make-ups, warm-ups, welcome themes on the ViewBoard (emoji/perf).
 
 **Next**: get Mat's in-class feedback (warm-ups first live 11/19, jobs card, make-ups); ask about the history scrub.
+
+## 11/18/2026 11 PM: welcome drifting notes + seasonal themes (build 2.29.0) + Dojo Rhythm Practice button (Dojo v82)
+- season.js: pick(date, settings) → none/fall/halloween/holidays/winter/concert (Auto by calendar; concert date beats season;
+  forced theme / Off beat concerts). Particles = spans in #wxFx (rise/fall/flit/twinkle keyframes, translate3d only, negative
+  delays); palettes are variables on #welcome.s-<theme> (never :root) so overlays keep --accent. seasonSync() runs after a=config.
+- Board Settings rows "Seasonal theme" / "Concert dates" / "Welcome animation" → settings.season / concerts / welcomeFx; reset to
+  "" when the row is gone (same list as perc/stage). Tests: season_test.js, season_smoke.py (16, 4 break-checks); old_browser_test
+  also scans season.js emoji. lunch_smoke "opens with countdown" flaked once under load (passes alone, also on main).
+- Dojo (Band Ninja Tracker 2026-2027 bound project 1o5SUv7QKTAqVlGt0HmWI20IyYpfCwWoPTu0qaTboi7rgrXZZJWpJZnIK, NOT the 5 same-named
+  copies): rhythmPracticeUrl_(record.block) above buildArcadePanelHtml_; "🥁 RHYTHM PRACTICE" pushed into the Arcade tab links.
+  record.block is "1st Block" etc. (the doc's '1st' keys would have sent everyone to 7th) → maps by block number; unknown = no lvl.
+  Deployed v82 on AKfycby6Jxj… (same URL). Not in a repo.
 
 ## 11/18/2026 10:30 PM: playing test make-ups (build 2.28.0 + ClosingScores v1.13, deployed @16, live hash = main; live a=ptest 6th → makeup Technique Builder 3 (#9) 11/17)
 - Neriah S. (6th) make-up on 11/18 saved as "Playing test"; I renamed that row (Playing Tests D82) to "Technique Builder 3 (#9)".

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.29.0 — 2026-11-18 (Mat)
+- **Drifting notes on the welcome screen.** A few faint music notes (♪ ♫) float slowly up behind the clock. CSS only, light enough
+  for the ViewBoard; nothing moves on the slides or overlays.
+- **Seasonal themes (welcome screen only).** Auto by the calendar: Fall (Oct–Nov, falling leaves, warm colors), Halloween (Oct 24–31,
+  bats + leaves, purple/orange), Holidays (Dec, snow + red/green/gold twinkles), Winter (Jan–Feb, snow, icy blue). Mar–Sep: notes
+  only. Concert days: gold sparkles + a "🎺 TODAY: Winter Concert 6:30 PM 🎺" banner (beats the season that day). Light theme has
+  its own season colors. Slides, closing scores and every other screen keep the usual Raven Band colors.
+- **Board Settings rows** (Content Pool): "Seasonal theme" (Auto · Off · Fall · Halloween · Winter · Holidays · Concert),
+  "Concert dates" ("12/9 Winter Concert 6:30 PM; 3/12 Spring Concert", M/D or M/D/YYYY), "Welcome animation" (On · Off: colors
+  stay, nothing moves). Blank or deleted row = Auto / none / On. A device set to reduce motion never animates.
+
 ## 2.28.0 + ClosingScores v1.13 — 2026-11-18 (Mat)
 - **Playing test make-ups.** When today's slide names no test (e.g. only a "Playing Test Today" reminder), the playing test screen
   and the remote use that block's most recent test (last 30 days) and say "Make-up (test given Tue, 11/17)" with a gold outline,

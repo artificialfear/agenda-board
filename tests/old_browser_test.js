@@ -11,4 +11,7 @@ const css = (html.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('\n').repl
 // emoji in the class jobs (shown on the board): only ones from Unicode 9 (2016) or older
 const NEW = ['🪑', '🧹', '🪣', '🧽', '🧺', '🪥', '🫡'];
 NEW.forEach(e => a.ok(!html.includes(e), 'index.html uses ' + e + ' (newer than the ViewBoard emoji font)'));
+// 2.29.0: the welcome screen's drifting leaves/bats/snow (season.js) too
+const season = fs.readFileSync(path.join(__dirname, '..', 'season.js'), 'utf8');
+NEW.concat(['🪺', '🫎', '🪽', '🪶', '❄️‍']).forEach(e => a.ok(!season.includes(e), 'season.js uses ' + e + ' (newer than the ViewBoard emoji font)'));
 console.log('old_browser_test: all passed');
