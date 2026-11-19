@@ -1,5 +1,5 @@
 /**
- * ClosingScores.gs  v1.12  (Raven Band, 11/17/2026)
+ * ClosingScores.gs  v1.13  (Raven Band, 11/18/2026)
  *
  * Lets the agenda board (the ViewSonic page) put closing rehearsal scores (1-3)
  * into the CLOSING table on each block's Daily Rehearsal slide.
@@ -58,6 +58,9 @@
  *   - v1.12 (Mat 11/17): playing tests on a 1–5 rubric. a=ptscore takes sc=5 (board 2.26.0+) and writes column H "Out Of"
  *       (5, or 4 from an older board); the Hub grades each score with the table for its scale, so older 1–4 scores keep their
  *       percent. No new permissions.
+ *   - v1.13 (Mat 11/18): make-ups. a=ptest also returns makeup = {test, date}: the block's latest real test name in the last
+ *       30 days (before today). The board uses it only when today's slide names no test, so a make-up score lands under
+ *       the right test instead of "Playing test" (a 6th Block make-up on 11/18 did).
  *
  * Lives in the same Apps Script project as the Daily Slides Code.gs (and NinjaGoals.gs).
  * Nothing in Code.gs needs to change. If saving says doGet is already defined, tell Claude.
@@ -617,8 +620,21 @@ function boardPtest_(block, now) {
       if (id) scores[id] = { s: String(r[4]), note: String(r[5]), test: String(r[3]) };
     });
   }
-  return { block: block, date: today, test: test,
+  return { block: block, date: today, test: test, makeup: boardPtMakeup_(sh, block, today),
            students: roster.map(function (s) { return { id: s.id, n: s.n }; }), scores: scores };
+}
+
+/** v1.13 (Mat 11/18): the block's most recent real playing test before today (last 30 days), for make-ups on a day the
+ *  slide doesn't name a test: { test, date } or null. The board only uses it when the slide has no test name. */
+function boardPtMakeup_(sh, block, today) {
+  if (!sh || sh.getLastRow() < 2) return null;
+  var from = boardYmd_(new Date(new Date(today + 'T12:00:00').getTime() - 30 * 864e5)), best = null;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues().forEach(function (r) {
+    var d = boardYmd_(r[0]), t = String(r[3]).trim();
+    if (String(r[1]).trim() !== block || !d || d >= today || d < from || !t || /^playing\s*test$/i.test(t)) return;
+    if (!best || d >= best.date) best = { test: t, date: d };
+  });
+  return best;
 }
 
 /** a=ptscore: saves (or with s blank, removes) one student's score for today. Returns { saved: {id, s, note} }. */

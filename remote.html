@@ -25,6 +25,7 @@
   .conn.ok i { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; } .conn.wait i { background: var(--gold); } .conn.err i { background: #ff5a4a; }
   main { padding: 12px 12px 90px; max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
   .card { background: var(--card); border-radius: 16px; padding: 14px; }
+  .card.makeup { box-shadow: inset 0 0 0 2px #c9a227; }
   .h { font: 600 15px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
     display: flex; align-items: center; gap: 8px; }
   .h small { margin-left: auto; color: var(--soft); letter-spacing: 0; text-transform: none; font-family: "Segoe UI", Arial, sans-serif; font-size: 13px; }
@@ -216,7 +217,7 @@
     var full = !!(st.now && st.deck), h = "";
     var errs = Object.keys(st.scores || {}).filter(function (id) { return st.scores[id].st === "err"; }).length;
     if (errs) h += '<div class="card warn">⚠ ' + errs + " score" + (errs > 1 ? "s" : "") + " not saved yet. The board keeps trying.</div>";
-    h += '<div class="card"><div class="h">🎯 Today\'s test<small>' + (st.played || []).length + " played · " + (st.wheel || []).length + " left</small></div><div class=\"test\">" + esc(st.test) + "</div></div>";
+    h += '<div class="card' + (st.makeup ? " makeup" : "") + '"><div class="h">🎯 ' + (st.makeup ? esc(st.makeup) : "Today\'s test") + '<small>' + (st.played || []).length + " played · " + (st.wheel || []).length + " left</small></div><div class=\"test\">" + esc(st.test) + "</div></div>";
     h += '<div class="card now"><div class="h">Now playing' + (st.now ? '<small><button class="b small" data-a="clear" data-slot="now">↩ Put back</button></small>' : "") + "</div>";
     if (st.now) {
       h += '<div class="name">' + esc(nm(st.now)) + "</div>" + scoreButtons(pick.s, "data-s") +

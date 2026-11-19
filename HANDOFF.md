@@ -1,5 +1,11 @@
 # Agenda Board — handoff
 
+## 11/18/2026 10:30 PM: playing test make-ups (build 2.28.0 + ClosingScores v1.13)
+- Neriah S. (6th) make-up on 11/18 saved as "Playing test"; I renamed that row (Playing Tests D82) to "Technique Builder 3 (#9)".
+- a=ptest returns makeup {test, date} = block's latest non-generic test before today, ≤30 days (boardPtMakeup_). ptest.js
+  testText: slide name (not generic) → typed menu text → makeup → "Playing test"; makeupNote() labels board (#ptTestH) + remote.
+  active() still only follows the slide/menu. ptest_smoke 36, ptest_gs_test (both break-checked).
+
 ## 11/17/2026 10:30 PM: AgendaFill v1.2 (warm-ups + Work Session fit), deployed @15, live hash = main
 - Board Settings rows 18–22 "Warm-up <block>" (row 17 left blank). Work Session text boxes resized (y 1938528, h 1371600 = the card;
   scaleX 1.7221 except 1st Block 1.2497 next to its QR). Line spacing 92% set via Slides API (Apps Script setLineSpacing throws);

@@ -34,13 +34,13 @@ def main():
     PORT = srv.server_address[1]
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    saved, slide = [], {"3rd": "F Concert scale, ToE #72", "4th": ""}
+    saved, slide, makeup = [], {"3rd": "F Concert scale, ToE #72", "4th": ""}, {}
 
     def script(route):
         q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
         a = q.get("a")
         if a == "ptest":
-            body = {"ok": True, "block": q["block"], "date": "2026-11-12", "test": slide.get(q["block"], ""), "students": STUDENTS,
+            body = {"ok": True, "block": q["block"], "date": "2026-11-12", "test": slide.get(q["block"], ""), "makeup": makeup.get(q["block"]), "students": STUDENTS,
                     "scores": {"e5": {"s": "2", "note": "from the sheet", "test": "x"}} if q["block"] == "3rd" else {}}
         elif a == "ptscore":
             saved.append(q)
@@ -171,6 +171,26 @@ def main():
         check("PIN remembered on the phone", not rem2.is_visible("#pin") and rem2.evaluate("window.__remote.authed()"))
         if len(sys.argv) > 1:
             rem.screenshot(path=sys.argv[1] + "/ptest_remote.png", full_page=True)
+
+        # 2.28.0 (Mat 11/18): make-up day. The slide names no test ("Playing Test Today" → "Playing test"): the board uses the
+        # block's last test (server makeup = {test, date}), says so, and the score is saved under that test.
+        def refetch():
+            page.clock.fast_forward("00:03:00"); page.evaluate("window.__ptest.sync()"); page.wait_for_timeout(500)
+        slide["3rd"] = "Playing test"; makeup["3rd"] = {"test": "Concert Bb scale", "date": "2026-11-10"}; refetch()
+        check("make-up: board shows the last test", page.inner_text("#ptTest") == "Concert Bb scale" and "make-up (test given tue, 11/10)" in page.inner_text("#ptTestH").lower()
+              and page.evaluate("document.getElementById('ptTest').parentNode.classList.contains('makeup')"), (page.inner_text("#ptTestH"), page.inner_text("#ptTest")))
+        rem.wait_for_timeout(400)
+        check("make-up: remote says so too", "make-up (test given tue, 11/10)" in rem.inner_text("#main").lower() and "Concert Bb scale" in rem.inner_text("#main"), rem.inner_text("#main")[:120])
+        if not page.evaluate("window.__ptest.state().now"):
+            page.evaluate("window.__ptest.act('spin')"); page.wait_for_timeout(2000)
+        now = page.evaluate("window.__ptest.state().now"); rem.wait_for_timeout(300)
+        rem.click("#main [data-s='5']"); rem.click("#doneBtn"); rem.wait_for_timeout(800)
+        check("make-up score saved under the last test", any(x["id"] == now and x["s"] == "5" and x["test"] == "Concert Bb scale" for x in saved), (now, saved[-1:]))
+        slide["3rd"] = "F Concert scale, ToE #72"; refetch()
+        check("a real slide name still wins over the make-up", page.inner_text("#ptTest") == "F Concert scale, ToE #72" and "today" in page.inner_text("#ptTestH").lower())
+        slide["3rd"] = ""; refetch()
+        check("no slide line + a make-up on file: screen stays off", not page.evaluate("document.getElementById('pt').classList.contains('open')"))
+        slide["3rd"] = "F Concert scale, ToE #72"; makeup.pop("3rd"); refetch()
 
         # ---- menu: off today, then typed test on a block with no slide line
         page.click("#ptMenu"); page.wait_for_timeout(200)

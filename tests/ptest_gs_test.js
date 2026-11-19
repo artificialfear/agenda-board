@@ -90,4 +90,12 @@ a.equal(T(['REMINDERS\nNo tutorial Tuesday', 'WORK SESSION\nBand Ninja']), '', '
 a.equal(T(['REMINDERS\nPlaying Test: Concert F scale']), 'Concert F scale', 'a real name in REMINDERS still works');
 a.equal(T(['WORK SESSION\nPlaying Test Day\n• Bb scale\n• Lightly Row']), 'Bb scale · Lightly Row');
 a.equal(T(['WORK SESSION\nPlaying Test: Friday Fanfare']), 'Friday Fanfare', 'a title that starts with a day word is kept');
+// v1.13 (Mat 11/18): make-ups: a=ptest also gives the block's last real test before today (30 days), skipping "Playing test"
+const ago = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+PT.vals.push([ago(6), '4th', 'Lee, Mia', 'Old scale', 3, '', '', 5], [ago(1), '4th', 'Lee, Mia', 'Technique Builder 3 (#9)', 4, '', '', 4],
+             [ago(0), '4th', 'Lee, Mia', 'Today thing', 4, '', '', 5], [ago(1), '4th', 'Lee, Mia', 'Playing test', 5, '', '', 5],
+             [ago(2), '6th', 'Lee, Mia', 'Other block', 5, '', '', 5], [ago(40), '7th', 'Lee, Mia', 'Too old', 5, '', '', 5]);
+a.deepEqual(doGet({ parameter: { k: 'KEY', a: 'ptest', block: '4th' } }).makeup, { test: 'Technique Builder 3 (#9)', date: ago(1) }, 'latest real test before today');
+a.deepEqual(doGet({ parameter: { k: 'KEY', a: 'ptest', block: '6th' } }).makeup, { test: 'Other block', date: ago(2) }, 'per block');
+a.equal(doGet({ parameter: { k: 'KEY', a: 'ptest', block: '7th' } }).makeup, null, 'older than 30 days: none');
 console.log('ptest checks ok');

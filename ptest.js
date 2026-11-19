@@ -46,6 +46,7 @@
     "#pt .pt-rule { height: .6vh; background: #c9a227; border-radius: 3px; flex: none; }",
     "#pt .pt-left { display: flex; flex-direction: column; gap: 1.8vh; min-height: 0; }",
     "#pt .pt-card { background: #2a3858; border-radius: 2vh; padding: 1.8vh 1.6vw; }",
+    "#pt .pt-card.makeup { box-shadow: inset 0 0 0 .35vh #c9a227; }",
     "#pt .pt-h { font: 600 2.6vh 'Oswald', 'Arial Narrow', Arial, sans-serif; letter-spacing: .08em; color: #c9a227; text-transform: uppercase; margin-bottom: .6vh; }",
     "#pt .pt-test { font-size: 3.6vh; line-height: 1.25; font-weight: 600; }",
     "#pt .pt-now { border: .4vh solid #c9a227; box-shadow: 0 0 3vh rgba(201,162,39,.25); }",
@@ -118,7 +119,7 @@
     '    <div class="pt-head"><img src="assets/raven-logo.png?v=1.1.0" alt=""><h1 id="ptTitle"></h1></div>' +
     '    <div class="pt-sub"><div class="pt-date" id="ptDate"></div><div class="pt-count" id="ptCount"></div></div>' +
     '    <div class="pt-rule"></div>' +
-    '    <div class="pt-card"><div class="pt-h">🎯 Today\'s playing test</div><div class="pt-test" id="ptTest"></div></div>' +
+    '    <div class="pt-card"><div class="pt-h" id="ptTestH">🎯 Today\'s playing test</div><div class="pt-test" id="ptTest"></div></div>' +
     '    <div class="pt-card pt-now"><div class="pt-h">Now playing</div><div class="pt-name" id="ptNow"></div></div>' +
     '    <div class="pt-card pt-deck"><div class="pt-h">On deck · get ready</div><div class="pt-name" id="ptDeck"></div></div>' +
     '    <div class="pt-btns"><button class="gold" id="ptDone">✓ Done</button><button id="ptLater">↺ Later</button></div>' +
@@ -170,10 +171,25 @@
     var r = R[block];
     return !!(r && r.date === today() && r.test);
   }
-  function testText(block) {
+  // 2.28.0 (Mat 11/18): make-ups. The slide's test name wins; then a name typed in the ☰ menu; then, when neither names a
+  // test, the block's last real test (server: makeup = {test, date}), shown as "Make-up" so Mat sees which test it files under.
+  function generic(t) { return !t || /^\s*playing\s*tests?\s*$/i.test(t); }
+  function makeupOf(block) {
     var r = R[block], o = dayOverride();
-    return (r && r.date === today() && r.test) || (o && o.text) || "Playing test";
+    if (!r || r.date !== today() || !generic(r.test) || (o && o.text && o.text.trim()) || !r.makeup || !r.makeup.test) return null;
+    return r.makeup;
   }
+  function testText(block) {
+    var r = R[block], o = dayOverride(), m = makeupOf(block);
+    if (r && r.date === today() && !generic(r.test)) return r.test;
+    if (o && o.text && o.text.trim()) return o.text.trim();
+    return m ? m.test : "Playing test";
+  }
+  function shortDay(ymd) {
+    var p = String(ymd).split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return isNaN(d) ? ymd : d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+  }
+  function makeupNote(block) { var m = makeupOf(block); return m ? "Make-up (test given " + shortDay(m.date) + ")" : ""; }
   function stateKey(block) { return "agendaBoard.pt." + today() + "." + block; }
   function blank() { return { now: null, deck: null, played: [], absent: [], later: [], scores: {}, hist: [] }; }
   function loadState(block) { var s = load(stateKey(block)); return s && s.played ? s : blank(); }
@@ -197,10 +213,10 @@
     fetching[block] = true;
     B.call({ a: "ptest", block: block }).then(function (j) {
       fetching[block] = false;
-      R[block] = { students: j.students || [], test: j.test || "", scores: j.scores || {}, date: today(), at: Date.now() };
+      R[block] = { students: j.students || [], test: j.test || "", makeup: j.makeup || null, scores: j.scores || {}, date: today(), at: Date.now() };
       var keep = {}; Object.keys(R).forEach(function (b) { keep[b] = { students: R[b].students, test: R[b].test, date: R[b].date }; });
       save(ROSTER_KEY, keep);
-      if (cur === block && S) mergeScores();
+      if (cur === block && S) { mergeScores(); broadcast(); }     // 2.28.0: the remote sees a new test name / make-up at once
       sync();
     }).catch(function () {
       fetching[block] = false;
@@ -249,6 +265,8 @@
     var total = r ? r.students.length - S.absent.filter(function (id) { return n[id]; }).length : 0;
     $("ptCount").textContent = (r ? S.played.filter(function (id) { return n[id]; }).length : 0) + " of " + total + " played";
     $("ptTest").textContent = testText(cur);
+    $("ptTestH").textContent = makeupNote(cur) ? "🎯 " + makeupNote(cur) : "🎯 Today's playing test";
+    $("ptTest").parentNode.classList.toggle("makeup", !!makeupNote(cur));
     nameBox("ptNow", S.now, S.now ? "" : (wheelIds().length ? "Spin the wheel!" : "—"));
     nameBox("ptDeck", S.deck, S.deck ? "" : S.now && wheelIds().length ? "Spin for who's next" : "—");
     $("ptDone").disabled = spinning || !S.now;
@@ -624,7 +642,7 @@
   function snapshot() {
     if (!cur || !S) return { type: "state", block: null };
     var r = roster(cur);
-    return { type: "state", block: cur, date: today(), test: testText(cur), names: names(), order: r ? r.students.map(function (s) { return s.id; }) : [],
+    return { type: "state", block: cur, date: today(), test: testText(cur), makeup: makeupNote(cur), names: names(), order: r ? r.students.map(function (s) { return s.id; }) : [],
       wheel: wheelIds(), now: S.now, deck: S.deck, played: S.played, absent: S.absent, later: S.later,
       scores: S.scores, spinning: spinning, canUndo: !!S.hist.length, pending: (load(QUEUE_KEY) || []).length };
   }

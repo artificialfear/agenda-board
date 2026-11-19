@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.28.0 + ClosingScores v1.13 — 2026-11-18 (Mat)
+- **Playing test make-ups.** When today's slide names no test (e.g. only a "Playing Test Today" reminder), the playing test screen
+  and the remote use that block's most recent test (last 30 days) and say "Make-up (test given Tue, 11/17)" with a gold outline,
+  so the score is saved under the real test name. A test name on the slide (or typed in the ☰ menu) always wins. A make-up on file
+  never turns the screen on by itself. The remote updates as soon as the board gets a new test name.
+
 ## AgendaFill v1.2 — 2026-11-17 (Mat) — Daily Slides script (deployment @15), no board change
 - **Daily warm-up first in WORK SESSION.** Board Settings rows "Warm-up 1st" … "Warm-up 7th" (Foundations Book pg. 4, 10, 31 /
   Technique Builder #3 / #3 / #2 / Warm-Up Set #1). Added every morning at the top of the plan's items; not added twice if the plan
