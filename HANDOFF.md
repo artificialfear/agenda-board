@@ -1,5 +1,39 @@
 # Agenda Board — handoff
 
+## ▶ START HERE — session summary 11/18/2026 (live: board 2.28.0, ClosingScores v1.13 @16, AgendaFill v1.2)
+**Where things are**
+- Apps Script project "Class Agenda – Daily Slide Updater" 1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG (ClosingScores.gs,
+  AgendaFill.gs, NinjaGoals.gs, Code.gs — Code.gs not in repo); web app deployment AKfycbw9… @16. Daily Rehearsal deck
+  1GVCu1ReJy-BPLXHb7omH8ijtz_c-XRWcftUtRguLMjY · Band Ninja Day deck 1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU · Content Pool
+  1GeHtIMEPq2RIuceFiaXBoGpsz9tYpx442Q7AbzYp79E (Board Settings, Agenda Plan, Agenda Focus, Playing Tests) · Band Ninja Tracker
+  1SMjkABPZx4e1wHdsZ3aRcmyw17SfEYueodGK_UQICIw.
+
+**Current state**
+- Class jobs (Percussion Captains 1st/4th/6th/7th, Stage Managers all blocks); rotation in localStorage agendaBoard.perc.
+- 2.25.0 "TODAY'S JOBS" card drawn by the board on the slide (SJ_GEO, slide EMU); two taps on a name = absent → next in line,
+  absent student owes the turn (perc.owe); Undo swap on check screens. 2.27.0 tap the card = hidden for that class, 🥁 JOBS tab back.
+- 2.24.0 AI voice (Piper Amy, 133 names) built, clips in private Drive folder 1GwFK_zPbUZL4e6O4MUzWHqDf4OSa1AI9; turned OFF by Mat
+  ("Say job names" = No → chime only).
+- Playing tests: 1–5 rubric (Hub v93, column H "Out Of"); v1.11 test name reads WORK SESSION first, skips "Playing Test Today";
+  v1.13/2.28.0 make-ups use the block's last real test (≤30 days) when the slide names none, labeled "Make-up (test given …)".
+- AgendaFill v1.2: Board Settings rows 18–22 "Warm-up <block>" go first in WORK SESSION each morning; boxes fill their card
+  (108 pt; 407 pt wide, 1st Block 295 pt by its QR); 92% line spacing set via Slides API; 4 one-line items fit at 16 pt.
+
+**Decisions**
+- Jobs card drawn by the board, not written into Slides (instant swaps, no names in decks). Absent = next in line; absent goes next class.
+- Voice: Amy, private Drive, whole roster — then off for now (keep the work).
+- Work Session fit by reclaiming box space at 16 pt; the closing table can't shrink (cell padding isn't settable by API).
+- Apps Script setLineSpacing throws "Invalid argument: spacing" → spacing set once via Slides REST; calls wrapped in try/catch.
+
+**Open**
+- 2.23.0 git history still has two real student names (comment/changelog; gone from current files). Offered a history scrub (force
+  push); Mat hasn't answered.
+- Voice pronunciation review pending (only if voice comes back).
+- Rebuilt Work Session boxes need 92% line spacing re-applied; changed slide layouts need SJ_GEO updated.
+- Not deployed: Dojo "Rhythm Practice" button. Untested in class: 2.15–2.28, especially slide jobs card, make-ups, warm-ups.
+
+**Next**: get Mat's in-class feedback (warm-ups first live 11/19, jobs card, make-ups); ask about the history scrub.
+
 ## 11/18/2026 10:30 PM: playing test make-ups (build 2.28.0 + ClosingScores v1.13, deployed @16, live hash = main; live a=ptest 6th → makeup Technique Builder 3 (#9) 11/17)
 - Neriah S. (6th) make-up on 11/18 saved as "Playing test"; I renamed that row (Playing Tests D82) to "Technique Builder 3 (#9)".
 - a=ptest returns makeup {test, date} = block's latest non-generic test before today, ≤30 days (boardPtMakeup_). ptest.js
