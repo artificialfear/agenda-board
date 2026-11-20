@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## ▶ START HERE — session summary 11/18/2026 (live: board 2.29.0, ClosingScores v1.13 @16, AgendaFill v1.2, Dojo v82)
+## ▶ START HERE — session summary 11/18/2026 (live: board 2.30.0, ClosingScores v1.13 @16, AgendaFill v1.2, Dojo v82)
 **Where things are**
 - Apps Script project "Class Agenda – Daily Slide Updater" 1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG (ClosingScores.gs,
   AgendaFill.gs, NinjaGoals.gs, Code.gs — Code.gs not in repo); web app deployment AKfycbw9… @16. Daily Rehearsal deck
@@ -30,9 +30,19 @@
   push); Mat hasn't answered.
 - Voice pronunciation review pending (only if voice comes back).
 - Rebuilt Work Session boxes need 92% line spacing re-applied; changed slide layouts need SJ_GEO updated.
-- Untested in class: 2.15–2.29, especially slide jobs card, make-ups, warm-ups, welcome themes on the ViewBoard (emoji/perf).
+- Untested in class: 2.15–2.30, especially slide jobs card, make-ups, warm-ups, welcome themes on the ViewBoard (emoji/perf).
 
 **Next**: get Mat's in-class feedback (warm-ups first live 11/19, jobs card, make-ups); ask about the history scrub.
+
+## 11/19/2026 evening: season effects in the slide header band, before the bell (build 2.30.0)
+- Mat chose: before class only, header band only, own "Slide animation" row, no color change to the slide.
+- season.js bandSync(): #slideFx (inside #agenda, z 4, under #tapCatch; pointer-events none; overflow hidden + bottom mask fade)
+  placed over the letterboxed 16:9 slide like SJ_GEO; height = gold-line top (BAND_GEO reg 731520/5143500, ninja 932688/6858000;
+  if the header/rule moves in either deck, update BAND_GEO). On = season has BAND layers (not "none") + slideFx not Off + on-agenda
+  + beforeBell(shown block's start). Fades 2 s at the bell, particles removed after 2.5 s. Rise/fall pieces are band-tall spans
+  (bandRise/bandFall % keyframes). show() calls seasonBandSync; sync every 5 s. settings.slideFx ← row "Slide animation".
+- Tests: season_test (beforeBell, switches), season_smoke 31 (15 slide checks; 4 break-checks: runs past bell, ninja height,
+  no clip, row ignored). Full suite green.
 
 ## 11/18/2026 11 PM: welcome drifting notes + seasonal themes (build 2.29.0) + Dojo Rhythm Practice button (Dojo v82)
 - season.js: pick(date, settings) → none/fall/halloween/holidays/winter/concert (Auto by calendar; concert date beats season;

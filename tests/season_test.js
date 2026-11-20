@@ -37,4 +37,18 @@ a.deepStrictEqual([p.theme, p.label], ['concert', 'Concert Day'], 'forced Concer
 a.strictEqual(S.pick(D(2026, 11, 18), {}).fx, true);
 a.strictEqual(S.pick(D(2026, 11, 18), { welcomeFx: 'On' }).fx, true);
 ['Off', 'no', 'FALSE'].forEach(v => a.strictEqual(S.pick(D(2026, 11, 18), { welcomeFx: v }).fx, false, v));
+// 2.30.0: slide header effects
+a.strictEqual(S.pick(D(2026, 11, 18), {}).slideFx, true);
+['Off', 'no'].forEach(v => a.strictEqual(S.pick(D(2026, 11, 18), { slideFx: v }).slideFx, false, v));
+a.strictEqual(S.pick(D(2026, 11, 18), { welcomeFx: 'Off' }).slideFx, true, 'the two switches are separate');
+const SCHED = [['1st', '07:45', '08:36'], ['3rd', '09:29', '10:20'], ['4th', '10:21', '11:13']];
+const T = (h, m, s) => new Date(2026, 10, 20, h, m, s || 0);
+a.strictEqual(S.beforeBell(T(7, 43), '1st', SCHED), true, 'lead-in');
+a.strictEqual(S.beforeBell(T(7, 44, 59), '1st', SCHED), true, 'one second before the bell');
+a.strictEqual(S.beforeBell(T(7, 45), '1st', SCHED), false, 'at the bell');
+a.strictEqual(S.beforeBell(T(8, 10), '1st', SCHED), false, 'mid-class');
+a.strictEqual(S.beforeBell(T(10, 20, 30), '4th', SCHED), true, 'passing time: next block');
+a.strictEqual(S.beforeBell(T(9, 0), 'welcome', SCHED), false);
+a.strictEqual(S.beforeBell(T(9, 0), null, SCHED), false);
+a.strictEqual(S.beforeBell(T(9, 0), '6th', SCHED), false, 'block not in today\'s schedule');
 console.log('season_test: all passed');

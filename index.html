@@ -88,25 +88,37 @@
   /* ---------- 2.29.0 welcome: drifting notes + seasonal themes (season.js) ---------- */
   #welcome > * { position: relative; z-index: 1; }
   #welcome > #wxFx { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-  #wxFx .wx { position: absolute; top: 0; left: 0; line-height: 1; will-change: transform;
+  #wxFx .wx, #slideFx .wx { position: absolute; top: 0; left: 0; line-height: 1; will-change: transform;
     animation-timing-function: linear; animation-iteration-count: infinite; }
-  #wxFx .wx-in { display: inline-block; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+  #wxFx .wx-in, #slideFx .wx-in { display: inline-block; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
   #wxFx .wx-rise { animation-name: wxRise; }
   #wxFx .wx-fall { animation-name: wxFall; }
-  #wxFx .wx-fall .wx-in { animation-name: wxSway; }
-  #wxFx .wx-flit { animation-name: wxFlit; }
-  #wxFx .wx-flit .wx-in { animation-name: wxBob; }
-  #wxFx .wx-twinkle { animation: none; }
-  #wxFx .wx-twinkle .wx-in { animation-name: wxTwinkle; opacity: 0; }
+  #wxFx .wx-fall .wx-in, #slideFx .wx-fall .wx-in { animation-name: wxSway; }
+  #wxFx .wx-flit, #slideFx .wx-flit { animation-name: wxFlit; }
+  #wxFx .wx-flit .wx-in, #slideFx .wx-flit .wx-in { animation-name: wxBob; }
+  #wxFx .wx-twinkle, #slideFx .wx-twinkle { animation: none; }
+  #wxFx .wx-twinkle .wx-in, #slideFx .wx-twinkle .wx-in { animation-name: wxTwinkle; opacity: 0; }
   #wxFx .note, #wxFx .sparkle { color: var(--accent); }
   #wxFx .snow { color: var(--snow, #ffffff); }
+  /* 2.30.0: the same season's effects in the agenda slide's header band (above its gold line), before the bell only.
+     Rise/fall pieces are band-tall spans with the glyph at the top, so a % transform moves exactly one band height. */
+  #slideFx { position: fixed; z-index: 4; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 2s ease;
+    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%); mask-image: linear-gradient(to bottom, #000 70%, transparent 100%); }
+  #slideFx.on { opacity: 1; }
+  #slideFx .wx-rise, #slideFx .wx-fall { height: 100%; }
+  #slideFx .wx-rise { animation-name: bandRise; }
+  #slideFx .wx-fall { animation-name: bandFall; }
+  #slideFx .note, #slideFx .sparkle { color: #c9a227; }
+  #slideFx .snow { color: #ffffff; }
+  @keyframes bandFall { from { transform: translate3d(0, -40%, 0); } to { transform: translate3d(0, 100%, 0); } }
+  @keyframes bandRise { from { transform: translate3d(0, 100%, 0); } to { transform: translate3d(0, -40%, 0); } }
   @keyframes wxRise { from { transform: translate3d(0, 105vh, 0); } to { transform: translate3d(0, -12vh, 0); } }
   @keyframes wxFall { from { transform: translate3d(0, -12vh, 0); } to { transform: translate3d(0, 105vh, 0); } }
   @keyframes wxFlit { from { transform: translate3d(-8vw, 0, 0); } to { transform: translate3d(106vw, 0, 0); } }
   @keyframes wxSway { 0%, 100% { transform: translate3d(-1.6vw, 0, 0) rotate(-14deg); } 50% { transform: translate3d(1.6vw, 0, 0) rotate(14deg); } }
   @keyframes wxBob { 0%, 100% { transform: translate3d(0, -1.5vh, 0); } 50% { transform: translate3d(0, 1.5vh, 0); } }
   @keyframes wxTwinkle { 0%, 100% { opacity: 0; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
-  @media (prefers-reduced-motion: reduce) { #wxFx { display: none; } }
+  @media (prefers-reduced-motion: reduce) { #wxFx, #slideFx { display: none; } }
   #welcome .wx-banner { margin-top: 2.6vh; padding: .35em 1.2em; border: 2px solid var(--accent); border-radius: 999px;
     font: 600 clamp(18px, 2.4vw, 46px) "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .05em; color: var(--ink);
     box-shadow: 0 0 26px rgba(201,162,39,.35); }
@@ -634,6 +646,7 @@
 <div id="agenda">
   <div class="loading">Loading agenda…</div>
   <iframe id="frame" title="Daily agenda" allowfullscreen></iframe>
+  <div id="slideFx" aria-hidden="true"></div>
   <div id="tapCatch" aria-hidden="true"></div>
 </div>
 
@@ -934,7 +947,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.29.0"></script>
+<script src="rhythmtime.js?v=2.30.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1167,6 +1180,7 @@
     if (window.mapSync) window.mapSync();
     if (window.ptestSync) window.ptestSync();
     if (window.slideJobsSync) window.slideJobsSync();
+    if (window.seasonBandSync) window.seasonBandSync();             // 2.30.0: header effects start with the slide, not 5 s later
   }
 
   function render(force) {
@@ -1665,7 +1679,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.29.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.30.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2179,7 +2193,8 @@
     "stage managers 7th": "stage7th",
     "say job names": "jobsSay",                                     // 2.23.0: "No" = chime + pulse, no voice; 2.24.0: "Built-in" = skip the AI voice
     // 2.29.0 (season.js): welcome screen look. Blank/missing = Auto, no concerts, animation On
-    "seasonal theme": "season", "concert dates": "concerts", "welcome animation": "welcomeFx" };
+    "seasonal theme": "season", "concert dates": "concerts", "welcome animation": "welcomeFx",
+    "slide animation": "slideFx" };                                 // 2.30.0: season effects in the slide header before the bell
   function remoteConfig() {
     if (!settings.closingUrl) return;
     scoresCall({ a: "config" }).then(function (j) {
@@ -2191,7 +2206,7 @@
       // 2.19.0: the script leaves out blank rows, so a percussion list that's gone (or emptied) means "no check" for that block
       var have = {}; Object.keys(cfg).forEach(function (n) { have[REMOTE_SETTINGS[String(n).toLowerCase().trim()]] = true; });
       ["perc1st", "perc3rd", "perc4th", "perc6th", "perc7th", "stage1st", "stage3rd", "stage4th", "stage6th", "stage7th",
-       "season", "concerts", "welcomeFx"].forEach(function (k) {
+       "season", "concerts", "welcomeFx", "slideFx"].forEach(function (k) {
         if (!have[k] && settings[k]) { settings[k] = ""; changed = true; }
       });
       if (changed) { save(STORE_KEY, settings); if (window.bookSync) window.bookSync(); if (window.slideJobsSync) window.slideJobsSync(); if (window.seasonSync) window.seasonSync(); }
@@ -3015,7 +3030,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.29.0";
+  var BUILD = "2.30.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -3044,10 +3059,10 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.29.0"></script>
-<script src="ptest.js?v=2.29.0"></script>
-<script src="lunch.js?v=2.29.0"></script>
-<script src="rtap.js?v=2.29.0"></script>
-<script src="season.js?v=2.29.0"></script>
+<script src="ptnet.js?v=2.30.0"></script>
+<script src="ptest.js?v=2.30.0"></script>
+<script src="lunch.js?v=2.30.0"></script>
+<script src="rtap.js?v=2.30.0"></script>
+<script src="season.js?v=2.30.0"></script>
 </body>
 </html>

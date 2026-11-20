@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.30.0 — 2026-11-19 (Mat)
+- **Season effects on the agenda slides, before class.** The welcome screen's seasonal effects (fall leaves, Halloween bats,
+  holiday snow + twinkles, winter snow, concert-day sparkles) now also drift across the slide's header band (block name, date,
+  concert countdown: everything above the gold line) while students come in. They fade out at the starting bell and stay off all
+  class; nothing ever crosses the Opening / Work Session / Focus Wall / Closing cards. Works on Band Ninja slides too. Lead-in is
+  3 minutes before 1st, 3rd and 6th; 4th and 7th only get the 1-minute passing time. Mar–Sep (no season): slides stay plain.
+- **New Board Settings row "Slide animation"** (On · Off), separate from "Welcome animation". "Seasonal theme" Off turns both off.
+  The slides in Google Slides are never changed; the board draws the effects on top.
+
 ## 2.29.0 — 2026-11-18 (Mat)
 - **Drifting notes on the welcome screen.** A few faint music notes (♪ ♫) float slowly up behind the clock. CSS only, light enough
   for the ViewBoard; nothing moves on the slides or overlays.

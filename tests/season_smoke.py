@@ -122,6 +122,90 @@ def main():
         box = pg.evaluate("(() => { const r = document.getElementById('wxBanner').getBoundingClientRect(); return [r.top, r.bottom]; })()")
         check("banner inside the screen", box[0] > 0 and box[1] < 900, box); ctx.close()
 
+        # ---------- 2.30.0: season effects in the agenda slide's header band, before the bell only ----------
+        SLIDE = ('<body style="margin:0;background:#1f2a44;height:100vh;font:600 6vh Oswald,Arial;color:#fff">'
+                 '<div style="position:absolute;left:3%;top:2.5%;font-size:7.5vh">3rd Block <span style="color:#c9a227">Agenda</span></div>'
+                 '<div style="position:absolute;left:3%;right:2.5%;top:{rule}%;height:0.7%;background:#c9a227"></div>'
+                 '<div style="position:absolute;left:3%;top:17.5%;width:56%;height:35%;background:#2a3858;border-radius:2vh"></div>'
+                 '<div style="position:absolute;left:63.5%;top:17.5%;width:34%;height:36%;background:#2a3858;border-radius:2vh"></div></body>')
+        def slide_board(t, cfg, size=(1600, 900), motion="no-preference"):
+            ctx = browser.new_context(viewport={"width": size[0], "height": size[1]}, timezone_id="America/New_York", reduced_motion=motion)
+            ctx.add_init_script(INIT)
+            def deck(route):
+                ninja = "1HLmyd7srbW3C_vkgyAofsAeZ3T4afLs5PmqXTEIKIYU" in route.request.url
+                route.fulfill(status=200, content_type="text/html", body=SLIDE.replace("{rule}", "13.6" if ninja else "14.22"))
+            ctx.route("https://docs.google.com/**", deck)
+            def script(route):
+                q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}
+                body = {"ok": True, "config": dict(cfg)} if q.get("a") == "config" else {"ok": True}
+                route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*"}, body=json.dumps(body))
+            ctx.route("https://script.google.com/**", script)
+            pg = ctx.new_page(); pg.clock.install(time=t)
+            pg.goto(f"http://127.0.0.1:{PORT}/index.html"); pg.wait_for_timeout(300)
+            pg.clock.fast_forward("00:03"); pg.wait_for_timeout(600)
+            return ctx, pg
+        SL = lambda pg: pg.evaluate("""() => { const s = window.__season.slide(), k = {};
+            document.querySelectorAll('#slideFx .wx').forEach(e => { const c = e.classList[1]; k[c] = (k[c] || 0) + 1; });
+            const r = document.getElementById('frame').getBoundingClientRect();
+            return Object.assign(s, { kinds: k, shown: window.__agendaBoard.shown(), frameH: r.height,
+              clip: getComputedStyle(document.getElementById('slideFx')).overflow }); }""")
+
+        ctx, pg = slide_board("2026-11-20T07:43:30", {})            # Fri: 1st Block lead-in (bell 7:45), fall
+        a = SL(pg)
+        if shots: pg.wait_for_timeout(2200); pg.screenshot(path=str(shots / "slide_fall_before_bell.png"))
+        b_ok = a["band"] and abs(a["band"]["top"]) <= 1 and abs(a["band"]["height"] - 900 * 731520 / 5143500) <= 1.5 and a["band"]["width"] == 1600
+        check("slide: lead-in = fall effects in header", a["on"] and a["visible"] and a["shown"] == "1st" and a["theme"] == "fall"
+              and a["kinds"] == {"note": 4, "leaf": 6} and a["clip"] == "hidden" and b_ok, a)
+        pg.clock.fast_forward("01:45"); pg.wait_for_timeout(6000)     # past the 7:45 bell: fade out, then removed
+        b = SL(pg)
+        check("slide: bell rings = effects fade + go", (not b["on"]) and (not b["visible"]) and b["count"] == 0 and b["shown"] == "1st", b)
+        ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T08:10:00", {}); c = SL(pg)
+        check("slide: mid-class = nothing", (not c["on"]) and c["count"] == 0 and c["shown"] == "1st", c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T10:20:20", {}); c = SL(pg)
+        check("slide: passing time = next block's header", c["on"] and c["shown"] == "4th", c); ctx.close()
+
+        ctx, pg = slide_board("2026-12-10T07:43:00", {}); c = SL(pg)
+        if shots: pg.wait_for_timeout(2200); pg.screenshot(path=str(shots / "slide_holidays_before_bell.png"))
+        check("slide: December = snow + twinkles", c["on"] and c["kinds"] == {"snow": 8, "twinkle": 6}, c); ctx.close()
+
+        ctx, pg = slide_board("2026-10-28T07:43:00", {}); c = SL(pg)
+        if shots: pg.wait_for_timeout(2200); pg.screenshot(path=str(shots / "slide_halloween_before_bell.png"))
+        check("slide: Halloween = leaves + bats", c["on"] and c["kinds"] == {"leaf": 4, "bat": 3}, c); ctx.close()
+
+        ctx, pg = slide_board("2027-04-14T07:43:00", {}); c = SL(pg)
+        check("slide: April (no season) = nothing", (not c["on"]) and c["count"] == 0 and c["shown"] == "1st", c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T07:43:00", {"Seasonal theme": "Off"}); pg.clock.fast_forward("00:04"); pg.wait_for_timeout(300); c = SL(pg)   # sheet answers 1.5 s in; fade + clear
+        check("slide: Seasonal theme Off = nothing", (not c["on"]) and (not c["visible"]) and c["count"] == 0, c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T07:43:00", {"Slide animation": "Off"}); pg.clock.fast_forward("00:04"); pg.wait_for_timeout(300); c = SL(pg)   # sheet answers 1.5 s in; fade + clear
+        check("slide: Slide animation Off = nothing", (not c["on"]) and (not c["visible"]) and c["count"] == 0, c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T07:43:00", {"Welcome animation": "Off"}); c = SL(pg)
+        check("slide: Welcome animation Off leaves slides on", c["on"] and c["count"] == 10, c); ctx.close()
+
+        ctx, pg = slide_board("2026-12-09T07:43:00", {"Concert dates": CONCERTS}); c = SL(pg)
+        check("slide: concert day = notes + sparkles", c["on"] and c["theme"] == "concert" and c["kinds"] == {"note": 4, "sparkle": 6}, c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-24T07:43:00", {}); c = SL(pg)         # IF Tuesday: Band Ninja slide, its own gold line
+        nb = c["band"] and abs(c["band"]["height"] - 900 * 932688 / 6858000) <= 1.5
+        check("slide: Band Ninja day uses its header", c["on"] and c["ninja"] and nb, c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T07:43:00", {}, size=(1920, 900)); c = SL(pg)   # wide screen: slide letterboxed
+        check("slide: letterboxed slide, band follows", c["on"] and abs(c["band"]["left"] - 160) <= 1 and abs(c["band"]["width"] - 1600) <= 1, c); ctx.close()
+
+        ctx, pg = slide_board("2026-11-20T07:43:00", {}, motion="reduce"); c = SL(pg)
+        check("slide: reduced motion = nothing", (not c["on"]) and c["count"] == 0, c); ctx.close()
+
+        # row removed later: "Slide animation" Off → deleted → back on (at the next 10-minute config check)
+        cfg = {"Slide animation": "Off"}
+        ctx, pg = slide_board("2026-11-20T09:15:00", cfg); a1 = SL(pg)["on"]       # 3rd lead-in starts 9:26
+        cfg.clear(); pg.clock.fast_forward("12:00"); pg.wait_for_timeout(800); a2 = SL(pg)
+        check("slide: deleted row = back On", (not a1) and a2["on"] and a2["shown"] == "3rd", (a1, a2)); ctx.close()
+
         # the welcome screen goes away for class (the theme waits underneath)
         ctx, pg = board("2026-11-18T10:00:00", {}); L = look(pg)
         check("class time: slide shows, not the welcome", L["shown"] == "3rd", L); ctx.close()
