@@ -732,6 +732,51 @@ def main():
         print(("PASS" if ok else "FAIL"), f"{'world map':34s}" + ("" if ok else f" {vis} {n} {card[:80]!r} {res[:60]!r} {jp[:60]!r} {my} {open1} {open2} {o3a} {open3} {page.evaluate('window.__agendaBoard.shown()')}"))
         failures += 0 if ok else 1
         ctx.close()
+        # 2.31.0 🎵/🔊 Articulation / Dynamics of the day: trainer (../articulation-dynamics/) in board mode, full screen.
+        # The trainer lives in another repo, so a stub page stands in for it here (it records its URL and can post "close").
+        STUB = ("<!doctype html><title>trainer stub</title><button id='back' onclick=\"parent.postMessage({artDyn:'close'},'*')\">Back</button>"
+                "<script>window.__loads=(window.__loads||0)+1;</script>")
+        ctx = browser.new_context(viewport={"width": 1920, "height": 1080}, timezone_id="America/New_York")
+        ctx.route("https://docs.google.com/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<p>stub</p>"))
+        ctx.route("**/articulation-dynamics/**", lambda r: r.fulfill(status=200, content_type="text/html", body=STUB))
+        page = ctx.new_page(); page.clock.install(time="2026-11-06T10:10:00")                     # Fri, 3rd Block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
+        vis = page.is_visible("#btnArtic"); lab = page.inner_text("#btnArtic")
+        page.click("#btnArtic"); page.wait_for_timeout(300)
+        src = page.get_attribute("#adFrame", "src") or ""
+        open1 = page.evaluate("document.getElementById('adView').classList.contains('open')")
+        sf = next((f for f in page.frames if "articulation-dynamics" in f.url), None)
+        full = sf.url if sf else ""
+        sf.click("#back"); page.wait_for_timeout(200)
+        open2 = page.evaluate("document.getElementById('adView').classList.contains('open')")
+        page.click("#btnArtic"); page.wait_for_timeout(200)                                          # reopen: same page, not reloaded
+        kept = (page.get_attribute("#adFrame", "src") == src) and sf.evaluate("window.__loads") == 1
+        page.clock.fast_forward("00:15:00"); page.wait_for_timeout(400)                              # 10:25 -> 4th Block
+        open3 = page.evaluate("document.getElementById('adView').classList.contains('open')")
+        unloaded = page.get_attribute("#adFrame", "src") is None
+        page.click("#btnArtic"); page.wait_for_timeout(200)
+        src4 = page.get_attribute("#adFrame", "src") or ""
+        page.keyboard.press("Escape"); page.wait_for_timeout(100)
+        esc = not page.evaluate("document.getElementById('adView').classList.contains('open')")
+        if shots_dir: page.screenshot(path=str(shots_dir / "artic_button.png"))
+        page.close(); page = ctx.new_page(); page.clock.install(time="2026-11-06T08:50:00")         # between classes: welcome
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
+        welcomeHidden = not page.is_visible("#btnArtic")
+        page.close(); page = ctx.new_page(); page.clock.install(time="2026-11-09T13:00:00")         # Mon, 6th Block
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
+        lab6 = page.inner_text("#btnArtic"); page.click("#btnArtic"); page.wait_for_timeout(200)
+        src6 = page.get_attribute("#adFrame", "src") or ""
+        page.close(); page = ctx.new_page(); page.clock.install(time="2026-11-10T13:00:00")         # Tue = IF day = Band Ninja
+        page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
+        ninjaHidden = not page.is_visible("#btnArtic")
+        ok = (vis and "Dynamics" in lab and open1 and "articulation-dynamics/index.html?board=1&mode=dyn&lvl=7th" in src
+              and "seed=2026-11-06%7C7th" in src and "/articulation-dynamics/" in full and not open2 and kept and not open3 and unloaded
+              and src4 == src and esc and welcomeHidden and "Articulation" in lab6 and "mode=art&lvl=6int" in src6 and ninjaHidden)
+        print(("PASS" if ok else "FAIL"), f"{'articulation / dynamics of the day':34s}" + ("" if ok else
+              f" {vis} {lab!r} {open1} {src!r} {full!r} {open2} {kept} {open3} {unloaded} {src4==src} {esc} {welcomeHidden} {lab6!r} {src6!r} {ninjaHidden}"))
+        failures += 0 if ok else 1
+        ctx.close()
+
         # the Content Pool sheet's map tabs win over the built-in list (a=map)
         def map_script(route):
             q = {k: v[0] for k, v in parse_qs(urlparse(route.request.url).query, keep_blank_values=True).items()}

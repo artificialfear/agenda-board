@@ -235,6 +235,15 @@
   #mapView.open { display: block; }
   #mapView iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #141c30; }
 
+  /* ---------- Articulation / Dynamics of the day (2.31.0): the trainer in board mode, full screen ---------- */
+  #btnArtic { display: none; background: #1f2a44; color: #c9a227; border: 2px solid #c9a227; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+    font: 600 20px "Oswald", "Arial Narrow", Arial, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  body.can-rhythm #btnArtic { display: block; }
+  body.timer-open #btnArtic { display: none; }
+  #adView { position: fixed; inset: 0; z-index: 34; display: none; background: #fff; }
+  #adView.open { display: block; }
+  #adView iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+
   /* ---------- Rhythm of the day, full width ---------- */
   #rhythm { position: fixed; inset: 0; z-index: 33; display: none; flex-direction: column; align-items: center;
     justify-content: center; gap: 3vh; background: #1f2a44; cursor: pointer; }
@@ -692,11 +701,15 @@
   <button id="btnRhythm" aria-label="Show the rhythm of the day big">♪ Rhythm</button>
   <button id="btnBook" aria-label="Show the method book">📖 Book</button>
   <button id="btnMap" aria-label="Open the world map">🌍 Map</button>
+  <button id="btnArtic" aria-label="Articulation or dynamics of the day">🎵 Articulation</button>
   <div id="overrideBadge" title="Tap to return to automatic"></div>
 </div>
 
 <!-- World map: where our songs, composers and instruments come from (map/index.html) -->
 <div id="mapView" role="dialog" aria-label="Music around the world"><iframe id="mapFrame" title="Music around the world"></iframe></div>
+
+<!-- Articulation / Dynamics of the day: the Articulation & Dynamics Trainer (../articulation-dynamics/) in board mode -->
+<div id="adView" role="dialog" aria-label="Articulation and dynamics of the day"><iframe id="adFrame" title="Articulation and dynamics of the day" allow="autoplay"></iframe></div>
 
 <!-- Rhythm of the day, zoomed to full width (a second copy of the slide, cropped to the rhythm card) -->
 <div id="rhythm" role="dialog" aria-label="Rhythm of the day">
@@ -947,7 +960,7 @@
   </div>
 </div>
 
-<script src="rhythmtime.js?v=2.30.0"></script>
+<script src="rhythmtime.js?v=2.31.0"></script>
 <script>
 (function () {
   "use strict";
@@ -1178,6 +1191,7 @@
     if (window.rhythmSync) window.rhythmSync();
     if (window.bookSync) window.bookSync();
     if (window.mapSync) window.mapSync();
+    if (window.adSync) window.adSync();
     if (window.ptestSync) window.ptestSync();
     if (window.slideJobsSync) window.slideJobsSync();
     if (window.seasonBandSync) window.seasonBandSync();             // 2.30.0: header effects start with the slide, not 5 s later
@@ -1679,7 +1693,7 @@
   // 🎲 stay in two-part rhythms until 👥 is switched off (or ↩ Today's rhythm). Like 🎲, the slide is never changed.
   var duoBook = null;
   function duoBookGet() {
-    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.30.0").then(function (r) {
+    if (!duoBook) duoBook = fetch("rhythm-duos.json?v=2.31.0").then(function (r) {
       if (!r.ok) throw new Error("two-part file missing"); return r.json();
     }).catch(function (e) { duoBook = null; throw e; });
     return duoBook;
@@ -2118,6 +2132,46 @@
   });
   window.mapSync = function () { if (mapEl.classList.contains("open") && mapFor !== shownKey) mapClose(); mapTodayFetch(); };
   setInterval(function () { if (shownKey && shownKey !== "welcome") mapTodayFetch(); }, 60000);
+
+  // ===================== ARTICULATION / DYNAMICS OF THE DAY (2.31.0, Mat 11/20) =====================
+  // The Articulation & Dynamics Trainer (artificialfear/articulation-dynamics — same site, so a relative link) in board mode.
+  // Mat's choices: board button + full-screen overlay (slides untouched); articulation and dynamics alternate by school day;
+  // difficulty by class; one example per class level per day (3rd + 4th share, 🎲 New still makes a fresh one);
+  // single pitch for everyone (concert F on the middle line), because a shared staff can't be in every instrument's key.
+  var AD_LEVEL = { "1st": "8th", "3rd": "7th", "4th": "7th", "6th": "6int", "7th": "6beg" };
+  var AD_URL = "../articulation-dynamics/index.html";
+  var adEl = document.getElementById("adView"), adFrame = document.getElementById("adFrame"), adBtn = document.getElementById("btnArtic"), adFor = null;
+  // Weekdays counted from Mon 8/3/2026: even = articulation, odd = dynamics (keeps alternating across weekends).
+  function adMode(d) {
+    var day = Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000), epoch = Math.round(Date.UTC(2026, 7, 3) / 86400000), n = 0;
+    for (var x = Math.min(epoch, day); x < Math.max(epoch, day); x++) { var wd = new Date(x * 86400000).getUTCDay(); if (wd > 0 && wd < 6) n++; }
+    return n % 2 ? "dyn" : "art";
+  }
+  function adSrc() {
+    var d = now(), lvl = AD_LEVEL[shownKey] || "7th";
+    return AD_URL + "?board=1&mode=" + adMode(d) + "&lvl=" + lvl + "&seed=" + encodeURIComponent(ymd(d) + "|" + lvl);
+  }
+  function adLabel() { adBtn.textContent = adMode(now()) === "dyn" ? "🔊 Dynamics" : "🎵 Articulation"; }
+  function adOpen() {
+    if (!shownKey || shownKey === "welcome" || shownNinja) return;
+    var src = adSrc();
+    if (adFrame.getAttribute("src") !== src) adFrame.src = src;      // same class + day: keep it (and where they were) loaded
+    adFor = shownKey; adEl.classList.add("open");
+  }
+  function adClose(unload) {
+    adEl.classList.remove("open");
+    if (unload) adFrame.removeAttribute("src");                     // class change: stops any sound, fresh copy next time
+  }
+  adBtn.onclick = adOpen;
+  window.addEventListener("message", function (e) {
+    if (e.source === adFrame.contentWindow && e.data && e.data.artDyn === "close") adClose(false);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && adEl.classList.contains("open")) adClose(false); });
+  window.adSync = function () {
+    adLabel();
+    if (adEl.classList.contains("open") && (adFor !== shownKey || shownKey === "welcome" || shownNinja)) adClose(true);
+  };
+  window.adSync();
 
   // ===================== WARNINGS =====================
   // Warnings on the welcome screen: things that would quietly break the end of class.
@@ -3030,7 +3084,7 @@
   // 2.5.2: self-update (Mat 11/12: the ViewBoard's browser kept an old copy after a refresh). Every 5 minutes the board asks
   // for version.json (never cached); when it names a newer build it reloads with ?v=<build>, which no cache has seen.
   // Never in the middle of a wheel spin, and at most once per build per 10 minutes (no reload loops).
-  var BUILD = "2.30.0";
+  var BUILD = "2.31.0";
   function checkBuild() {
     if (TEST) return;
     fetch("version.json?_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
@@ -3059,10 +3113,10 @@
     chime: function (kind) { if (kind === "end") scoreChime(); else packChime(); } };
 })();
 </script>
-<script src="ptnet.js?v=2.30.0"></script>
-<script src="ptest.js?v=2.30.0"></script>
-<script src="lunch.js?v=2.30.0"></script>
-<script src="rtap.js?v=2.30.0"></script>
-<script src="season.js?v=2.30.0"></script>
+<script src="ptnet.js?v=2.31.0"></script>
+<script src="ptest.js?v=2.31.0"></script>
+<script src="lunch.js?v=2.31.0"></script>
+<script src="rtap.js?v=2.31.0"></script>
+<script src="season.js?v=2.31.0"></script>
 </body>
 </html>

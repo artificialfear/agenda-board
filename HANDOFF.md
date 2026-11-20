@@ -1,6 +1,6 @@
 # Agenda Board — handoff
 
-## ▶ START HERE — session summary 11/18/2026 (live: board 2.30.0, ClosingScores v1.13 @16, AgendaFill v1.2, Dojo v82)
+## ▶ START HERE — session summary 11/18/2026 (live: board 2.31.0 — see 11/20 below, ClosingScores v1.13 @16, AgendaFill v1.2, Dojo v82)
 **Where things are**
 - Apps Script project "Class Agenda – Daily Slide Updater" 1tptuE3iTnOfA3KI-tAFGK6qCTdEKTFgWh6OiK6WpGoKXvKDLe9tdj_TG (ClosingScores.gs,
   AgendaFill.gs, NinjaGoals.gs, Code.gs — Code.gs not in repo); web app deployment AKfycbw9… @16. Daily Rehearsal deck
@@ -33,6 +33,22 @@
 - Untested in class: 2.15–2.30, especially slide jobs card, make-ups, warm-ups, welcome themes on the ViewBoard (emoji/perf).
 
 **Next**: get Mat's in-class feedback (warm-ups first live 11/19, jobs card, make-ups); ask about the history scrub.
+
+## 11/20/2026 morning: Articulation / Dynamics of the day (build 2.31.0 + trainer 2.3.0)
+- Mat chose: a board button + full-screen overlay (slides untouched); articulation and dynamics alternate by school day; difficulty
+  by class; one example per class level per day. When asked about pitch on a shared staff, he chose single pitch for every class
+  (concert F on the middle line). Scales on the board would show concert pitch, which is wrong for transposing instruments.
+- Board: #btnArtic (shown with body.can-rhythm, so agenda slides only, not Ninja) → #adView (z 34) iframe
+  `../articulation-dynamics/index.html?board=1&mode=&lvl=&seed=<ymd>|<lvl>` (same origin on GitHub Pages).
+  - AD_LEVEL: 1st 8th, 3rd/4th 7th, 6th 6int, 7th 6beg.
+  - adMode(): weekdays since Mon 8/3/2026, even = art, odd = dyn. Uses now(), so ?test= works.
+  - The same src stays loaded when reopened. Class change (adSync from show()) closes it and unloads, which stops sound.
+  - Closes on the trainer's {artDyn:"close"} message or Esc.
+- Trainer side (artificialfear/articulation-dynamics 2.3.0): board mode, LEVELS, the seeded examples, and a hidden "neutral" instrument.
+  - It must keep working on the ViewBoard's Chrome ~87 and old emoji font (🎚 showed as a box, so Dynamics uses 🔊).
+- Tests: smoke "articulation / dynamics of the day" uses a stub trainer page; break-checked (no close at class change). 67/67,
+  plus all other suites green. Checked against the real trainer by serving both repos side by side.
+- Not tried on the real ViewBoard yet: check sound and that the trainer loads (first open fetches about 300 KB of trumpet samples).
 
 ## 11/19/2026 evening: season effects in the slide header band, before the bell (build 2.30.0)
 - Mat chose: before class only, header band only, own "Slide animation" row, no color change to the slide.

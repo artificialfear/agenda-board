@@ -1,5 +1,14 @@
 # Changelog
 
+
+## 2.31.0 — 2026-11-20
+- New button on agenda slides next to 🌍 Map: **🎵 Articulation** or **🔊 Dynamics** of the day. It opens the Articulation & Dynamics Trainer full screen in Presentation mode, with Play, New, Show shapes, Articulation ⇄ Dynamics, tempo − / +, and Back to agenda.
+- Articulation and Dynamics alternate by school day.
+- Each class gets its level: 1st = 8th grade, 3rd/4th = 7th grade (shared example), 6th = 6th Intermediate, 7th = 6th Beginning.
+- The example is the same all day for a class.
+- Everyone reads the middle line and plays concert F, so every instrument reads it correctly.
+- Hidden on the welcome screen and on Band Ninja days. Closes at class change, Back to agenda, or Esc.
+
 ## 2.30.0 — 2026-11-19 (Mat)
 - **Season effects on the agenda slides, before class.** The welcome screen's seasonal effects (fall leaves, Halloween bats,
   holiday snow + twinkles, winter snow, concert-day sparkles) now also drift across the slide's header band (block name, date,
