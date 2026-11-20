@@ -48,7 +48,9 @@
   - It must keep working on the ViewBoard's Chrome ~87 and old emoji font (🎚 showed as a box, so Dynamics uses 🔊).
 - Tests: smoke "articulation / dynamics of the day" uses a stub trainer page; break-checked (no close at class change). 67/67,
   plus all other suites green. Checked against the real trainer by serving both repos side by side.
-- Not tried on the real ViewBoard yet: check sound and that the trainer loads (first open fetches about 300 KB of trumpet samples).
+- Not tried on the real ViewBoard yet: check the sound and that the trainer loads.
+- 2.31.1 (Mat): adSrc adds `&delay=<settings.audioDelay>` (when > 0). The trainer (2.4.5) delays its cursor and highlights, not the sound.
+  Changing the delay changes the src, so the next open reloads the trainer. Since trainer 2.4.4 the board plays Synth (octaves), so no samples load.
 
 ## 11/19/2026 evening: season effects in the slide header band, before the bell (build 2.30.0)
 - Mat chose: before class only, header band only, own "Slide animation" row, no color change to the slide.

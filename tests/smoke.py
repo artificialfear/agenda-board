@@ -759,6 +759,13 @@ def main():
         page.keyboard.press("Escape"); page.wait_for_timeout(100)
         esc = not page.evaluate("document.getElementById('adView').classList.contains('open')")
         if shots_dir: page.screenshot(path=str(shots_dir / "artic_button.png"))
+        # 2.31.1: the board's Speaker delay rides along so the trainer's cursor waits for the sound
+        page.evaluate("window.__agendaBoard.settings().audioDelay = 280"); page.clock.fast_forward("00:00:01")
+        page.click("#btnArtic"); page.wait_for_timeout(200)
+        dsrc = page.get_attribute("#adFrame", "src") or ""
+        page.keyboard.press("Escape")
+        if "&delay=280" not in dsrc: print("FAIL", f"{'articulation: speaker delay':34s} {dsrc!r}"); failures += 1
+        else: print("PASS", f"{'articulation: speaker delay':34s}")
         page.close(); page = ctx.new_page(); page.clock.install(time="2026-11-06T08:50:00")         # between classes: welcome
         page.goto(f"http://127.0.0.1:{PORT}/index.html"); page.wait_for_timeout(400)
         welcomeHidden = not page.is_visible("#btnArtic")

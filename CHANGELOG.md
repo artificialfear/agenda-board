@@ -1,6 +1,10 @@
 # Changelog
 
 
+
+## 2.31.1 — 2026-11-20
+- 🎵/🔊 Articulation / Dynamics of the day uses the board's **🔈 Speaker delay** (the same setting as Rhythm of the Day). The trainer's cursor and highlighted notes wait for the sound, so students playing along see the cursor where the music actually is.
+
 ## 2.31.0 — 2026-11-20
 - New button on agenda slides next to 🌍 Map: **🎵 Articulation** or **🔊 Dynamics** of the day. It opens the Articulation & Dynamics Trainer full screen in Presentation mode, with Play, New, Show shapes, Articulation ⇄ Dynamics, tempo − / +, and Back to agenda.
 - Articulation and Dynamics alternate by school day.
